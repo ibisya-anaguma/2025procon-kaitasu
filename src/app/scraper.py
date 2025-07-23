@@ -1,3 +1,6 @@
+# あらとも
+# scraper用
+
 import os
 import json
 import sys
@@ -12,8 +15,8 @@ from webdriver_manager.chrome import ChromeDriverManager
 # -----------------------------------------------------------------------------
 # 設定
 # -----------------------------------------------------------------------------
-CATEGORY_FILE = "categories.txt"  # 1行に1URLずつ記述 (カテゴリページURL)
-OUTPUT_FILE   = "all_products.json"
+CATEGORY_FILE = "../db/categories.txt"  # 1行に1URLずつ記述 (カテゴリページURL)
+OUTPUT_FILE   = "../db/all_products.json"
 
 # -----------------------------------------------------------------------------
 # カテゴリ URL 読み込み
