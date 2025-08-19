@@ -7,6 +7,9 @@ export default function Shopping() {
       <header className={styles.header}>
         <h1>探す</h1>
       </header>
+      <a href="/shopping/shopping_cart" className={styles.button}>
+        カートに移動
+      </a>
       <a href="/" className={styles.button}>
         ホームに戻る
       </a>
