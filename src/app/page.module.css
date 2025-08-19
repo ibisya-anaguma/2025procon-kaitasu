@@ -166,3 +166,45 @@ a.secondary {
     filter: invert();
   }
 }
+
+.list {
+  padding: 0;
+  margin: 20px; /* Add margin from page edges */
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px; /* Add spacing between list items */
+}
+
+.button {
+  display: inline-block;
+  padding: 12px 24px;
+  font-size: 18px;
+  font-weight: bold;
+  color: white;
+  background-color: #0070f3;
+  text-decoration: none;
+  border-radius: 8px;
+  text-align: center;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: background-color 0.3s, transform 0.2s;
+  margin: 10px; /* Add margin between buttons */
+}
+
+.button:hover {
+  background-color: #005bb5;
+  transform: translateY(-2px);
+}
+
+.button:active {
+  background-color: #003f7f;
+  transform: translateY(0);
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 20px;
+  font-size: 24px;
+  font-weight: bold;
+  color: #333;
+}
