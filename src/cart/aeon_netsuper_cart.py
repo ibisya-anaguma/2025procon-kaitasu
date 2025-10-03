@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import os
 import sys
 import re
@@ -54,7 +55,6 @@ def build_driver(user_data_dir: Optional[str], headless: bool) -> webdriver.Chro
     try:
         return webdriver.Chrome(service=service, options=opts)
     except WebDriverException as e:
-        # 既存プロファイル使用中の保険
         if "user data directory is already in use" in str(e):
             tmp = tempfile.mkdtemp(prefix="selenium-profile-")
             logger.warning("指定プロファイルが使用中 → 一時プロファイルで再試行: %s", tmp)
@@ -67,11 +67,8 @@ def build_driver(user_data_dir: Optional[str], headless: bool) -> webdriver.Chro
 # ========= ログイン検知 =========
 def is_logged_in(driver: webdriver.Chrome) -> bool:
     try:
-        # ログイン時に現れがちなリンクで判定
-        if driver.find_elements(By.CSS_SELECTOR, 'a[href*="/customer/account/logout"]'):
-            return True
-        if driver.find_elements(By.CSS_SELECTOR, 'a[href*="/customer/account/"]'):
-            return True
+        if driver.find_elements(By.CSS_SELECTOR, 'a[href*="/customer/account/logout"]'): return True
+        if driver.find_elements(By.CSS_SELECTOR, 'a[href*="/customer/account/"]'): return True
     except Exception:
         pass
     return False
@@ -81,8 +78,7 @@ def is_login_page(driver: webdriver.Chrome) -> bool:
         url = driver.current_url or ""
     except Exception:
         url = ""
-    if "/customer/account/login" in url:
-        return True
+    if "/customer/account/login" in url: return True
     try:
         if driver.find_elements(By.CSS_SELECTOR, 'form[action*="login"] input[type="password"]'):
             return True
@@ -91,14 +87,11 @@ def is_login_page(driver: webdriver.Chrome) -> bool:
     return False
 
 def ensure_logged_in(driver: webdriver.Chrome, wait: WebDriverWait, max_wait_sec: int = 300):
-    # まずホームを開いてログイン済みか確認
     driver.get(HOME_URL)
     wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
     if is_logged_in(driver):
         logger.info("ログイン済みを検知。続行します。")
         return
-
-    # 未ログイン → ログインページへ誘導し完了待ち
     driver.get(LOGIN_URL)
     wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
     logger.info("ログインが必要です。開いたブラウザでログインを完了してください（最長 %s 秒待機）。", max_wait_sec)
@@ -108,7 +101,6 @@ def ensure_logged_in(driver: webdriver.Chrome, wait: WebDriverWait, max_wait_sec
         if is_logged_in(driver):
             logger.info("ログイン完了を検知しました。続行します。")
             return
-        # ログイン後に自動遷移したケース
         if not is_login_page(driver):
             logger.info("ログインページ以外に遷移を検知。続行します。")
             return
@@ -141,24 +133,20 @@ def _first_displayed(driver: webdriver.Chrome, selectors_css: List[str], xpaths:
     return None
 
 def _keywords_from_name(name: str) -> List[str]:
-    if not name:
-        return []
+    if not name: return []
     s = name.strip()
     for ch in "（）()【】[]『』「」,:：、・　 ":
         s = s.replace(ch, " ")
     toks = [t for t in s.split() if len(t) >= 3]
-    if not toks:
-        return [name[:8]]
+    if not toks: return [name[:8]]
     keys = [toks[0], toks[len(toks)//2], toks[-1]]
     keys = [k for i, k in enumerate(keys) if k and k not in keys[:i]]
-    if name[:8] not in keys:
-        keys.append(name[:8])
+    if name[:8] not in keys: keys.append(name[:8])
     return keys
 
 def find_add_to_cart_by_id(driver: webdriver.Chrome, product_id: str):
     pid = (product_id or "").strip()
-    if not pid:
-        return None
+    if not pid: return None
     css = [
         f'button[data-product-id="{pid}"]',
         f'button[data-id="{pid}"]',
@@ -170,8 +158,7 @@ def find_add_to_cart_by_id(driver: webdriver.Chrome, product_id: str):
     return _first_displayed(driver, css, [])
 
 def find_add_to_cart_by_name(driver: webdriver.Chrome, product_name: str):
-    if not product_name:
-        return None
+    if not product_name: return None
     keys = _keywords_from_name(product_name)
     btn_xpath = ".//button[contains(.,'カゴ') or contains(.,'カート') or contains(.,'追加') or contains(.,'購入')]"
     for kw in keys:
@@ -233,13 +220,11 @@ def wait_cart_added(driver, before_count=None, expected_delta=1, timeout=12):
 
 def add_to_cart(driver: webdriver.Chrome, wait: WebDriverWait,
                 product_id: str, qty: int = 1, name: str = "", url: str = ""):
-    # qty 正規化
     try:
         qty = max(1, int(qty))
     except Exception:
         qty = 1
 
-    # 商品ページを開く
     if url:
         driver.get(url)
         wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
@@ -251,12 +236,9 @@ def add_to_cart(driver: webdriver.Chrome, wait: WebDriverWait,
     found = None
     if product_id and driver.page_source.find(str(product_id)) == -1:
         logger.info("[INFO] page_source に product_id=%s は未検出（ID非掲載ページ想定）", product_id)
-    if not found and product_id:
-        found = find_add_to_cart_by_id(driver, str(product_id))
-    if not found and name:
-        found = find_add_to_cart_by_name(driver, name)
-    if not found:
-        found = find_add_to_cart_generic(driver)
+    if not found and product_id: found = find_add_to_cart_by_id(driver, str(product_id))
+    if not found and name:       found = find_add_to_cart_by_name(driver, name)
+    if not found:                found = find_add_to_cart_generic(driver)
     if not found:
         raise RuntimeError("カゴ追加ボタンが見つかりません")
 
@@ -286,7 +268,6 @@ def add_to_cart(driver: webdriver.Chrome, wait: WebDriverWait,
             driver.execute_script("arguments[0].click();", el)
         time.sleep(0.6)
 
-        # クリック後にログインへ飛ばれたら対応
         if is_login_page(driver):
             logger.info("クリック後にログイン画面へ遷移。ログイン完了を待ちます。")
             ensure_logged_in(driver, wait, 300)
@@ -318,9 +299,6 @@ def fb_client(cred_path: str, project_id: Optional[str]) -> fb_firestore.Client:
     return fb_firestore.client()
 
 def collection_from_path(db: fb_firestore.Client, col_path: str) -> fb_firestore.CollectionReference:
-    """
-    'users/uid/purchase' のような『コレクション』パスを CollectionReference に変換
-    """
     parts = [p for p in col_path.split("/") if p]
     if len(parts) % 2 == 0:
         raise ValueError(f"コレクションパスが不正（偶数セグメント）: {col_path}")
@@ -332,58 +310,42 @@ def collection_from_path(db: fb_firestore.Client, col_path: str) -> fb_firestore
 def safe_qty(d: Dict[str, Any]) -> int:
     for k in ("quantity", "qty", "count", "num"):
         if k in d:
-            try:
-                return max(1, int(d[k]))
-            except Exception:
-                pass
+            try: return max(1, int(d[k]))
+            except Exception: pass
     return 1
 
 def id_from_any(v: Any, url: str = "") -> str:
-    # URL末尾の .../PRODUCT_ID.html を優先抽出
     if url:
         m = re.search(r"/(\d{8,})\.html(?:[?#].*)?$", url)
-        if m:
-            return m.group(1)
-    # 文字列 or 整数はそのまま採用
-    if isinstance(v, str):
-        return v.strip()
-    if isinstance(v, int):
-        return str(v)
-    # float(指数表記)などは空を返して URL/名前で探索に回す
+        if m: return m.group(1)
+    if isinstance(v, str): return v.strip()
+    if isinstance(v, int): return str(v)
     return ""
 
 def items_from_purchase_doc(snap: fb_firestore.DocumentSnapshot) -> List[Dict]:
     data = snap.to_dict() or {}
     raw = data.get("items")
-    if not isinstance(raw, list):
-        return []
+    if not isinstance(raw, list): return []
     out: List[Dict] = []
     for it in raw:
-        if not isinstance(it, dict):
-            continue
+        if not isinstance(it, dict): continue
         url = (it.get("url") or "").strip()
         pid = id_from_any(it.get("id"), url)
         name = (it.get("name") or it.get("title") or "").strip()
         qty = safe_qty(it)
-        if not any([url, pid, name]):  # 手がかりなしはスキップ
-            continue
+        if not any([url, pid, name]): continue
         out.append({"id": pid, "url": url, "name": name, "qty": qty})
     return out
 
 def fetch_items(db: fb_firestore.Client,
                 purchase_col_path: str,
                 purchase_doc: Optional[str]) -> Tuple[str, List[Dict]]:
-    """
-    purchase_doc が指定されていればそれ、無ければ createdAt 降順で最新1件。
-    戻り値: (ドキュメントID, items[])
-    """
     col = collection_from_path(db, purchase_col_path)
     if purchase_doc:
         snap = col.document(purchase_doc).get()
         if not snap.exists:
             raise RuntimeError(f"purchase ドキュメントが存在しません: {purchase_doc}")
         return snap.id, items_from_purchase_doc(snap)
-    # 最新1件（createdAt が無い場合は先頭1件）
     snaps: List[fb_firestore.DocumentSnapshot] = []
     try:
         snaps = list(col.order_by("createdAt", direction=firestore.Query.DESCENDING).limit(1).stream())
@@ -394,9 +356,85 @@ def fetch_items(db: fb_firestore.Client,
     snap = snaps[0]
     return snap.id, items_from_purchase_doc(snap)
 
+# ========= カート読み取り & 差分計算 =========
+def open_cart(driver: webdriver.Chrome, wait: WebDriverWait):
+    driver.get(CHECKOUT_URL)
+    wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
+    try_close_common_popups(driver)
+    time.sleep(0.3)
+
+def norm_name(s: str) -> str:
+    s = (s or "").lower()
+    s = re.sub(r"[（）()【】\[\]『』「」,:：、・\s]+", " ", s)
+    return re.sub(r"\s+", " ", s).strip()
+
+def product_id_from_url(url: str) -> str:
+    if not url: return ""
+    m = re.search(r"/(\d{8,})\.html", url)
+    return m.group(1) if m else ""
+
+def scrape_cart(driver: webdriver.Chrome) -> List[Dict]:
+    """カートページから {id/url/name/qty} を取得"""
+    items: List[Dict] = []
+    # 代表リンクを拾う
+    links = driver.find_elements(By.CSS_SELECTOR, 'a.product-item-link, .cart a[href*="/netsuper/"][href$=".html"]')
+    seen = set()
+    for a in links:
+        with contextlib.suppress(Exception):
+            href = a.get_attribute("href") or ""
+            name = (a.text or "").strip()
+            # 行コンテナ（tr or div.card など）
+            row = a.find_element(By.XPATH, "ancestor::tr[1] | ancestor::li[1] | ancestor::div[contains(@class,'item') or contains(@class,'cart')][1]")
+            qty = None
+            # inputで数量取得
+            with contextlib.suppress(Exception):
+                inp = row.find_element(By.CSS_SELECTOR, "input[name*='qty'], input[type='number']")
+                val = (inp.get_attribute("value") or "").strip()
+                if val.isdigit(): qty = int(val)
+            # テキストで数量取得
+            if qty is None:
+                with contextlib.suppress(Exception):
+                    span = row.find_element(By.XPATH, ".//*[contains(@class,'qty') or contains(.,'数量')][1]")
+                    txt = (span.text or "").strip()
+                    m = re.search(r"(\d+)", txt)
+                    if m: qty = int(m.group(1))
+            qty = qty or 1
+            pid = product_id_from_url(href)
+            key = (pid or norm_name(name) or href)
+            if key in seen:  # 同一商品重複は合算
+                for it in items:
+                    if it.get("_key")==key:
+                        it["qty"] += qty
+                        break
+            else:
+                items.append({"id": pid, "url": href, "name": name, "qty": qty, "_key": key})
+                seen.add(key)
+    return items
+
+def plan_topup(desired: List[Dict], current: List[Dict]) -> List[Dict]:
+    """desired（Firestore）を current（カート）に対して不足分だけ追加する計画を返す"""
+    # 現在の数量をキー別に
+    cur_map: Dict[str, int] = {}
+    def key_of(it: Dict) -> str:
+        return (it.get("id") or product_id_from_url(it.get("url","")) or norm_name(it.get("name","")))
+
+    for it in current:
+        k = it.get("_key") or key_of(it)
+        cur_map[k] = cur_map.get(k, 0) + int(it.get("qty",1) or 1)
+
+    plan: List[Dict] = []
+    for it in desired:
+        tgt = int(it.get("qty",1) or 1)
+        k = key_of(it)
+        have = cur_map.get(k, 0)
+        need = max(0, tgt - have)
+        if need > 0:
+            plan.append({"id": it.get("id",""), "url": it.get("url",""), "name": it.get("name",""), "qty": need})
+    return plan
+
 # ========= CLI =========
 def parse_args():
-    p = argparse.ArgumentParser(description="AEON 徳島 | Firestore users/{uid}/purchase から items を読み取りカートに投入")
+    p = argparse.ArgumentParser(description="AEON 徳島 | Firestore users/{uid}/purchase を読み、現カートを見て不足分だけトップアップ")
     # Chrome
     p.add_argument("--user-data-dir", default=DEFAULT_USER_DATA_DIR, help="Chrome のユーザープロファイル（ログイン保持）")
     p.add_argument("--headless", action="store_true", help="ヘッドレスで起動（ログイン時は非推奨）")
@@ -407,6 +445,8 @@ def parse_args():
     p.add_argument("--purchase-path", default="users/uid/purchase", help="例: users/<あなたのuid>/purchase")
     p.add_argument("--purchase-doc", default="", help="特定の purchase ドキュメントID（省略で最新1件）")
     # 挙動
+    p.add_argument("--topup-only", action="store_true", help="（既定）現在カートの不足分だけ入れる")
+    p.add_argument("--dry-run", action="store_true", help="追加せず計画だけログに出す")
     p.add_argument("--sleep-after-add", type=float, default=0.5, help="1商品投入後の待機秒")
     p.add_argument("--go-checkout", action="store_true", help="全投入後にカート画面へ移動")
     p.add_argument("--keep-open", action="store_true", help="終了後もブラウザを開いたままにする")
@@ -440,25 +480,38 @@ def main():
 
         db = fb_client(credp, args.fb_project or None)
 
-        # items 取得
-        doc_id, items = fetch_items(db, args.purchase_path, args.purchase_doc)
-        logger.info("purchase doc=%s から %d 件の items を取得", (doc_id or "(none)"), len(items))
-        if not items:
-            logger.info("投入する商品がありません。")
-        else:
-            for it in items:
-                try:
-                    add_to_cart(
-                        driver, wait,
-                        product_id=str(it.get("id") or ""),
-                        qty=int(it.get("qty", 1) or 1),
-                        name=it.get("name", ""),
-                        url=(it.get("url") or "")
-                    )
-                    time.sleep(args.sleep_after_add)
-                except Exception as e:
-                    logger.error(f"Failed to add {it.get('name') or it.get('id') or 'N/A'}: {e}")
+        # Firestore items 取得
+        doc_id, desired = fetch_items(db, args.purchase_path, args.purchase_doc)
+        logger.info("purchase doc=%s から %d 件の items を取得", (doc_id or "(none)"), len(desired))
 
+        # 現在のカートを読む
+        open_cart(driver, wait)
+        current = scrape_cart(driver)
+        logger.info("現在のカート: %d アイテム", len(current))
+
+        # トップアップ計画を作成
+        plan = plan_topup(desired, current) if (args.topup_only or True) else desired
+        if not plan:
+            logger.info("不足分はありません。追加処理はスキップします。")
+        else:
+            logger.info("不足分 %d 件 → 追加します。", len(plan))
+            for it in plan:
+                logger.info("Top-up: %s x%d", it.get("name") or it.get("id") or it.get("url"), int(it.get("qty",1) or 1))
+            if not args.dry_run:
+                for it in plan:
+                    try:
+                        add_to_cart(
+                            driver, wait,
+                            product_id=str(it.get("id") or ""),
+                            qty=int(it.get("qty", 1) or 1),
+                            name=it.get("name", ""),
+                            url=(it.get("url") or "")
+                        )
+                        time.sleep(args.sleep_after_add)
+                    except Exception as e:
+                        logger.error(f"Failed to add {it.get('name') or it.get('id') or 'N/A'}: {e}")
+
+        # 最終カートへ移動
         if args.go_checkout:
             with contextlib.suppress(Exception):
                 driver.get(CHECKOUT_URL)
