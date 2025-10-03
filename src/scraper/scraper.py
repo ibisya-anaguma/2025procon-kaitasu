@@ -14,26 +14,23 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
 
-# -----------------------------------------------------------------------------
-# 既定値（CLIで上書き可）
-# -----------------------------------------------------------------------------
+# 既定値（CLIで上書き可）------------------------------------------------------------
 STORE_ID   = "01050000036000"   # 店舗/受取識別子
 GENRE_MIN  = 10                 # ジャンル下限（含む）
 GENRE_MAX  = 79                 # ジャンル上限（含む）
 PAGE_MIN   = 1                  # ページ下限（含む）
 PAGE_MAX   = 5                  # ページ上限（含む）
-SORT_PARAM = "recommend"        # 並び順（p>=2 のとき付与）
+SORT_PARAM = "recommend"        # ページ（p>=2 のとき付与）
 
 OUTPUT_JSON = "all_products.json"  # フラット配列JSON
 HEADLESS = True                    # Trueにすると無画面実行
 
 # 除外/包含のデフォルト（空なら無効）
-EXCLUDE_GENRES_DEFAULT: Set[int] = {55}  # ★ 55 をデフォルト除外
+EXCLUDE_GENRES_DEFAULT: Set[int] = {55}  # デフォルト除外欄
 INCLUDE_GENRES_DEFAULT: Set[int] = set()
+# -----------------------------------------------------------------------------
 
-# -----------------------------------------------------------------------------
-# ユーティリティ
-# -----------------------------------------------------------------------------
+# ユーティリティ-------------------------------------------------------------------
 def parse_genre_spec(spec: str) -> Set[int]:
     """'10-15,18,20-22' → {10,11,12,13,14,15,18,20,21,22}"""
     out: Set[int] = set()
@@ -59,13 +56,11 @@ def parse_genre_spec(spec: str) -> Set[int]:
                 continue
     return out
 
-
 def build_category_url(store_id: str, genre: int, page: int, sort_param: str) -> str:
     base = f"https://shop.aeon.com/netsuper/{store_id}/{genre}.html"
     if page <= 1:
         return base
     return f"{base}?p={page}&sort={sort_param}"
-
 
 def collect_detail_urls(driver, wait, category_url: str) -> List[str]:
     print(f"Collecting detail URLs from {category_url}")
@@ -91,9 +86,8 @@ def collect_detail_urls(driver, wait, category_url: str) -> List[str]:
     print(f"  Found {len(hrefs)} detail URLs")
     return sorted(hrefs)
 
-
 def scrape_detail(driver, wait, detail_url: str, genre: int) -> Dict:
-    print(f"Scraping: {detail_url}")
+    # print(f"Scraping: {detail_url}")
     driver.get(detail_url)
     wait.until(EC.presence_of_element_located((By.TAG_NAME, 'body')))
     time.sleep(0.4)
@@ -142,7 +136,6 @@ def scrape_detail(driver, wait, detail_url: str, genre: int) -> Dict:
         'price_tax': price_tax,
         'genre': genre,   # 代表ジャンル
     }
-
 
 def main():
     import argparse
@@ -243,6 +236,7 @@ def main():
         driver.quit()
         print("Browser closed")
 
-
 if __name__ == '__main__':
     main()
+
+# -----------------------------------------------------------------------------
