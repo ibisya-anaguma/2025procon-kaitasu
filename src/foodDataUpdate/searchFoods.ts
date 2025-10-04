@@ -164,6 +164,7 @@ const normalizeName = (rawName: string) : { n: string; amt: string | null} => {
 		// 個別商品・飲料系の寄せ
 		.replace(/朝のフレッシュ\s*糖質?/g, 'コーヒーホワイトナー 液状 植物性脂肪')
 		.replace(/うまい！|トキメクおやつ部|ありのままの野菜たち|レンジで簡単！/g, '')
+		.replace(/どん兵衛/g, '')
 		.replace(/マルちゃん/g, '')
 		.replace(/ヤマダイ|グリーンアイ|Chill Break/g, '')
 		.replace(/フジパン|キョクヨー|CIRIO/g, '')
@@ -202,11 +203,42 @@ const normalizeName = (rawName: string) : { n: string; amt: string | null} => {
 		.replace(/コカコーラ|コカ・コーラ|コカ\b/g, 'コーラ')
 		.replace(/のんある気分/g, 'ビール風味炭酸飲料')
 		// 追加: ログの未マッチ対応（ブランド・宣伝・表記ゆれなど）
+		// 軽微な寄せ・ノイズ除去
+		.replace(/^サラダ\s*/g, '')
+		.replace(/^フェアトレード\s*/g, '')
+		.replace(/^ORW\s*/g, '')
+		.replace(/^SUPERfruit\s*/ig, '')
+		.replace(/^ザ\s*/g, '')
+		.replace(/^サラダごぼう/g, 'ごぼう')
+		.replace(/オニオン/g, 'たまねぎ')
+		.replace(/日分の野菜がとれる/g, '')
+		.replace(/色の/g, '')
+		.replace(/野菜り\s*/g, '')
+		.replace(/原材料名/g, '')
+		.replace(/選ばれし人気店|具だくさん|てりやき|純粋|風味豊かな|製菓/g, '')
+		.replace(/食べられる/g, '')
+		.replace(/すりつぶしかぼちゃ/g, 'かぼちゃ')
+		.replace(/大学いも/g, '調味ソース')
+		.replace(/にらりもやし/g, 'にら')
+		.replace(/がおいしい.*$/g, '')
+		.replace(/パリパリ麺サラダ/g, '')
+		.replace(/緑の野菜サラダ/g, 'リーフレタス')
+		.replace(/パプリカとオニオン/g, 'パプリカ')
+		.replace(/オニオンとレタス/g, 'レタス')
+		.replace(/もやしとキャベツ野菜/g, 'もやし')
+		.replace(/コーンとキャベツ/g, 'スイートコーン')
+		.replace(/ビーツやトレビス/g, 'ビーツ')
+		.replace(/にがうり調味ソース/g, 'にがうり')
+		.replace(/^食べ$/g, '')
+		.replace(/^食花$/g, '食用花')
+		.replace(/ディズニー|ヱスビー食品|オーマイ|JoyNuts|センピョ/g, '')
+		.replace(/ZERO/g, '')
 		.replace(/ベビーリーフ大/g, 'ベビーリーフ')
 		.replace(/ベビーリーフ/g, 'リーフレタス')
 		.replace(/カーネルコーン/g, 'スイートコーン')
 		.replace(/フルーツパプリカ/g, 'パプリカ')
 		.replace(/グローパイナップル/g, 'パイナップル')
+		.replace(/十勝つぶ姫\s*/g, '')
 		.replace(/^ナチュラル\s+/, '')
 		.replace(/純輝鶏/g, '')
 		.replace(/ダノンビオ/g, 'ヨーグルト 全脂無糖')
@@ -220,7 +252,9 @@ const normalizeName = (rawName: string) : { n: string; amt: string | null} => {
 		.replace(/いくら/g, 'イクラ')
 		.replace(/明太子/g, 'たらこ')
 		.replace(/柿/g, 'かき')
+		.replace(/^栗$/g, 'くり')
 		.replace(/春雨/g, 'はるさめ')
+		.replace(/干し芋|干しいも/g, 'さつまいも 蒸し切干')
 		.replace(/エディブルフラワー|食花/g, '食用花')
 		.replace(/レッドキドニー(?:ビーンズ)?|キドニー/g, 'いんげんまめ')
 		.replace(/黒豆/g, '黒大豆')
@@ -263,6 +297,7 @@ const normalizeName = (rawName: string) : { n: string; amt: string | null} => {
 		.replace(/パイ\b/g, 'パイ パイ皮')
 		.replace(/アップルパイ/g, 'パイ アップルパイ')
 		.replace(/ミートパイ/g, 'パイ ミートパイ')
+		.replace(/ミルフィーユ/g, 'パイ パイ皮')
 		.replace(/バームクーヘン|バウムクーヘン/g, 'バターケーキ')
 		.replace(/カステラ/g, 'カステラ')
 		.replace(/たい焼き|たい焼|今川焼/g, '今川焼 こしあん入り')
@@ -601,6 +636,7 @@ const normalizeName = (rawName: string) : { n: string; amt: string | null} => {
 		.replace(/フィンガー/g, '')
 		.replace(/クリーム\s*バー|クリームバー|クリーム/g, '')
 		.replace(/カプレーゼ/g, 'ナチュラルチーズ モッツァレラ')
+		.replace(/グリーンサラダ/g, 'リーフレタス')
 		// パスタ味種の整理
 		.replace(/ペペロンチーノ/g, 'マカロニ・スパゲッティ')
 		.replace(/しそ|和風|明太/g, '')
@@ -617,31 +653,43 @@ const normalizeName = (rawName: string) : { n: string; amt: string | null} => {
 		.replace(/にわとりナゲット|ナゲット/g, 'にわとり')
 		.replace(/コロコロ/g, '')
 		.replace(/フィレ/g, '')
+		.replace(/にわとり使/g, 'にわとり ')
+		.replace(/にわとり\s*もも\s*生/g, 'にわとり もも 皮なし 生')
+		.replace(/にわとり(?:の)?にわとり/g, 'にわとり')
+		.replace(/ナチュラル\s+/g, '')
+		.replace(/(手羽もと)/g, 'にわとり 手羽もと 皮つき 生')
+		.replace(/(むね|もも)ミンチ/g, 'にわとり ひき肉 生')
+		.replace(/にわとり もも 生/g, 'にわとり もも 皮なし 生')
 		// ハム・ベーコン・ソーセージの寄せ
-		.replace(/ポークビッツ|ロイヤルポールウインナー|シャウエッセン|香薫|モーニングサーブ|ウイ.?ニー/g, 'ウインナーソーセージ')
+		.replace(/ポークビッツ|ロイヤルポールウインナー|シャウエッセン|香薫|モーニングサーブ|ウイ.?ニー|あらびきウインナー|あらびきポークウインナー|特級あらびきポークウインナー/g, 'ウインナーソーセージ')
 		.replace(/DHA[^\s]*/g, '')
 		.replace(/無塩せき/g, '')
 		.replace(/燻製屋/g, '')
 		.replace(/赤身/g, '')
 		.replace(/切落し|落とし/g, '')
 		.replace(/厚ポークハム.*?/g, 'ロースハム')
+		.replace(/焼.?豚/g, '焼き豚')
 		.replace(/豚.*落とし/g, 'ぶた ロース')
 		// 揚げ物・天ぷら・惣菜系
 		.replace(/エビフライ|海老フライ/g, 'えびフライ')
 		.replace(/海老天|えび天/g, 'バナメイえび 養殖 天ぷら')
 		.replace(/イカ天/g, 'するめいか 胴 皮なし 天ぷら')
+		.replace(/いか(?:形)?てんぷら|いか天天/g, 'するめいか 胴 皮なし 天ぷら')
 		.replace(/鶏天/g, 'にわとり ささみ 天ぷら')
 		.replace(/アジフライ(?:小)?/g, 'まあじ フライ')
 		// ピザ・パン
 		.replace(/クワトロ/g, 'ピザ生地')
 		.replace(/ピッツア|ピッツァ|PIZZA|pizza/g, 'ピザ')
 		.replace(/ソリデラ/g, '')
+		.replace(/ピザ生地ソース/g, 'ピザ生地')
+		.replace(/.*ピザ生地$/g, 'ピザ生地')
 		// 地名・路線・観光ワードの除去
 		.replace(/北陸富山|山陰鳥取|東北仙台|山陽岡山|東海道品川|近鉄線奈良|東海道|山陽|山陰|東北/g, '')
 		.replace(/N700Sのぞみ/g, '')
 		// 寿司のご当地名寄せ
 		.replace(/ますのすし|鱒寿司|ます寿司/g, 'すし酢 巻き寿司・箱寿司用')
 		.replace(/かきの葉すし|柿の葉寿司|かきの葉寿司/g, 'すし酢 巻き寿司・箱寿司用')
+		.replace(/はみ出し巻/g, '太巻')
 		// 菓子・輸入ブランドのノイズを削除
 		.replace(/ウォーカー|セレッシャル|レクラーク|サンミッシェル|ピエールビスキュイットリー|ブルックサイド|ジョルジュモニン|モナン|フーバー|トローリ|マウントハーゲン|クライス|ヴェルタースオリジナル|バールセン|カベンディッシュ|VIVANI|HITSCHLER|ゼスタ|TEARTH|Tokyo\s*Tea\s*Trading|菱和園|ひしわ|アフタヌーンティー|Afternoon\s*Tea|キーコーヒー|カフェランテ|マスコット|デルタインターナショナル|デルタ|東洋ナッツ(?:食品)?|フリトレー|金城製菓|共立食品|川越屋|川口製菓|川本昆布|東洋食品|千年屋|丸正醸造|大阪ぎょくろえん|南国製菓|おとうふ工いしかわ|共栄製茶|正栄食品工業|エバートラストジャパン|富士甚醤油|井崎商店|スタジオオカムラ|リズミックアンドベル|フーバープレッツェル|ハンター|ナチュラルピーク|サニーフルーツ|ラムフォード/g, '')
 		.replace(/メープル紅はるか.*食パン/g, '食パン')
@@ -688,6 +736,7 @@ const normalizeName = (rawName: string) : { n: string; amt: string | null} => {
 		.replace(/(まあじ|アジ)の南蛮(酢|漬け)/g, 'アジの南蛮漬け')
 		.replace(/お肉屋さんのコロッケ/g, 'ポテトコロッケ')
 		.replace(/焼鳥(?:串)?/g, 'にわとり 焼き鳥缶詰')
+		.replace(/焼き鳥缶詰タレ/g, '焼き鳥缶詰')
 		.replace(/鶏のつくね串|つくね串/g, 'にわとり つくね')
 		.replace(/豚.*落とし/g, 'ぶた ロース')
 		.replace(/厚ポークハム.*?/g, 'ロースハム')
@@ -707,30 +756,37 @@ const normalizeName = (rawName: string) : { n: string; amt: string | null} => {
 		.replace(/白いちじく/g, 'いちじく 乾')
 		.replace(/バナナチップ/g, 'バナナ 乾')
 		.replace(/サルタナレーズン/g, '干しぶどう')
+		.replace(/種抜き/g, '')
 		.replace(/小豆の赤飯/g, '赤飯')
 		.replace(/ママレード/g, 'マーマレード')
 		.replace(/マルゲリータ|ピッツァ|ピザ/g, 'ピザ生地')
 		.replace(/太巻巻/g, '太巻')
 		.replace(/\bユニ\b/g, '')
 		.replace(/ユニ/g, '')
+		.replace(/もっちりもち/g, 'もち')
 		.replace(/美酢/g, '果実酢 りんご酢')
 		.replace(/ヒマラヤ岩塩.*|岩塩/g, '食塩')
 		.replace(/ピルクル/g, '乳酸菌飲料 乳製品')
 		.replace(/ジョア/g, '乳酸菌飲料 乳製品')
+		.replace(/カルピス/g, '乳酸菌飲料 乳製品')
 		.replace(/和の紅茶.*ミルクティー/g, '紅茶 浸出液')
 		.replace(/アサヒGINON.*/g, '缶チューハイ レモン風味')
 		.replace(/黄桜\s*一献/g, '清酒 普通酒')
 		.replace(/ロッキーマウンテン.*マシュマロ/g, 'マシュマロ')
 		.replace(/リンツ.*カカオ.*/g, 'スイートチョコレート カカオ増量')
+		.replace(/エクセレンスカカオ/g, 'スイートチョコレート')
 		.replace(/カンピー\s*ブルーベリージャム/g, 'ブルーベリー ジャム')
 		.replace(/アンナマンマ.*トマト/g, 'トマト')
 		.replace(/ポモロッソ.*トマト/g, 'トマト')
 		.replace(/淡路島酪農.*淡路島牛乳|淡路島牛乳/g, '普通牛乳')
+		.replace(/.*おにぎり$/g, 'おにぎり')
+		.replace(/午後の紅茶[^,\n]*/g, '紅茶 浸出液')
 		.replace(/華はるさめサラダ/g, 'はるさめ')
 		.replace(/食べられるレモン/g, 'レモン')
 		.replace(/餃子の皮/g, 'ぎょうざ')
 		.replace(/甘さすっきり|甘さ控えめ/g, '')
 		.replace(/糖質\s*オフ|糖類オフ|オフ/g, '')
+		.replace(/キリマンジャロブレンド|モカブレンド|オリジナルブレンド/g, 'コーヒー 浸出液')
 		.replace(/\d+\s*(か月|ヶ月|ヵ月)/g, '乳児用調製粉乳')
 		.replace(/(餃子|ギョーザ|ギョウザ)/g, 'ぎょうざ')
 		.replace(/鶏肉使サラダチキン|鶏の焼鳥串タレ/g, 'にわとり むね 皮なし 生')
@@ -742,13 +798,16 @@ const normalizeName = (rawName: string) : { n: string; amt: string | null} => {
 		.replace(/牛肉/g, 'うし')
 		.replace(/鶏肉/g, 'にわとり')
 		.replace(/チキン/g, 'にわとり')
+		.replace(/牛ぶた\s*ひき肉\s*生/g, 'ぶた ひき肉 生')
 		.replace(/ベーカーズアンドベーカ[^\s]*/g, '')
 		.replace(/毎日の食卓/g, '')
 		.replace(/ステップ\s*キューブ/g, '乳児用調製粉乳')
 		.replace(/スゴイダイズ.*無調整.*/g, '豆乳')
 		.replace(/ポップコーン/g, 'コーンスナック')
 		.replace(/太巻\b/g, 'すし酢 巻き寿司・箱寿司用')
+		.replace(/海鮮太巻|上太巻/g, 'すし酢 巻き寿司・箱寿司用')
 		.replace(/寿司|鮨|すし/g, 'すし酢 にぎり用')
+		.replace(/.*すし酢\s*(にぎり用|巻き寿司・箱寿司用|ちらし・稲荷用).*/g, 'すし酢 $1')
 		.replace(/駅|新幹線|本線/g, '')
 		.replace(/弁当/g, 'うるち米')
 		.replace(/五ツ星/g, '')
@@ -760,11 +819,18 @@ const normalizeName = (rawName: string) : { n: string; amt: string | null} => {
 		.replace(/甘酒/g, '甘酒')
 		.replace(/プルーン(?!\s*(生|乾))/g, 'プルーン 乾')
 		.replace(/もち棒|もちスティック/g, 'もち')
+		.replace(/キャラメルコーンスナック/g, 'コーンスナック')
+		.replace(/キシリトール.*ガム/g, '糖衣ガム')
+		.replace(/にわとり即席中華めんどんぶり/g, '即席中華めん')
+		.replace(/スンドゥブ/g, '豆腐')
+		.replace(/ロールキャベツ/g, 'キャベツ')
+		.replace(/たらこ.*マカロニ/g, 'マカロニ・スパゲッティ')
 		// 飲料（茶・コーヒー・麦茶など）の表記ゆれ吸収
 		.replace(/おーいお茶(?:濃い茶)?|緑茶(?:飲料)?/g, 'せん茶 浸出液')
 		.replace(/やさしい麦茶|健康ミネラルむぎ茶|麦茶(?:の|\s*)?浸出液?/g, '麦茶 浸出液')
 		.replace(/午後の紅茶.*(レモンティー|ミルクティー)/g, '紅茶 浸出液')
 		.replace(/午後の紅茶.*おいしい無糖/g, '紅茶 浸出液')
+		.replace(/生茶/g, 'せん茶 浸出液')
 		.replace(/コーヒー\s*飲料/g, 'コーヒー 浸出液')
 		// アルコール・ノンアル関連
 		.replace(/トリス(?:クラシック)?|ブラックニッカ|角瓶|WHISKY|ウィスキー/g, 'ウイスキー')
@@ -772,10 +838,16 @@ const normalizeName = (rawName: string) : { n: string; amt: string | null} => {
 		.replace(/のんある気分|ノンアル(?:コール)?(?:ビール)?/g, 'ビール風味炭酸飲料')
 		// 余分な重複語・空白の整理
 		.replace(/\b(浸出液)(?:\s*\1)+\b/g, '$1')
+		.replace(/\b(全脂無糖)(?:\s*\1)+\b/g, '$1')
 		.replace(/\b(ソフトビスケット)(?:\s*\1)+\b/g, '$1')
 		.replace(/(せん茶 浸出液)\1/g, '$1')
+		.replace(/(ピザ生地)(?:\s*\1)+/g, '$1')
+		.replace(/(にわとり)(?:\s*\1)+/g, '$1')
+		.replace(/(たらこ)(?:\s*\1)+/g, '$1')
 		.replace(/カレールウ即席中華めん/g, '即席中華めん')
 		.replace(/カレールウカレールウ/g, 'カレールウ')
+		.replace(/(白湯|シーフード|チリトマト|トマト|カレー|塩|しょうゆ|とんこつ|旨辛|濃厚)\s*即席中華めん/g, '即席中華めん')
+		.replace(/(^|\s)(本|個|枚|玉|袋|箱|パック)(?=\s|$)/g, ' ')
 		.replace(/\s{2,}/g, ' ');
 
     // 前後の空白を整理
@@ -802,7 +874,8 @@ const options = {
 	],
 	threshold: 0.4, // 低いほど厳密
 	shouldSort: true, // 検索をスコア順にソート
-	ignoreLocation: true
+	ignoreLocation: true,
+	minMatchCharLength: 2,
 }
 const fuse = new Fuse(DB, options);
 
@@ -810,18 +883,15 @@ const fuse = new Fuse(DB, options);
 fs.writeFileSync(logPath, '', 'utf8');
 
 function logAppend(data: string) {
-	fs.appendFile(logPath, data+"\n", function(err) {
-		if(err) {
-			throw err;
-		}
-	});
 }
 
 let matchProducts = 0;
 const total = products.length;
+const logData: string[] = [];
+
 for (let i = 0; i < total; i++) {
 
-	const matches = fuse.search(normalizedName[i]);
+	const matches = fuse.search(normalizedName[i], { limit: 1 });
 	const match = matches[0];
 
 	if (match) {
@@ -836,12 +906,10 @@ for (let i = 0; i < total; i++) {
 			NaCl_EQ_g: foodData.NaCl_EQ_g,
 		});
 
-		// console.log(`✅ ${normalizedName[i]} > ${foodData.name} / ${match.item.remarks}`);
-		logAppend(`✅ ${normalizedName[i]} > ${foodData.name} / ${match.item.remarks}`);
+		logData.push(`✅ ${normalizedName[i]} > ${foodData.name} / ${match.item.remarks} | id=${products[i].id} score=${typeof match.score === 'number' ? match.score.toFixed(3) : 'n/a'}`);
 		matchProducts++;
 	} else {
-		// console.log(`❌ だめ: ${normalizedName[i]}`);
-		logAppend(`❌ だめ: ${normalizedName[i]}`);
+		logData.push(`❌ だめ: ${normalizedName[i]} | id=${products[i].id}`);
 	}
 
 	// 進捗
@@ -850,6 +918,12 @@ for (let i = 0; i < total; i++) {
 	process.stdout.write(`\r[${bar}] ${i + 1}/${total}`);
 }
 console.log(); // 改行
+
+fs.appendFile(logPath, logData.join("\n")+"\n", function(err) {
+	if(err) {
+		throw err;
+	}
+});
 
 console.log("マッチ率:", 100 * matchProducts / products.length , "%");
 
