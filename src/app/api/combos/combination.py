@@ -23,13 +23,8 @@ def compute_p10_p90(data, key):
     values = [v for v in values if v is not None]
     if not values:
         return None, None
-<<<<<<< HEAD
     p10 = float(np.percentile(values, 10))
     p90 = float(np.percentile(values, 90))
-=======
-    p10 = float(np.percentile(values, 1))
-    p90 = float(np.percentile(values, 99))
->>>>>>> 0c513f2f339b4b697bab55c55f157aa6a36ecceb
     return p10, p90
 
 def normalize_health(data):
@@ -137,7 +132,6 @@ def solve_one(Items, budget_yen, selected_categories=None, H_floor_ratio=None, f
         "price_sum": price_sum,
     }
 
-<<<<<<< HEAD
 def _solve_price_only(Items, budget_yen):
     n = len(Items)
     x = [LpVariable(f"x_{i}", 0, 1, LpBinary) for i in range(n)]
@@ -153,16 +147,12 @@ def _solve_price_only(Items, budget_yen):
     return {"ids": pick_ids, "price_sum": price_sum}
 
 def build_items_for_solver(products, require_health=True):
-=======
-def build_items_for_solver(products_normalized):
->>>>>>> 0c513f2f339b4b697bab55c55f157aa6a36ecceb
     """
     solver用に必要なフィールドを補完。
     - price_yen が無い場合は priceTax を整数化して埋める
     - health_score が None のものは除外（健康モード仕様）
     """
     Items = []
-<<<<<<< HEAD
     for p in products:
         price_yen = int(round(p.get("price_yen", p.get("priceTax", 0) or 0)))
         hs = p.get("health_score")
@@ -263,77 +253,4 @@ if __name__ == "__main__":
     result_items = to_api_shape(products, result["ids"])
     with open(out_path, "w", encoding="utf-8") as f:
         json.dump(result_items, f, ensure_ascii=False, indent=2)
-=======
-    for p in products_normalized:
-        hs = p.get("health_score")
-        if hs is None:
-            continue
-        price_yen = int(round(p.get("price_yen", p.get("priceTax", 0))))
-        Items.append({
-            "id": p["id"],
-            "name": p.get("name"),
-            "category": p.get("category"),
-            "price_yen": price_yen,
-            "health_score": float(hs),
-        })
-    return Items
-
-if __name__ == "__main__":
-    # 入力: スクレイパーの出力
-    input_path = Path(__file__).resolve().parent.parent / "foodDataUpdate" / "foodData.json"
-    with open(input_path, "r", encoding="utf-8") as f:
-        products = json.load(f)
-
-    # 0〜1正規化（健康スコア付与）
-    normalized = normalize_health(products)
-
-
-    Items = build_items_for_solver(normalized)
-    if not Items:
-        print("[ERROR] 健康スコア計算済みのアイテムがありません")
-        raise SystemExit(1)
-
-    # 第1段：H最大化（最適解）
-    sol_opt = solve_one(Items, BUDGET_YEN, SELECTED_CATEGORIES, H_floor_ratio=None, forbid_overlap_with=None)
-    if sol_opt is None or not sol_opt["ids"]:
-        print("[ERROR] 解が見つかりませんでした（最適解）")
-        raise SystemExit(1)
-    H_star = sol_opt["H"]
-
-    # 第2段：残額最小化（H を最適値まで固定）
-    sol_opt2 = solve_one(
-        Items, BUDGET_YEN, SELECTED_CATEGORIES,
-        H_floor_ratio=H_star - 1e-9,
-        forbid_overlap_with=None 
-    )
-    best = sol_opt2 or sol_opt
-
-    # 出力作成（最適解のみ）
-    def pick_items(ids):
-        s = []
-        idset = set(ids)
-        for it in Items:
-            if it["id"] in idset:
-                s.append(it)
-        return s
-
-    results = {
-        "optimal": {
-            "H": best["H"],
-            "price_sum": best["price_sum"],
-            "items": pick_items(best["ids"]),
-        },
-        "meta": {
-            "budget_yen": BUDGET_YEN,
-            "selected_categories": SELECTED_CATEGORIES,
-            "H_star": H_star,
-            "quality_drop_max": QUALITY_DROP,
-        }
-    }
-
-    # 保存
-    out_path = Path(__file__).resolve().parent / "optimized_results.json"
-    with open(out_path, "w", encoding="utf-8") as f:
-        json.dump(results, f, ensure_ascii=False, indent=2)
->>>>>>> 0c513f2f339b4b697bab55c55f157aa6a36ecceb
     print(f"[WRITE] {out_path}")
