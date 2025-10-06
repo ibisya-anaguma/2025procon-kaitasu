@@ -42,4 +42,4 @@ next-env.d.ts
 
 service-account.json
 
-src/jobs/foodDataUpdate/log.txt
+/src/jobs/foodDataUpdate/log.txt
