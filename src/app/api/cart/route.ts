@@ -3,6 +3,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth } from "@/lib/middleware";
 import { getFirestore, FieldValue } from 'firebase-admin/firestore'
+import foodData from '@/data/foodData.json'
+
 const db = getFirestore();
 
 export const GET = withAuth(async (_req: NextRequest, uid: string) => {
@@ -18,6 +20,14 @@ export const GET = withAuth(async (_req: NextRequest, uid: string) => {
 		id: doc.id,
 		...doc.data()
 	}));
+
+	// name, price, imgeUrlをfoodData.jsonから加える
+	const mergedItems = items.map(item => {
+		const food = foodData.find(f => f.id === item.id);
+		return food
+			? { ...item, name: food.name, price: food.priceTax, imgUrl: food.url }
+			: { ...item, name: "no Name", price: 0, imgUrl: "" };
+	});
 
 	return NextResponse.json(items);
 });
