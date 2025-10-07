@@ -38,7 +38,7 @@ export const POST = withAuth(async (req: NextRequest, uid: string) => {
 		}
 		await batch.commit();
 
-		// idとquantifyのみ追加
+		// idとquantityのみ追加
 		return NextResponse.json({ msg: "success" })
 	} catch (error) {
 		return NextResponse.json({ error: "Failed to add cart" }, {status: 500});
