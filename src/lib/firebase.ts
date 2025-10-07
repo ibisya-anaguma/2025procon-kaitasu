@@ -1,5 +1,4 @@
 // firebase初期化処理
-// うめはら
 
 import { initializeApp, getApps } from 'firebase/app';
 import { getAuth } from 'firebase/auth';

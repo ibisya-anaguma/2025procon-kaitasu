@@ -17380,12 +17380,12 @@
         "priceTax": 354.24,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4549414464023.jpg",
         "amount": "180g",
-        "cholesterol_mg": "50",
+        "cholesterol_mg": "60",
         "fiber_g": "0",
-        "K_mg": "260",
-        "Ca_mg": "6",
-        "VitaminC_mg": "50",
-        "NaCl_EQ_g": "2.2"
+        "K_mg": "230",
+        "Ca_mg": "4",
+        "VitaminC_mg": "69",
+        "NaCl_EQ_g": "2.6"
     },
     {
         "id": "010500000360004549414490237",
@@ -17646,12 +17646,12 @@
         "priceTax": 278.64,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4549741152655.jpg",
         "amount": "96g",
-        "cholesterol_mg": "0",
-        "fiber_g": "1.1",
-        "K_mg": "340",
-        "Ca_mg": "18",
+        "cholesterol_mg": "-13",
+        "fiber_g": "-1.8",
+        "K_mg": "()110",
+        "Ca_mg": "()11",
         "VitaminC_mg": "(Tr)",
-        "NaCl_EQ_g": "0.6"
+        "NaCl_EQ_g": "()1.1"
     },
     {
         "id": "010500000360004549741174312",
@@ -19326,12 +19326,12 @@
         "priceTax": 159.84,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/0000049408560.jpg",
         "amount": "200ml",
-        "cholesterol_mg": "6",
+        "cholesterol_mg": "16",
         "fiber_g": "0",
-        "K_mg": "190",
-        "Ca_mg": "130",
+        "K_mg": "170",
+        "Ca_mg": "110",
         "VitaminC_mg": "Tr",
-        "NaCl_EQ_g": "0.2"
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360000000049410402",
@@ -19606,12 +19606,12 @@
         "priceTax": 591.84,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/3090291123349.jpg",
         "amount": "100g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "87",
+        "fiber_g": "0",
+        "K_mg": "120",
+        "Ca_mg": "460",
+        "VitaminC_mg": "0",
+        "NaCl_EQ_g": "2.0"
     },
     {
         "id": "010500000360003090291123615",
@@ -19634,12 +19634,12 @@
         "priceTax": 710.64,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/3222476547248.jpg",
         "amount": "200g",
-        "cholesterol_mg": "0",
-        "fiber_g": "11.4",
-        "K_mg": "290",
-        "Ca_mg": "20",
-        "VitaminC_mg": "21",
-        "NaCl_EQ_g": "0"
+        "cholesterol_mg": "62",
+        "fiber_g": "0",
+        "K_mg": "20",
+        "Ca_mg": "330",
+        "VitaminC_mg": "-",
+        "NaCl_EQ_g": "0.2"
     },
     {
         "id": "010500000360003222476547255",
@@ -20726,12 +20726,12 @@
         "priceTax": 95.04,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4549741769846.jpg",
         "amount": "200ml",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "-12",
+        "fiber_g": "0",
+        "K_mg": "-150",
+        "Ca_mg": "-110",
+        "VitaminC_mg": "-1",
+        "NaCl_EQ_g": "-0.1"
     },
     {
         "id": "010500000360004549741769853",
@@ -20754,12 +20754,12 @@
         "priceTax": 321.84,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4549741769860.jpg",
         "amount": "1000ml",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "-12",
+        "fiber_g": "0",
+        "K_mg": "-150",
+        "Ca_mg": "-110",
+        "VitaminC_mg": "-1",
+        "NaCl_EQ_g": "-0.1"
     },
     {
         "id": "010500000360004549741817806",
@@ -21048,12 +21048,12 @@
         "priceTax": 149.04,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4901112100434.jpg",
         "amount": "250ml",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "12",
+        "fiber_g": "0",
+        "K_mg": "170",
+        "Ca_mg": "120",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360004901112100441",
@@ -21118,12 +21118,12 @@
         "priceTax": 267.84,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4901112800136.jpg",
         "amount": "240ml",
-        "cholesterol_mg": "6",
+        "cholesterol_mg": "12",
         "fiber_g": "0",
-        "K_mg": "190",
-        "Ca_mg": "130",
-        "VitaminC_mg": "Tr",
-        "NaCl_EQ_g": "0.2"
+        "K_mg": "170",
+        "Ca_mg": "120",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360004901112800143",
@@ -21132,12 +21132,12 @@
         "priceTax": 267.84,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4901112800143.jpg",
         "amount": "240ml",
-        "cholesterol_mg": "6",
+        "cholesterol_mg": "12",
         "fiber_g": "0",
-        "K_mg": "190",
-        "Ca_mg": "130",
-        "VitaminC_mg": "Tr",
-        "NaCl_EQ_g": "0.2"
+        "K_mg": "170",
+        "Ca_mg": "120",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360004901112800211",
@@ -21146,12 +21146,12 @@
         "priceTax": 267.84,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4901112800211.jpg",
         "amount": "240ml",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "12",
+        "fiber_g": "0",
+        "K_mg": "170",
+        "Ca_mg": "120",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360004901231055646",
@@ -21272,12 +21272,12 @@
         "priceTax": 213.84,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4901810124251.jpg",
         "amount": "1000ml",
-        "cholesterol_mg": "6",
-        "fiber_g": "0",
-        "K_mg": "190",
-        "Ca_mg": "130",
-        "VitaminC_mg": "Tr",
-        "NaCl_EQ_g": "0.2"
+        "cholesterol_mg": "-4",
+        "fiber_g": "-0.5",
+        "K_mg": "-51",
+        "Ca_mg": "-38",
+        "VitaminC_mg": "(Tr)",
+        "NaCl_EQ_g": "0"
     },
     {
         "id": "010500000360004901810124268",
@@ -21286,12 +21286,12 @@
         "priceTax": 213.84,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4901810124268.jpg",
         "amount": "1000ml",
-        "cholesterol_mg": "4",
-        "fiber_g": "0",
-        "K_mg": "180",
-        "Ca_mg": "140",
-        "VitaminC_mg": "1",
-        "NaCl_EQ_g": "0.1"
+        "cholesterol_mg": "-4",
+        "fiber_g": "-0.5",
+        "K_mg": "-51",
+        "Ca_mg": "-38",
+        "VitaminC_mg": "(Tr)",
+        "NaCl_EQ_g": "0"
     },
     {
         "id": "010500000360004901810393954",
@@ -21370,12 +21370,12 @@
         "priceTax": 354.24,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4902033804272.jpg",
         "amount": "27g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "62",
+        "fiber_g": "0",
+        "K_mg": "20",
+        "Ca_mg": "330",
+        "VitaminC_mg": "-",
+        "NaCl_EQ_g": "0.2"
     },
     {
         "id": "010500000360004902033804289",
@@ -21384,12 +21384,12 @@
         "priceTax": 354.24,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4902033804289.jpg",
         "amount": "27g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "96",
+        "fiber_g": "0",
+        "K_mg": "120",
+        "Ca_mg": "1300",
+        "VitaminC_mg": "0",
+        "NaCl_EQ_g": "3.8"
     },
     {
         "id": "010500000360004902033805156",
@@ -21524,12 +21524,12 @@
         "priceTax": 159.84,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4902121964345.jpg",
         "amount": "1000ml",
-        "cholesterol_mg": "4",
-        "fiber_g": "0",
-        "K_mg": "80",
-        "Ca_mg": "60",
-        "VitaminC_mg": "0",
-        "NaCl_EQ_g": "0.1"
+        "cholesterol_mg": null,
+        "fiber_g": null,
+        "K_mg": null,
+        "Ca_mg": null,
+        "VitaminC_mg": null,
+        "NaCl_EQ_g": null
     },
     {
         "id": "010500000360004902188122269",
@@ -21608,12 +21608,12 @@
         "priceTax": 321.84,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4902705006287.jpg",
         "amount": "900ml",
-        "cholesterol_mg": "6",
+        "cholesterol_mg": "16",
         "fiber_g": "0",
-        "K_mg": "190",
-        "Ca_mg": "130",
+        "K_mg": "170",
+        "Ca_mg": "110",
         "VitaminC_mg": "Tr",
-        "NaCl_EQ_g": "0.2"
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360004902705014541",
@@ -21791,11 +21791,11 @@
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4902705065000.jpg",
         "amount": "150g",
         "cholesterol_mg": "0",
-        "fiber_g": "-",
-        "K_mg": "140",
-        "Ca_mg": "16",
-        "VitaminC_mg": "120",
-        "NaCl_EQ_g": "1.5"
+        "fiber_g": "0",
+        "K_mg": "-3",
+        "Ca_mg": "-3",
+        "VitaminC_mg": "0",
+        "NaCl_EQ_g": "0"
     },
     {
         "id": "010500000360004902705067547",
@@ -21818,12 +21818,12 @@
         "priceTax": 235.44,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4902705068087.jpg",
         "amount": "200ml",
-        "cholesterol_mg": "6",
+        "cholesterol_mg": "16",
         "fiber_g": "0",
-        "K_mg": "190",
-        "Ca_mg": "130",
+        "K_mg": "170",
+        "Ca_mg": "110",
         "VitaminC_mg": "Tr",
-        "NaCl_EQ_g": "0.2"
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360004902705093720",
@@ -21860,12 +21860,12 @@
         "priceTax": 138.24,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4902705095175.jpg",
         "amount": "200ml",
-        "cholesterol_mg": "6",
+        "cholesterol_mg": "16",
         "fiber_g": "0",
-        "K_mg": "190",
-        "Ca_mg": "130",
+        "K_mg": "170",
+        "Ca_mg": "110",
         "VitaminC_mg": "Tr",
-        "NaCl_EQ_g": "0.2"
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360004902705095465",
@@ -21874,12 +21874,12 @@
         "priceTax": 235.44,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4902705095465.jpg",
         "amount": "200ml",
-        "cholesterol_mg": "6",
+        "cholesterol_mg": "16",
         "fiber_g": "0",
-        "K_mg": "190",
-        "Ca_mg": "130",
+        "K_mg": "170",
+        "Ca_mg": "110",
         "VitaminC_mg": "Tr",
-        "NaCl_EQ_g": "0.2"
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360004902705096769",
@@ -21944,12 +21944,12 @@
         "priceTax": 332.64,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4902705098633.jpg",
         "amount": "430ml",
-        "cholesterol_mg": "6",
+        "cholesterol_mg": "16",
         "fiber_g": "0",
-        "K_mg": "190",
-        "Ca_mg": "130",
+        "K_mg": "170",
+        "Ca_mg": "110",
         "VitaminC_mg": "Tr",
-        "NaCl_EQ_g": "0.2"
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360004902705098640",
@@ -21958,12 +21958,12 @@
         "priceTax": 332.64,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4902705098640.jpg",
         "amount": "430ml",
-        "cholesterol_mg": "6",
+        "cholesterol_mg": "16",
         "fiber_g": "0",
-        "K_mg": "190",
-        "Ca_mg": "130",
+        "K_mg": "170",
+        "Ca_mg": "110",
         "VitaminC_mg": "Tr",
-        "NaCl_EQ_g": "0.2"
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360004902705098909",
@@ -22028,12 +22028,12 @@
         "priceTax": 138.24,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4902705127555.jpg",
         "amount": "200ml",
-        "cholesterol_mg": "6",
+        "cholesterol_mg": "16",
         "fiber_g": "0",
-        "K_mg": "190",
-        "Ca_mg": "130",
+        "K_mg": "170",
+        "Ca_mg": "110",
         "VitaminC_mg": "Tr",
-        "NaCl_EQ_g": "0.2"
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360004902705127821",
@@ -22098,12 +22098,12 @@
         "priceTax": 278.64,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4902720069403.jpg",
         "amount": "1000ml",
-        "cholesterol_mg": "6",
+        "cholesterol_mg": "16",
         "fiber_g": "0",
-        "K_mg": "190",
-        "Ca_mg": "130",
+        "K_mg": "170",
+        "Ca_mg": "110",
         "VitaminC_mg": "Tr",
-        "NaCl_EQ_g": "0.2"
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360004902720094221",
@@ -23260,12 +23260,12 @@
         "priceTax": 181.44,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/01050000036000/PC/L/4908547380257.jpg",
         "amount": "1000ml",
-        "cholesterol_mg": "6",
-        "fiber_g": "0",
-        "K_mg": "190",
-        "Ca_mg": "130",
-        "VitaminC_mg": "Tr",
-        "NaCl_EQ_g": "0.2"
+        "cholesterol_mg": null,
+        "fiber_g": null,
+        "K_mg": null,
+        "Ca_mg": null,
+        "VitaminC_mg": null,
+        "NaCl_EQ_g": null
     },
     {
         "id": "010500000360004908609011211",
@@ -23288,12 +23288,12 @@
         "priceTax": 300.24,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4908609100335.jpg",
         "amount": "1000ml",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "0",
+        "fiber_g": "-",
+        "K_mg": "65",
+        "Ca_mg": "2",
+        "VitaminC_mg": "0",
+        "NaCl_EQ_g": "0"
     },
     {
         "id": "010500000360004908629401801",
@@ -23610,12 +23610,12 @@
         "priceTax": 95.04,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4930726103210.jpg",
         "amount": "200ml",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "0",
+        "fiber_g": "1.1",
+        "K_mg": "170",
+        "Ca_mg": "31",
+        "VitaminC_mg": "Tr",
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360004930726103517",
@@ -23624,12 +23624,12 @@
         "priceTax": 127.44,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4930726103517.jpg",
         "amount": "200ml",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "0",
+        "fiber_g": "0.9",
+        "K_mg": "190",
+        "Ca_mg": "15",
+        "VitaminC_mg": "Tr",
+        "NaCl_EQ_g": "0"
     },
     {
         "id": "010500000360004930726103678",
@@ -23666,12 +23666,12 @@
         "priceTax": 257.04,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/01050000036000/PC/L/4933373052290.jpg",
         "amount": "150g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "4",
+        "fiber_g": "0",
+        "K_mg": "17",
+        "Ca_mg": "8",
+        "VitaminC_mg": "0",
+        "NaCl_EQ_g": "1.1"
     },
     {
         "id": "010500000360004935584012308",
@@ -23694,12 +23694,12 @@
         "priceTax": 257.04,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4942019501764.jpg",
         "amount": "70g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "100",
+        "fiber_g": "0",
+        "K_mg": "85",
+        "Ca_mg": "740",
+        "VitaminC_mg": "0",
+        "NaCl_EQ_g": "2.0"
     },
     {
         "id": "010500000360004942019501894",
@@ -23708,12 +23708,12 @@
         "priceTax": 429.84,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4942019501894.jpg",
         "amount": "90g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "87",
+        "fiber_g": "0",
+        "K_mg": "120",
+        "Ca_mg": "460",
+        "VitaminC_mg": "0",
+        "NaCl_EQ_g": "2.0"
     },
     {
         "id": "010500000360004942019501924",
@@ -23722,12 +23722,12 @@
         "priceTax": 224.64,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4942019501924.jpg",
         "amount": "70g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "100",
+        "fiber_g": "0",
+        "K_mg": "85",
+        "Ca_mg": "740",
+        "VitaminC_mg": "0",
+        "NaCl_EQ_g": "2.0"
     },
     {
         "id": "010500000360004942019501948",
@@ -23736,12 +23736,12 @@
         "priceTax": 224.64,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4942019501948.jpg",
         "amount": "70g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "62",
+        "fiber_g": "0",
+        "K_mg": "20",
+        "Ca_mg": "330",
+        "VitaminC_mg": "-",
+        "NaCl_EQ_g": "0.2"
     },
     {
         "id": "010500000360004942019502075",
@@ -23750,12 +23750,12 @@
         "priceTax": 429.84,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4942019502075.jpg",
         "amount": "70g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "87",
+        "fiber_g": "0",
+        "K_mg": "120",
+        "Ca_mg": "460",
+        "VitaminC_mg": "0",
+        "NaCl_EQ_g": "2.0"
     },
     {
         "id": "010500000360004942019502150",
@@ -23778,12 +23778,12 @@
         "priceTax": 753.84,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4942019502501.jpg",
         "amount": "60g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "20",
+        "fiber_g": "0",
+        "K_mg": "50",
+        "Ca_mg": "55",
+        "VitaminC_mg": "0",
+        "NaCl_EQ_g": "1.0"
     },
     {
         "id": "010500000360004942019502518",
@@ -23792,12 +23792,12 @@
         "priceTax": 980,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4942019502518.jpg",
         "amount": "80g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "20",
+        "fiber_g": "0",
+        "K_mg": "50",
+        "Ca_mg": "55",
+        "VitaminC_mg": "0",
+        "NaCl_EQ_g": "1.0"
     },
     {
         "id": "010500000360004942019502525",
@@ -23806,12 +23806,12 @@
         "priceTax": 753.84,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4942019502525.jpg",
         "amount": "60g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "62",
+        "fiber_g": "0",
+        "K_mg": "20",
+        "Ca_mg": "330",
+        "VitaminC_mg": "-",
+        "NaCl_EQ_g": "0.2"
     },
     {
         "id": "010500000360004942220477155",
@@ -23820,12 +23820,12 @@
         "priceTax": 861.84,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4942220477155.jpg",
         "amount": "600g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "0",
+        "fiber_g": "0.4",
+        "K_mg": "14",
+        "Ca_mg": "3",
+        "VitaminC_mg": "0",
+        "NaCl_EQ_g": "0.2"
     },
     {
         "id": "010500000360004951785002023",
@@ -23848,12 +23848,12 @@
         "priceTax": 354.24,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/01050000036000/PC/L/4951785518258.jpg",
         "amount": "10個",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "470",
+        "fiber_g": "0",
+        "K_mg": "150",
+        "Ca_mg": "60",
+        "VitaminC_mg": "0",
+        "NaCl_EQ_g": "0.3"
     },
     {
         "id": "010500000360004953036123457",
@@ -23862,12 +23862,12 @@
         "priceTax": 159.84,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4953036123457.jpg",
         "amount": "10個",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "490",
+        "fiber_g": "0",
+        "K_mg": "28",
+        "Ca_mg": "47",
+        "VitaminC_mg": "0",
+        "NaCl_EQ_g": "0.5"
     },
     {
         "id": "010500000360004959127410710",
@@ -23918,12 +23918,12 @@
         "priceTax": 321.84,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4964312348099.jpg",
         "amount": "180g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "96",
+        "fiber_g": "0",
+        "K_mg": "120",
+        "Ca_mg": "1300",
+        "VitaminC_mg": "0",
+        "NaCl_EQ_g": "3.8"
     },
     {
         "id": "010500000360004964312478031",
@@ -23932,12 +23932,12 @@
         "priceTax": 192.24,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4964312478031.jpg",
         "amount": "75g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "-15",
+        "fiber_g": "-3.2",
+        "K_mg": "()320",
+        "Ca_mg": "()160",
+        "VitaminC_mg": ")0",
+        "NaCl_EQ_g": "() .3"
     },
     {
         "id": "010500000360004964312478048",
@@ -23960,12 +23960,12 @@
         "priceTax": 429.84,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4970208030238.jpg",
         "amount": "185g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "4",
+        "fiber_g": "0",
+        "K_mg": "17",
+        "Ca_mg": "8",
+        "VitaminC_mg": "0",
+        "NaCl_EQ_g": "1.1"
     },
     {
         "id": "010500000360004971666404296",
@@ -23988,12 +23988,12 @@
         "priceTax": 300.24,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4971666406603.jpg",
         "amount": "100ml",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "12",
+        "fiber_g": "0",
+        "K_mg": "150",
+        "Ca_mg": "110",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360004971666410174",
@@ -24086,12 +24086,12 @@
         "priceTax": 116.64,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4971666512601.jpg",
         "amount": "200ml",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "-",
+        "fiber_g": "-",
+        "K_mg": "60",
+        "Ca_mg": "22",
+        "VitaminC_mg": "0",
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360004972050010437",
@@ -24100,12 +24100,12 @@
         "priceTax": 354.24,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4972050010437.jpg",
         "amount": "180g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "4",
+        "fiber_g": "0",
+        "K_mg": "17",
+        "Ca_mg": "8",
+        "VitaminC_mg": "0",
+        "NaCl_EQ_g": "1.1"
     },
     {
         "id": "010500000360004972050014183",
@@ -24114,12 +24114,12 @@
         "priceTax": 321.84,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4972050014183.jpg",
         "amount": "75g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "0",
+        "fiber_g": "4.1",
+        "K_mg": "740",
+        "Ca_mg": "65",
+        "VitaminC_mg": "Tr",
+        "NaCl_EQ_g": "0"
     },
     {
         "id": "010500000360004976750572417",
@@ -24128,12 +24128,12 @@
         "priceTax": 786.24,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4976750572417.jpg",
         "amount": "400g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "65",
+        "fiber_g": "0",
+        "K_mg": "65",
+        "Ca_mg": "660",
+        "VitaminC_mg": "0",
+        "NaCl_EQ_g": "2.0"
     },
     {
         "id": "010500000360004981099801562",
@@ -24170,12 +24170,12 @@
         "priceTax": 753.84,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/8006103102490.jpg",
         "amount": "100g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "90",
+        "fiber_g": "0",
+        "K_mg": "120",
+        "Ca_mg": "590",
+        "VitaminC_mg": "0",
+        "NaCl_EQ_g": "3.8"
     },
     {
         "id": "010500000360008010883001973",
@@ -24184,12 +24184,12 @@
         "priceTax": 807.84,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/8010883001973.jpg",
         "amount": "100g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "96",
+        "fiber_g": "0",
+        "K_mg": "120",
+        "Ca_mg": "1300",
+        "VitaminC_mg": "0",
+        "NaCl_EQ_g": "3.8"
     },
     {
         "id": "010500000360008023678729174",
@@ -24198,12 +24198,12 @@
         "priceTax": 494.64,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/8023678729174.jpg",
         "amount": "1000ml",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "-12",
+        "fiber_g": "0",
+        "K_mg": "-150",
+        "Ca_mg": "-110",
+        "VitaminC_mg": "-1",
+        "NaCl_EQ_g": "-0.1"
     },
     {
         "id": "010500000360000000045091568",
@@ -24212,12 +24212,12 @@
         "priceTax": 149.04,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/0000045091568.jpg",
         "amount": "112g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "12",
+        "fiber_g": "0",
+        "K_mg": "170",
+        "Ca_mg": "120",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360000000045184703",
@@ -24240,12 +24240,12 @@
         "priceTax": 170.64,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/0000045207082.jpg",
         "amount": "113g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "12",
+        "fiber_g": "0",
+        "K_mg": "170",
+        "Ca_mg": "120",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360000000045207099",
@@ -24254,12 +24254,12 @@
         "priceTax": 170.64,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/0000045207099.jpg",
         "amount": "113g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "12",
+        "fiber_g": "0",
+        "K_mg": "170",
+        "Ca_mg": "120",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360000000049202229",
@@ -24268,12 +24268,12 @@
         "priceTax": 159.84,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/0000049202229.jpg",
         "amount": "100g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "12",
+        "fiber_g": "0",
+        "K_mg": "170",
+        "Ca_mg": "120",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360000000049202267",
@@ -24282,12 +24282,12 @@
         "priceTax": 138.24,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/0000049202267.jpg",
         "amount": "100g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "12",
+        "fiber_g": "0",
+        "K_mg": "170",
+        "Ca_mg": "120",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360000000049202274",
@@ -24296,12 +24296,12 @@
         "priceTax": 138.24,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/0000049202274.jpg",
         "amount": "100g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "12",
+        "fiber_g": "0",
+        "K_mg": "170",
+        "Ca_mg": "120",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360000000049212617",
@@ -24310,12 +24310,12 @@
         "priceTax": 138.24,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/0000049212617.jpg",
         "amount": "100g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "12",
+        "fiber_g": "0",
+        "K_mg": "170",
+        "Ca_mg": "120",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360000000049212624",
@@ -24324,12 +24324,12 @@
         "priceTax": 138.24,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/0000049212624.jpg",
         "amount": "100g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "12",
+        "fiber_g": "0",
+        "K_mg": "170",
+        "Ca_mg": "120",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360000000049212877",
@@ -24338,12 +24338,12 @@
         "priceTax": 192.24,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/0000049212877.jpg",
         "amount": "400g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "12",
+        "fiber_g": "0",
+        "K_mg": "170",
+        "Ca_mg": "120",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360000000049410471",
@@ -24352,12 +24352,12 @@
         "priceTax": 149.04,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/0000049410471.jpg",
         "amount": "100g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "12",
+        "fiber_g": "0",
+        "K_mg": "170",
+        "Ca_mg": "120",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360000000049721836",
@@ -24366,12 +24366,12 @@
         "priceTax": 149.04,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/0000049721836.jpg",
         "amount": "112g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "12",
+        "fiber_g": "0",
+        "K_mg": "170",
+        "Ca_mg": "120",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360000000049722000",
@@ -24380,12 +24380,12 @@
         "priceTax": 149.04,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/0000049722000.jpg",
         "amount": "112g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "12",
+        "fiber_g": "0",
+        "K_mg": "170",
+        "Ca_mg": "120",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360000000049722253",
@@ -24394,12 +24394,12 @@
         "priceTax": 149.04,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/0000049722253.jpg",
         "amount": "112g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "12",
+        "fiber_g": "0",
+        "K_mg": "170",
+        "Ca_mg": "120",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360000000049794052",
@@ -24408,12 +24408,12 @@
         "priceTax": 159.84,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/0000049794052.jpg",
         "amount": "100g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "12",
+        "fiber_g": "0",
+        "K_mg": "170",
+        "Ca_mg": "120",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360000000049835335",
@@ -24422,11 +24422,11 @@
         "priceTax": 159.84,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/0000049835335.jpg",
         "amount": "100g",
-        "cholesterol_mg": "3",
+        "cholesterol_mg": "12",
         "fiber_g": "0",
-        "K_mg": "130",
-        "Ca_mg": "110",
-        "VitaminC_mg": "Tr",
+        "K_mg": "170",
+        "Ca_mg": "120",
+        "VitaminC_mg": "1",
         "NaCl_EQ_g": "0.1"
     },
     {
@@ -24436,12 +24436,12 @@
         "priceTax": 159.84,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/0000049836349.jpg",
         "amount": "100g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "12",
+        "fiber_g": "0",
+        "K_mg": "170",
+        "Ca_mg": "120",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360000000049837896",
@@ -24534,12 +24534,12 @@
         "priceTax": 149.04,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4549414436693.jpg",
         "amount": "70g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "12",
+        "fiber_g": "0",
+        "K_mg": "170",
+        "Ca_mg": "120",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360004549414436709",
@@ -24548,12 +24548,12 @@
         "priceTax": 149.04,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4549414436709.jpg",
         "amount": "70g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "12",
+        "fiber_g": "0",
+        "K_mg": "170",
+        "Ca_mg": "120",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360004549414436716",
@@ -24562,12 +24562,12 @@
         "priceTax": 149.04,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4549414436716.jpg",
         "amount": "70g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "12",
+        "fiber_g": "0",
+        "K_mg": "170",
+        "Ca_mg": "120",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360004549414453324",
@@ -24576,12 +24576,12 @@
         "priceTax": 203.04,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4549414453324.jpg",
         "amount": "185g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "0",
+        "fiber_g": "0",
+        "K_mg": "230",
+        "Ca_mg": "75",
+        "VitaminC_mg": "0",
+        "NaCl_EQ_g": "0"
     },
     {
         "id": "010500000360004549414453331",
@@ -24590,12 +24590,12 @@
         "priceTax": 203.04,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4549414453331.jpg",
         "amount": "185g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "0",
+        "fiber_g": "0",
+        "K_mg": "230",
+        "Ca_mg": "75",
+        "VitaminC_mg": "0",
+        "NaCl_EQ_g": "0"
     },
     {
         "id": "010500000360004549414453348",
@@ -24604,12 +24604,12 @@
         "priceTax": 203.04,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4549414453348.jpg",
         "amount": "185g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "0",
+        "fiber_g": "0",
+        "K_mg": "230",
+        "Ca_mg": "75",
+        "VitaminC_mg": "0",
+        "NaCl_EQ_g": "0"
     },
     {
         "id": "010500000360004549414488036",
@@ -24632,12 +24632,12 @@
         "priceTax": 375.84,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4549414488043.jpg",
         "amount": "250g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "12",
+        "fiber_g": "0",
+        "K_mg": "170",
+        "Ca_mg": "120",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360004549414546132",
@@ -24758,12 +24758,12 @@
         "priceTax": 950.4,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4560278092429.jpg",
         "amount": "1000g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "12",
+        "fiber_g": "0",
+        "K_mg": "170",
+        "Ca_mg": "120",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360004560278092504",
@@ -24772,12 +24772,12 @@
         "priceTax": 980,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4560278092504.jpg",
         "amount": "1000g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "12",
+        "fiber_g": "0",
+        "K_mg": "170",
+        "Ca_mg": "120",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360004901033635657",
@@ -24786,12 +24786,12 @@
         "priceTax": 321.84,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4901033635657.jpg",
         "amount": "400g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "12",
+        "fiber_g": "0",
+        "K_mg": "170",
+        "Ca_mg": "120",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360004901033640736",
@@ -24842,12 +24842,12 @@
         "priceTax": 246.24,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4901112200189.jpg",
         "amount": "180g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "12",
+        "fiber_g": "0",
+        "K_mg": "170",
+        "Ca_mg": "120",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360004901112250177",
@@ -24856,12 +24856,12 @@
         "priceTax": 246.24,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4901112250177.jpg",
         "amount": "180g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "12",
+        "fiber_g": "0",
+        "K_mg": "170",
+        "Ca_mg": "120",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360004901112250207",
@@ -24870,12 +24870,12 @@
         "priceTax": 246.24,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4901112250207.jpg",
         "amount": "180g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "12",
+        "fiber_g": "0",
+        "K_mg": "170",
+        "Ca_mg": "120",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360004901112600835",
@@ -24996,12 +24996,12 @@
         "priceTax": 213.84,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4901112611343.jpg",
         "amount": "300g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "12",
+        "fiber_g": "0",
+        "K_mg": "170",
+        "Ca_mg": "120",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360004901112611350",
@@ -25010,12 +25010,12 @@
         "priceTax": 213.84,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4901112611350.jpg",
         "amount": "300g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "12",
+        "fiber_g": "0",
+        "K_mg": "170",
+        "Ca_mg": "120",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360004901112611367",
@@ -25024,12 +25024,12 @@
         "priceTax": 170.64,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4901112611367.jpg",
         "amount": "150g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "12",
+        "fiber_g": "0",
+        "K_mg": "170",
+        "Ca_mg": "120",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360004901112611374",
@@ -25038,12 +25038,12 @@
         "priceTax": 170.64,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4901112611374.jpg",
         "amount": "150g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "12",
+        "fiber_g": "0",
+        "K_mg": "170",
+        "Ca_mg": "120",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360004901112611466",
@@ -25052,12 +25052,12 @@
         "priceTax": 213.84,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4901112611466.jpg",
         "amount": "300g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "12",
+        "fiber_g": "0",
+        "K_mg": "170",
+        "Ca_mg": "120",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360004901112611480",
@@ -25066,12 +25066,12 @@
         "priceTax": 149.04,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4901112611480.jpg",
         "amount": "100g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "12",
+        "fiber_g": "0",
+        "K_mg": "170",
+        "Ca_mg": "120",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360004901112611497",
@@ -25080,12 +25080,12 @@
         "priceTax": 149.04,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4901112611497.jpg",
         "amount": "100g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "12",
+        "fiber_g": "0",
+        "K_mg": "170",
+        "Ca_mg": "120",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360004901112611534",
@@ -25094,12 +25094,12 @@
         "priceTax": 213.84,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4901112611534.jpg",
         "amount": "300g",
-        "cholesterol_mg": "-1",
-        "fiber_g": "-1.2",
-        "K_mg": "()54",
-        "Ca_mg": "()5",
-        "VitaminC_mg": "()1",
-        "NaCl_EQ_g": "() .4"
+        "cholesterol_mg": "12",
+        "fiber_g": "0",
+        "K_mg": "170",
+        "Ca_mg": "120",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360004901112611572",
@@ -25108,12 +25108,12 @@
         "priceTax": 170.64,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4901112611572.jpg",
         "amount": "150g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "12",
+        "fiber_g": "0",
+        "K_mg": "170",
+        "Ca_mg": "120",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360004901112611596",
@@ -25122,12 +25122,12 @@
         "priceTax": 213.84,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4901112611596.jpg",
         "amount": "300g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "12",
+        "fiber_g": "0",
+        "K_mg": "170",
+        "Ca_mg": "120",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360004901112800006",
@@ -25136,12 +25136,12 @@
         "priceTax": 235.44,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4901112800006.jpg",
         "amount": "170g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "12",
+        "fiber_g": "0",
+        "K_mg": "170",
+        "Ca_mg": "120",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360004901112800235",
@@ -25150,12 +25150,12 @@
         "priceTax": 170.64,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4901112800235.jpg",
         "amount": "123g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "12",
+        "fiber_g": "0",
+        "K_mg": "170",
+        "Ca_mg": "120",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360004901112800242",
@@ -25164,12 +25164,12 @@
         "priceTax": 170.64,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4901112800242.jpg",
         "amount": "123g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "12",
+        "fiber_g": "0",
+        "K_mg": "170",
+        "Ca_mg": "120",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360004901112800259",
@@ -25178,12 +25178,12 @@
         "priceTax": 170.64,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4901112800259.jpg",
         "amount": "113g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "12",
+        "fiber_g": "0",
+        "K_mg": "170",
+        "Ca_mg": "120",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360004901112800358",
@@ -25192,12 +25192,12 @@
         "priceTax": 170.64,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4901112800358.jpg",
         "amount": "113g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "12",
+        "fiber_g": "0",
+        "K_mg": "170",
+        "Ca_mg": "120",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360004901385001155",
@@ -25374,12 +25374,12 @@
         "priceTax": 149.04,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4902705036062.jpg",
         "amount": "112g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "12",
+        "fiber_g": "0",
+        "K_mg": "170",
+        "Ca_mg": "120",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360004902705036123",
@@ -25388,12 +25388,12 @@
         "priceTax": 149.04,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4902705036123.jpg",
         "amount": "112g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "12",
+        "fiber_g": "0",
+        "K_mg": "170",
+        "Ca_mg": "120",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360004902705044234",
@@ -25416,12 +25416,12 @@
         "priceTax": 149.04,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4902705088207.jpg",
         "amount": "112g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "12",
+        "fiber_g": "0",
+        "K_mg": "170",
+        "Ca_mg": "120",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360004902705090828",
@@ -25430,12 +25430,12 @@
         "priceTax": 149.04,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4902705090828.jpg",
         "amount": "112g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "12",
+        "fiber_g": "0",
+        "K_mg": "170",
+        "Ca_mg": "120",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360004902705090873",
@@ -25444,12 +25444,12 @@
         "priceTax": 149.04,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4902705090873.jpg",
         "amount": "112g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "12",
+        "fiber_g": "0",
+        "K_mg": "170",
+        "Ca_mg": "120",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360004902705095076",
@@ -25458,12 +25458,12 @@
         "priceTax": 246.24,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4902705095076.jpg",
         "amount": "112g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "12",
+        "fiber_g": "0",
+        "K_mg": "170",
+        "Ca_mg": "120",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360004902705095984",
@@ -25472,12 +25472,12 @@
         "priceTax": 159.84,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4902705095984.jpg",
         "amount": "112g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "12",
+        "fiber_g": "0",
+        "K_mg": "170",
+        "Ca_mg": "120",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360004902705095991",
@@ -25486,12 +25486,12 @@
         "priceTax": 159.84,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4902705095991.jpg",
         "amount": "112g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "12",
+        "fiber_g": "0",
+        "K_mg": "170",
+        "Ca_mg": "120",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360004902705096004",
@@ -25500,12 +25500,12 @@
         "priceTax": 159.84,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4902705096004.jpg",
         "amount": "112g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "12",
+        "fiber_g": "0",
+        "K_mg": "170",
+        "Ca_mg": "120",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360004902705096011",
@@ -25514,12 +25514,12 @@
         "priceTax": 159.84,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4902705096011.jpg",
         "amount": "112g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "12",
+        "fiber_g": "0",
+        "K_mg": "170",
+        "Ca_mg": "120",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360004902705096028",
@@ -25528,12 +25528,12 @@
         "priceTax": 159.84,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4902705096028.jpg",
         "amount": "112g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "12",
+        "fiber_g": "0",
+        "K_mg": "170",
+        "Ca_mg": "120",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360004902705096042",
@@ -25542,12 +25542,12 @@
         "priceTax": 159.84,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4902705096042.jpg",
         "amount": "112g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "12",
+        "fiber_g": "0",
+        "K_mg": "170",
+        "Ca_mg": "120",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360004902705096103",
@@ -25556,12 +25556,12 @@
         "priceTax": 159.84,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4902705096103.jpg",
         "amount": "112g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "12",
+        "fiber_g": "0",
+        "K_mg": "170",
+        "Ca_mg": "120",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360004902705096110",
@@ -25570,12 +25570,12 @@
         "priceTax": 159.84,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4902705096110.jpg",
         "amount": "112g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "12",
+        "fiber_g": "0",
+        "K_mg": "170",
+        "Ca_mg": "120",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360004902705096141",
@@ -25584,11 +25584,11 @@
         "priceTax": 159.84,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4902705096141.jpg",
         "amount": "112g",
-        "cholesterol_mg": "3",
+        "cholesterol_mg": "12",
         "fiber_g": "0",
-        "K_mg": "130",
-        "Ca_mg": "110",
-        "VitaminC_mg": "Tr",
+        "K_mg": "170",
+        "Ca_mg": "120",
+        "VitaminC_mg": "1",
         "NaCl_EQ_g": "0.1"
     },
     {
@@ -25598,12 +25598,12 @@
         "priceTax": 1760,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4902705097421.jpg",
         "amount": "112g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "12",
+        "fiber_g": "0",
+        "K_mg": "170",
+        "Ca_mg": "120",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360004902705097438",
@@ -25612,12 +25612,12 @@
         "priceTax": 1760,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4902705097438.jpg",
         "amount": "112g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "12",
+        "fiber_g": "0",
+        "K_mg": "170",
+        "Ca_mg": "120",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360004902705097681",
@@ -25640,12 +25640,12 @@
         "priceTax": 267.84,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4902705098503.jpg",
         "amount": "112g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "12",
+        "fiber_g": "0",
+        "K_mg": "170",
+        "Ca_mg": "120",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360004902705098824",
@@ -25668,12 +25668,12 @@
         "priceTax": 213.84,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4902705098855.jpg",
         "amount": "125g",
-        "cholesterol_mg": "6",
+        "cholesterol_mg": "16",
         "fiber_g": "0",
-        "K_mg": "190",
-        "Ca_mg": "130",
+        "K_mg": "170",
+        "Ca_mg": "110",
         "VitaminC_mg": "Tr",
-        "NaCl_EQ_g": "0.2"
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360004902705127913",
@@ -25682,12 +25682,12 @@
         "priceTax": 213.84,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4902705127913.jpg",
         "amount": "125g",
-        "cholesterol_mg": "6",
+        "cholesterol_mg": "16",
         "fiber_g": "0",
-        "K_mg": "190",
-        "Ca_mg": "130",
+        "K_mg": "170",
+        "Ca_mg": "110",
         "VitaminC_mg": "Tr",
-        "NaCl_EQ_g": "0.2"
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360004902705128132",
@@ -25738,12 +25738,12 @@
         "priceTax": 213.84,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4902705129887.jpg",
         "amount": "125g",
-        "cholesterol_mg": "6",
+        "cholesterol_mg": "16",
         "fiber_g": "0",
-        "K_mg": "190",
-        "Ca_mg": "130",
+        "K_mg": "170",
+        "Ca_mg": "110",
         "VitaminC_mg": "Tr",
-        "NaCl_EQ_g": "0.2"
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360004902720116442",
@@ -25766,12 +25766,12 @@
         "priceTax": 181.44,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4902720116466.jpg",
         "amount": "400g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "12",
+        "fiber_g": "0",
+        "K_mg": "170",
+        "Ca_mg": "120",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360004902720116473",
@@ -25794,12 +25794,12 @@
         "priceTax": 213.84,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4902720117562.jpg",
         "amount": "75g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "12",
+        "fiber_g": "0",
+        "K_mg": "170",
+        "Ca_mg": "120",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360004902720138581",
@@ -25822,12 +25822,12 @@
         "priceTax": 213.84,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4902720140577.jpg",
         "amount": "75g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "12",
+        "fiber_g": "0",
+        "K_mg": "170",
+        "Ca_mg": "120",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360004902720145107",
@@ -25836,12 +25836,12 @@
         "priceTax": 149.04,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4902720145107.jpg",
         "amount": "100g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "12",
+        "fiber_g": "0",
+        "K_mg": "170",
+        "Ca_mg": "120",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360004902720145718",
@@ -25878,12 +25878,12 @@
         "priceTax": 149.04,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4902720150125.jpg",
         "amount": "100g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "12",
+        "fiber_g": "0",
+        "K_mg": "170",
+        "Ca_mg": "120",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360004902720153430",
@@ -25892,12 +25892,12 @@
         "priceTax": 203.04,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4902720153430.jpg",
         "amount": "200g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "12",
+        "fiber_g": "0",
+        "K_mg": "170",
+        "Ca_mg": "120",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360004902720156141",
@@ -25920,12 +25920,12 @@
         "priceTax": 213.84,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4902720157353.jpg",
         "amount": "75g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "12",
+        "fiber_g": "0",
+        "K_mg": "170",
+        "Ca_mg": "120",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360004902720161183",
@@ -26004,12 +26004,12 @@
         "priceTax": 159.84,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4902720162937.jpg",
         "amount": "100g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "12",
+        "fiber_g": "0",
+        "K_mg": "170",
+        "Ca_mg": "120",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360004902720163545",
@@ -26046,12 +26046,12 @@
         "priceTax": 300.24,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4903009015395.jpg",
         "amount": "900g",
-        "cholesterol_mg": "12",
-        "fiber_g": "0",
-        "K_mg": "170",
-        "Ca_mg": "120",
-        "VitaminC_mg": "1",
-        "NaCl_EQ_g": "0.1"
+        "cholesterol_mg": null,
+        "fiber_g": null,
+        "K_mg": null,
+        "Ca_mg": null,
+        "VitaminC_mg": null,
+        "NaCl_EQ_g": null
     },
     {
         "id": "010500000360004903009015418",
@@ -26060,12 +26060,12 @@
         "priceTax": 300.24,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4903009015418.jpg",
         "amount": "900g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "12",
+        "fiber_g": "0",
+        "K_mg": "170",
+        "Ca_mg": "120",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360004903009016255",
@@ -26158,12 +26158,12 @@
         "priceTax": 105.84,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4903080216322.jpg",
         "amount": "125ml",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "1",
+        "fiber_g": "0",
+        "K_mg": "48",
+        "Ca_mg": "43",
+        "VitaminC_mg": "Tr",
+        "NaCl_EQ_g": "0"
     },
     {
         "id": "010500000360004903080216339",
@@ -26172,12 +26172,12 @@
         "priceTax": 105.84,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4903080216339.jpg",
         "amount": "125ml",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "1",
+        "fiber_g": "0",
+        "K_mg": "48",
+        "Ca_mg": "43",
+        "VitaminC_mg": "Tr",
+        "NaCl_EQ_g": "0"
     },
     {
         "id": "010500000360004903080216353",
@@ -26298,12 +26298,12 @@
         "priceTax": 375.84,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4908014017549.jpg",
         "amount": "375g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "12",
+        "fiber_g": "0",
+        "K_mg": "170",
+        "Ca_mg": "120",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360004970020110750",
@@ -26564,12 +26564,12 @@
         "priceTax": 375.84,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4972050015487.jpg",
         "amount": "400g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "12",
+        "fiber_g": "0",
+        "K_mg": "170",
+        "Ca_mg": "120",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360004972050015500",
@@ -26578,12 +26578,12 @@
         "priceTax": 138.24,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4972050015500.jpg",
         "amount": "100g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "12",
+        "fiber_g": "0",
+        "K_mg": "170",
+        "Ca_mg": "120",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360004972050151741",
@@ -27110,12 +27110,12 @@
         "priceTax": 494.64,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4549414284980.jpg",
         "amount": "420g",
-        "cholesterol_mg": "6",
+        "cholesterol_mg": "16",
         "fiber_g": "0",
-        "K_mg": "190",
-        "Ca_mg": "130",
+        "K_mg": "170",
+        "Ca_mg": "110",
         "VitaminC_mg": "Tr",
-        "NaCl_EQ_g": "0.2"
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360004549414359510",
@@ -27838,12 +27838,12 @@
         "priceTax": 440.64,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4549741021371.jpg",
         "amount": "180g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "0",
+        "fiber_g": "2.1",
+        "K_mg": "130",
+        "Ca_mg": "23",
+        "VitaminC_mg": "26",
+        "NaCl_EQ_g": "0"
     },
     {
         "id": "010500000360004549741021388",
@@ -27852,12 +27852,12 @@
         "priceTax": 462.24,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4549741021388.jpg",
         "amount": "180g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "0",
+        "fiber_g": "3.3",
+        "K_mg": "70",
+        "Ca_mg": "8",
+        "VitaminC_mg": "9",
+        "NaCl_EQ_g": "0"
     },
     {
         "id": "010500000360004549741284325",
@@ -27866,12 +27866,12 @@
         "priceTax": 462.24,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4549741284325.jpg",
         "amount": "180g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "0",
+        "fiber_g": "1.4",
+        "K_mg": "170",
+        "Ca_mg": "17",
+        "VitaminC_mg": "62",
+        "NaCl_EQ_g": "0"
     },
     {
         "id": "010500000360004549741422291",
@@ -29616,12 +29616,12 @@
         "priceTax": 213.84,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4901820347244.jpg",
         "amount": "6個",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "0",
+        "fiber_g": "4.1",
+        "K_mg": "740",
+        "Ca_mg": "65",
+        "VitaminC_mg": "Tr",
+        "NaCl_EQ_g": "0"
     },
     {
         "id": "010500000360004901820355461",
@@ -36434,12 +36434,12 @@
         "priceTax": 138.24,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4549414666342.jpg",
         "amount": "46g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "0",
+        "fiber_g": "4.1",
+        "K_mg": "740",
+        "Ca_mg": "65",
+        "VitaminC_mg": "Tr",
+        "NaCl_EQ_g": "0"
     },
     {
         "id": "010500000360004549414666359",
@@ -36490,12 +36490,12 @@
         "priceTax": 138.24,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4549414666397.jpg",
         "amount": "72g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "0",
+        "fiber_g": "9.5",
+        "K_mg": "700",
+        "Ca_mg": "50",
+        "VitaminC_mg": "0",
+        "NaCl_EQ_g": "0.3"
     },
     {
         "id": "010500000360004549414666403",
@@ -36518,12 +36518,12 @@
         "priceTax": 159.84,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4549414666410.jpg",
         "amount": "52g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "-15",
+        "fiber_g": "-3.2",
+        "K_mg": "()320",
+        "Ca_mg": "()160",
+        "VitaminC_mg": ")0",
+        "NaCl_EQ_g": "() .3"
     },
     {
         "id": "010500000360004549414667271",
@@ -36840,12 +36840,12 @@
         "priceTax": 213.84,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4549414675030.jpg",
         "amount": "36g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "2",
+        "fiber_g": "13.1",
+        "K_mg": "900",
+        "Ca_mg": "71",
+        "VitaminC_mg": "0",
+        "NaCl_EQ_g": "0"
     },
     {
         "id": "010500000360004549414675047",
@@ -44204,12 +44204,12 @@
         "priceTax": 248.4,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4978931401615.jpg",
         "amount": "200g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "58",
+        "fiber_g": "0.8",
+        "K_mg": "36",
+        "Ca_mg": "10",
+        "VitaminC_mg": "0",
+        "NaCl_EQ_g": "3.9"
     },
     {
         "id": "010500000360004979365121070",
@@ -47452,12 +47452,12 @@
         "priceTax": 149.04,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4901085044483.jpg",
         "amount": "2000ml",
-        "cholesterol_mg": "0",
-        "fiber_g": "-",
-        "K_mg": "6",
-        "Ca_mg": "2",
-        "VitaminC_mg": "0",
-        "NaCl_EQ_g": "0"
+        "cholesterol_mg": null,
+        "fiber_g": null,
+        "K_mg": null,
+        "Ca_mg": null,
+        "VitaminC_mg": null,
+        "NaCl_EQ_g": null
     },
     {
         "id": "010500000360004901085122358",
@@ -47508,12 +47508,12 @@
         "priceTax": 84.24,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4901085179611.jpg",
         "amount": "650ml",
-        "cholesterol_mg": "0",
-        "fiber_g": "-",
-        "K_mg": "6",
-        "Ca_mg": "2",
-        "VitaminC_mg": "0",
-        "NaCl_EQ_g": "0"
+        "cholesterol_mg": null,
+        "fiber_g": null,
+        "K_mg": null,
+        "Ca_mg": null,
+        "VitaminC_mg": null,
+        "NaCl_EQ_g": null
     },
     {
         "id": "010500000360004901085196885",
@@ -47522,12 +47522,12 @@
         "priceTax": 321.84,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4901085196885.jpg",
         "amount": "8g",
-        "cholesterol_mg": "0",
-        "fiber_g": "-",
-        "K_mg": "6",
-        "Ca_mg": "2",
-        "VitaminC_mg": "0",
-        "NaCl_EQ_g": "0"
+        "cholesterol_mg": null,
+        "fiber_g": null,
+        "K_mg": null,
+        "Ca_mg": null,
+        "VitaminC_mg": null,
+        "NaCl_EQ_g": null
     },
     {
         "id": "010500000360004901085202609",
@@ -47564,12 +47564,12 @@
         "priceTax": 825,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4901085244487.jpg",
         "amount": "2000ml",
-        "cholesterol_mg": "0",
-        "fiber_g": "-",
-        "K_mg": "6",
-        "Ca_mg": "2",
-        "VitaminC_mg": "0",
-        "NaCl_EQ_g": "0"
+        "cholesterol_mg": null,
+        "fiber_g": null,
+        "K_mg": null,
+        "Ca_mg": null,
+        "VitaminC_mg": null,
+        "NaCl_EQ_g": null
     },
     {
         "id": "010500000360004901085609576",
@@ -48950,12 +48950,12 @@
         "priceTax": 203.04,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4902560170987.jpg",
         "amount": "190g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "0",
+        "fiber_g": "0",
+        "K_mg": "Tr",
+        "Ca_mg": "Tr",
+        "VitaminC_mg": "0",
+        "NaCl_EQ_g": "0"
     },
     {
         "id": "010500000360004902560170994",
@@ -54116,12 +54116,12 @@
         "priceTax": 613.44,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4902713133692.jpg",
         "amount": "10食",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "0",
+        "fiber_g": "2.8",
+        "K_mg": "340",
+        "Ca_mg": "56",
+        "VitaminC_mg": "Tr",
+        "NaCl_EQ_g": "4.8"
     },
     {
         "id": "010500000360004902713134088",
@@ -57798,12 +57798,12 @@
         "priceTax": 880,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4901301447647.jpg",
         "amount": "70g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "12",
+        "fiber_g": "0",
+        "K_mg": "170",
+        "Ca_mg": "120",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.1"
     },
     {
         "id": "010500000360004901306001769",
@@ -60094,12 +60094,12 @@
         "priceTax": 138.24,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4902511004590.jpg",
         "amount": null,
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "76",
+        "fiber_g": "0",
+        "K_mg": "200",
+        "Ca_mg": "12",
+        "VitaminC_mg": "0",
+        "NaCl_EQ_g": "2.2"
     },
     {
         "id": "010500000360004902511011499",
@@ -60108,12 +60108,12 @@
         "priceTax": 138.24,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4902511011499.jpg",
         "amount": "75g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "76",
+        "fiber_g": "0",
+        "K_mg": "200",
+        "Ca_mg": "12",
+        "VitaminC_mg": "0",
+        "NaCl_EQ_g": "2.2"
     },
     {
         "id": "010500000360004902511013233",
@@ -60150,12 +60150,12 @@
         "priceTax": 429.84,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4902560015165.jpg",
         "amount": "70g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "76",
+        "fiber_g": "0",
+        "K_mg": "200",
+        "Ca_mg": "12",
+        "VitaminC_mg": "0",
+        "NaCl_EQ_g": "2.2"
     },
     {
         "id": "010500000360004902560022477",
@@ -60164,12 +60164,12 @@
         "priceTax": 149.04,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4902560022477.jpg",
         "amount": "50g",
-        "cholesterol_mg": "0",
-        "fiber_g": "3.7",
-        "K_mg": "420",
-        "Ca_mg": "220",
-        "VitaminC_mg": "81",
-        "NaCl_EQ_g": "0"
+        "cholesterol_mg": null,
+        "fiber_g": null,
+        "K_mg": null,
+        "Ca_mg": null,
+        "VitaminC_mg": null,
+        "NaCl_EQ_g": null
     },
     {
         "id": "010500000360004902560033633",
@@ -60178,12 +60178,12 @@
         "priceTax": 300.24,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4902560033633.jpg",
         "amount": "180g",
-        "cholesterol_mg": "0",
-        "fiber_g": "3.7",
-        "K_mg": "420",
-        "Ca_mg": "220",
-        "VitaminC_mg": "81",
-        "NaCl_EQ_g": "0"
+        "cholesterol_mg": null,
+        "fiber_g": null,
+        "K_mg": null,
+        "Ca_mg": null,
+        "VitaminC_mg": null,
+        "NaCl_EQ_g": null
     },
     {
         "id": "010500000360004902560041492",
@@ -60192,12 +60192,12 @@
         "priceTax": 170.64,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4902560041492.jpg",
         "amount": "90g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "61",
+        "fiber_g": "0",
+        "K_mg": "330",
+        "Ca_mg": "6",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.3"
     },
     {
         "id": "010500000360004902560041522",
@@ -60206,12 +60206,12 @@
         "priceTax": 170.64,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4902560041522.jpg",
         "amount": "90g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "61",
+        "fiber_g": "0",
+        "K_mg": "330",
+        "Ca_mg": "6",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.3"
     },
     {
         "id": "010500000360004902560041638",
@@ -60276,12 +60276,12 @@
         "priceTax": 159.84,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4902560041973.jpg",
         "amount": "90g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "710",
+        "fiber_g": "0",
+        "K_mg": "790",
+        "Ca_mg": "970",
+        "VitaminC_mg": "0",
+        "NaCl_EQ_g": "2.2"
     },
     {
         "id": "010500000360004902560042000",
@@ -60290,12 +60290,12 @@
         "priceTax": 159.84,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4902560042000.jpg",
         "amount": "90g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "710",
+        "fiber_g": "0",
+        "K_mg": "790",
+        "Ca_mg": "970",
+        "VitaminC_mg": "0",
+        "NaCl_EQ_g": "2.2"
     },
     {
         "id": "010500000360004902560042277",
@@ -60332,12 +60332,12 @@
         "priceTax": 462.24,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4902560044264.jpg",
         "amount": "105g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "60",
+        "fiber_g": "0",
+        "K_mg": "440",
+        "Ca_mg": "85",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.2"
     },
     {
         "id": "010500000360004902560051774",
@@ -60402,12 +60402,12 @@
         "priceTax": 429.84,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4902560226073.jpg",
         "amount": null,
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "0",
+        "fiber_g": "1.8",
+        "K_mg": "150",
+        "Ca_mg": "2",
+        "VitaminC_mg": "3",
+        "NaCl_EQ_g": "0.7"
     },
     {
         "id": "010500000360004902560241755",
@@ -60430,12 +60430,12 @@
         "priceTax": 462.24,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4902560241762.jpg",
         "amount": "110g",
-        "cholesterol_mg": "0",
-        "fiber_g": "1.1",
-        "K_mg": "340",
-        "Ca_mg": "18",
-        "VitaminC_mg": "(Tr)",
-        "NaCl_EQ_g": "0.6"
+        "cholesterol_mg": "61",
+        "fiber_g": "0",
+        "K_mg": "330",
+        "Ca_mg": "6",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.3"
     },
     {
         "id": "010500000360004902560500555",
@@ -60486,12 +60486,12 @@
         "priceTax": 548.64,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4902701389513.jpg",
         "amount": "90g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "64",
+        "fiber_g": "0",
+        "K_mg": "260",
+        "Ca_mg": "6",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.2"
     },
     {
         "id": "010500000360004902702004002",
@@ -60500,12 +60500,12 @@
         "priceTax": 149.04,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4902702004002.jpg",
         "amount": "93g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "7",
+        "fiber_g": "2.5",
+        "K_mg": "260",
+        "Ca_mg": "430",
+        "VitaminC_mg": "0",
+        "NaCl_EQ_g": "6.4"
     },
     {
         "id": "010500000360004902713128100",
@@ -60514,12 +60514,12 @@
         "priceTax": 116.64,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4902713128100.jpg",
         "amount": "1食",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "0",
+        "fiber_g": "3.3",
+        "K_mg": "210",
+        "Ca_mg": "87",
+        "VitaminC_mg": "19",
+        "NaCl_EQ_g": "0.3"
     },
     {
         "id": "010500000360004902777015927",
@@ -61312,12 +61312,12 @@
         "priceTax": 213.84,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4903101340180.jpg",
         "amount": "180g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "-",
+        "fiber_g": "-",
+        "K_mg": "180",
+        "Ca_mg": "11",
+        "VitaminC_mg": "-",
+        "NaCl_EQ_g": "1.3"
     },
     {
         "id": "010500000360004903101500935",
@@ -61844,12 +61844,12 @@
         "priceTax": 375.84,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4972195045219.jpg",
         "amount": "135g",
-        "cholesterol_mg": null,
-        "fiber_g": null,
-        "K_mg": null,
-        "Ca_mg": null,
-        "VitaminC_mg": null,
-        "NaCl_EQ_g": null
+        "cholesterol_mg": "250",
+        "fiber_g": "0",
+        "K_mg": "300",
+        "Ca_mg": "11",
+        "VitaminC_mg": "1",
+        "NaCl_EQ_g": "0.5"
     },
     {
         "id": "010500000360004972195070341",
@@ -61858,12 +61858,12 @@
         "priceTax": 408.24,
         "imgUrl": "https://www.aeonnetshop.com/img/goods/0105/00000000000000/PC/L/4972195070341.jpg",
         "amount": "145g",
-        "cholesterol_mg": "48",
-        "fiber_g": "0",
-        "K_mg": "180",
-        "Ca_mg": "8",
-        "VitaminC_mg": "0",
-        "NaCl_EQ_g": "1.8"
+        "cholesterol_mg": null,
+        "fiber_g": null,
+        "K_mg": null,
+        "Ca_mg": null,
+        "VitaminC_mg": null,
+        "NaCl_EQ_g": null
     },
     {
         "id": "010500000360004973360561619",
