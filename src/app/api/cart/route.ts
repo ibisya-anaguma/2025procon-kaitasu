@@ -1,10 +1,11 @@
 // post api cart
-import { NextResponse } from 'next/server';
+
+import { NextRequest, NextResponse } from 'next/server';
 import { withAuth } from "@/lib/middleware";
 import { getFirestore, FieldValue } from 'firebase-admin/firestore'
 const db = getFirestore();
 
-export const GET = withAuth(async (_req: NextResponse, uid: setting) => {
+export const GET = withAuth(async (_req: NextRequest, uid: string) => {
 	const snapshot = await db
 		.collection("users")
 		.doc(uid)
@@ -15,23 +16,32 @@ export const GET = withAuth(async (_req: NextResponse, uid: setting) => {
 	// オブジェクトだから()で囲む
 	const items = snapshot.docs.map((doc) => ({
 		id: doc.id,
-		...doc.data(),
-	});
+		...doc.data()
+	}));
 
 	return NextResponse.json(items);
-})
+});
 
-export const POST = withAuth(async (req: NextResponse, uid: setting) => {
-	const items = await req.json();
+export const POST = withAuth(async (req: NextRequest, uid: string) => {
+	try {
+		const items = await req.json();
 
-	const batch = db.batch();
+		const batch = db.batch();
+		const cartRef = db.collection("users").doc(uid).collection("cart");
 
-	for (let i = 0; i < array.length; i++) {
-		const element = array[i];
+		for (const item of items) {
+			const docRef = cartRef.doc(item.id);
+			batch.set(
+				docRef,
+				{ quantity: FieldValue.increment(item.quantity) }
+			)
+		}
+		await batch.commit();
+
+		// idとquantifyのみ追加
+		return NextResponse.json({ msg: "success" })
+	} catch (error) {
+		return NextResponse.json({ error: "Failed to add cart" }, {status: 500});
+
 	}
-
-	await batch.commit();
-
-	// idとquantifyのみ追加
-	return NextResponse.json({ ok: true, uid })
-}
+});
