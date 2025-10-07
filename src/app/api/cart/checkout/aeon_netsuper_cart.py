@@ -1,10 +1,4 @@
-<<<<<<< HEAD
 #あらとも
-=======
-# あらとも
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
->>>>>>> 19853bba08469eb4ead51425972a45c6f9c39e1f
 
 import os, re, sys, json, time, argparse, logging, contextlib, tempfile, subprocess
 from typing import List, Dict, Any, Optional, Tuple, Set
