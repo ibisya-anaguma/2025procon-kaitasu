@@ -1,3 +1,4 @@
+// うめはら
 import { NextResponse } from 'next/server';
 import path from 'path';
 import { exec } from 'child_process';
@@ -23,6 +24,7 @@ export async function POST(_req: Request) {
 
 	} catch { 
 		return NextResponse.json(
+			// error msg
 			{ error: 'Python script not found' },
 			{ status: 500 }
 		);

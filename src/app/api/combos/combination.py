@@ -184,8 +184,14 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser(description="かいたす: 組み合わせ最適化スクリプト")
-    parser.add_argument("--input", type=str, default=str(Path(__file__).resolve().parent.parent / "foodDataUpdate" / "foodData.json"),
-                        help="入力JSONファイルパス")
+    # src/data/foodData.json
+    default_input = Path(__file__).resolve().parents[3] / "data" / "foodData.json"
+    parser.add_argument( 
+        "--input",
+        type=str,
+        default=str(default_input),
+        help="入力JSONファイルパス"
+    )
     parser.add_argument("--budget", type=int, default=2500, help="予算（円）")
     parser.add_argument("--health", type=str, default="true", help="健康重視モード true/false")
     args = parser.parse_args()
@@ -251,6 +257,4 @@ if __name__ == "__main__":
     # ==== 出力 ====
     out_path = Path(__file__).resolve().parent / "optimized_results.json"
     result_items = to_api_shape(products, result["ids"])
-    with open(out_path, "w", encoding="utf-8") as f:
-        json.dump(result_items, f, ensure_ascii=False, indent=2)
-    print(f"[WRITE] {out_path}")
+    print(json.dumps(result_items, ensure_ascii=False, indent=4))

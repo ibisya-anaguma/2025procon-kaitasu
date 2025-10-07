@@ -14,7 +14,7 @@ import * as fs from 'fs';
 import rawData from "../scraper/all_products.json" with { type: "json" };
 import foodCompositionDatabase from "./foodCompositionDatabase.json" with { type: "json" };
 
-const logPath = "./src/foodDataUpdate/log.txt";
+const logPath = "./src/jobs/foodDataUpdate/log.txt";
 
 type ProductRaw = {
 	genre: number;
@@ -94,7 +94,7 @@ const normalizeName = (rawName: string) : { n: string; amt: string | null} => {
 	// \d+　で数字
 	// ?はオプショナルチェーン、マッチしなくても大丈夫 ??は、左がnullまたはundefinedならって意味らしい
 	// 分数も
-	const amountRegex = /(\d+\/\d+|\d+(?:\s*[×x]\s*\d+)?(?:g|ml|l|束|個|袋入|組|本|枚|玉|食|人前|袋|箱|パック|本入|貫|切|尾|株|房))/gi;
+    const amountRegex = /(\d+\/\d+|\d+(?:\s*[×x]\s*\d+)?(?:g|ml|l|束|個|袋入|枚入|組|本|枚|玉|食|人前|袋|箱|パック|本入|貫|切|尾|株|房))/gi;
     let n: string = rawName;
 	const amountMatch = n.match(amountRegex);
 	const amt : string | null = amountMatch ? amountMatch[0].trim() : null;
@@ -195,6 +195,9 @@ const normalizeName = (rawName: string) : { n: string; amt: string | null} => {
 		.replace(/きのこたけのこ/g, 'ビスケット等をチョコレートで被覆したもの') 
 		.replace(/ヤクルト/g, '乳酸菌飲料')
 		.replace(/DONBURI亭/g, '')
+		.replace(/井村屋/g, '')
+		.replace(/キユーピー/g, '')
+		.replace(/寿がきや|香味徳/g, '')
 		// パン・ブレッド系のブランド表記を簡素化
 		.replace(/超熟|本仕込|芳醇|超芳醇|生ぶれっど|生ブレッド|湯種ブレッド|ホテルブレッド|穂のリッチホテルブレッド|山崎|ヤマザキ|パスコ|Pasco/g, '')
 		.replace(/ブレッド/g, '食パン')
@@ -204,11 +207,27 @@ const normalizeName = (rawName: string) : { n: string; amt: string | null} => {
 		.replace(/のんある気分/g, 'ビール風味炭酸飲料')
 		// 追加: ログの未マッチ対応（ブランド・宣伝・表記ゆれなど）
 		// 軽微な寄せ・ノイズ除去
+		.replace(/京都|愛媛|博多|八幡浜|鳥取/g, '')
+		.replace(/タイ\b/g, '')
+		// 産地・原産国・先頭ノイズの除去
+		.replace(/\b(国内産|国外産|国産)\b/g, '')
+		.replace(/^他\s*/g, '')
+		.replace(/活〆/g, '')
+		.replace(/\bチリ\b/g, '')
+		.replace(/\bペルー\b|\bメキシコ\b|\bアメリカ\b|\bモロッコ\b/g, '')
+		.replace(/原料原産地[:：][^\s]+/g, '')
+		.replace(/^地\s*/g, '')
+		// 県名（〜県）を丸ごと除去（例: 広島県 などの国内産 大葉 → 大葉）
+		.replace(/[\p{Script=Han}]{1,3}県\b/gu, '')
+		.replace(/京都|愛媛|博多|八幡浜/g, '')
+		// 先頭のコロン除去（例: :ロシアイクラ）
+		.replace(/^[：:]+/g, '')
 		.replace(/^サラダ\s*/g, '')
 		.replace(/^フェアトレード\s*/g, '')
 		.replace(/^ORW\s*/g, '')
 		.replace(/^SUPERfruit\s*/ig, '')
 		.replace(/^ザ\s*/g, '')
+		.replace(/^ザ・\s*/g, '')
 		.replace(/^サラダごぼう/g, 'ごぼう')
 		.replace(/オニオン/g, 'たまねぎ')
 		.replace(/日分の野菜がとれる/g, '')
@@ -223,12 +242,15 @@ const normalizeName = (rawName: string) : { n: string; amt: string | null} => {
 		.replace(/がおいしい.*$/g, '')
 		.replace(/パリパリ麺サラダ/g, '')
 		.replace(/緑の野菜サラダ/g, 'リーフレタス')
+		.replace(/混ぜ込みわかめ[^\s]*/g, 'わかめ')
+		.replace(/鮭めんたい/g, '')
 		.replace(/パプリカとオニオン/g, 'パプリカ')
 		.replace(/オニオンとレタス/g, 'レタス')
 		.replace(/もやしとキャベツ野菜/g, 'もやし')
 		.replace(/コーンとキャベツ/g, 'スイートコーン')
 		.replace(/ビーツやトレビス/g, 'ビーツ')
 		.replace(/にがうり調味ソース/g, 'にがうり')
+		.replace(/豚バラ.*だいこん.*煮/g, 'だいこん')
 		.replace(/^食べ$/g, '')
 		.replace(/^食花$/g, '食用花')
 		.replace(/ディズニー|ヱスビー食品|オーマイ|JoyNuts|センピョ/g, '')
@@ -238,6 +260,8 @@ const normalizeName = (rawName: string) : { n: string; amt: string | null} => {
 		.replace(/カーネルコーン/g, 'スイートコーン')
 		.replace(/フルーツパプリカ/g, 'パプリカ')
 		.replace(/グローパイナップル/g, 'パイナップル')
+		.replace(/フルーツフルーツ/g, 'フルーツ')
+		.replace(/[大小中]$/g, '')
 		.replace(/十勝つぶ姫\s*/g, '')
 		.replace(/^ナチュラル\s+/, '')
 		.replace(/純輝鶏/g, '')
@@ -245,6 +269,10 @@ const normalizeName = (rawName: string) : { n: string; amt: string | null} => {
 		.replace(/トブラローネ/g, 'ミルクチョコレート')
 		.replace(/萩屋ケイちゃん/g, '調味ソース')
 		.replace(/香ばしっ！/g, '')
+		// ミックス野菜系の寄せ
+		.replace(/(洋風|和風)?野菜ミックス/g, 'ミックスベジタブル')
+		.replace(/\d+色の彩りベジタブル/g, 'ミックスベジタブル')
+		.replace(/彩りベジタブル/g, 'ミックスベジタブル')
 		// --- ログからの追加修正（未マッチ対策・表記ゆれ吸収） ---
 		// 単独サイズ語など
 		.replace(/^大$/g, '')
@@ -262,12 +290,26 @@ const normalizeName = (rawName: string) : { n: string; amt: string | null} => {
 		.replace(/フィルター|杯/g, '')
 		.replace(/デ[ェエ]?カフェ|カフェインレス/g, '')
 		.replace(/アールグレー|スリーピータイム/g, '紅茶 浸出液')
+		// 即席めん・焼きそば系のブランド/味文言吸収
+		.replace(/チャルメラ\s*即席中華めん/g, '即席中華めん')
+		.replace(/チャルメラ/g, '')
+		.replace(/一平ちゃん夜店の焼きそば[^\n]*/g, '焼きそば')
+		.replace(/ソース焼きそば(?:\s*超大盛)?/g, '焼きそば')
+		.replace(/超大盛たらこ焼きそば/g, '焼きそば')
+		.replace(/岩井の/g, '')
 		// 具体的な複合表現の分割・寄せ（スペースなしの「と」「や」対応も含む）
 		.replace(/パプリカとたまねぎ/g, 'パプリカ')
 		.replace(/たまねぎとレタス/g, 'たまねぎ')
 		.replace(/パプリカとトレビス/g, 'パプリカ')
 		.replace(/野菜をいっぱい食べるもやし/g, 'もやし')
 		.replace(/ピーマンのはるさめ/g, 'はるさめ')
+		.replace(/華風はるさめサラダ/g, 'はるさめ')
+		.replace(/ミネストローネ(?:スープ)?/g, '調味ソース')
+		.replace(/からし酢みそ/g, '調味ソース')
+		.replace(/ひじきの煮物/g, 'ひじきのいため煮')
+		.replace(/こうや豆腐/g, '凍り豆腐')
+		.replace(/福福彩菜/g, '')
+		.replace(/(麻婆豆腐)?はるさめ/g, 'はるさめ')
 		// ナチョス・ディップ類
 		.replace(/エルサ|ウイングエース/g, '')
 		.replace(/ナチョチップ(?:ス)?(?:ノン)?/g, 'コーンスナック')
@@ -276,10 +318,13 @@ const normalizeName = (rawName: string) : { n: string; amt: string | null} => {
 		.replace(/^.*のピザ生地$/g, 'ピザ生地')
 		.replace(/ピザ生地生地/g, 'ピザ生地')
 		.replace(/.*の(ビーフン|マカロニ・スパゲッティ|即席中華めん)$/g, '$1')
+		// 調味ソースで終わる複合語はまとめて圧縮
+		.replace(/[^\n]*調味ソース/g, '調味ソース')
 		// サラダ系の宣伝表現
 		.replace(/イタリアンサラダ|メキシカンサラダ|パリパリ麺サラダ/g, 'リーフレタス')
 		// 料理名のカテゴリ化
 		.replace(/ポトフ|冷や汁|いも炊き/g, '調味ソース')
+		.replace(/牛すじ煮込み|もつ煮込み/g, '調味ソース')
 		// きのこ系の汎化
 		.replace(/きのこで作る/g, 'ぶなしめじ')
 		// 冷やし中華・ざる系・いなりなどの寄せ
@@ -288,6 +333,7 @@ const normalizeName = (rawName: string) : { n: string; amt: string | null} => {
 		.replace(/いなり/g, 'うるち米')
 		.replace(/ちょいと\s*/g, '')
 		.replace(/冷しぶっかけ/g, '')
+		.replace(/すき焼き/g, '')
 		.replace(/白い力もち/g, '')
 		.replace(/緑のたぬき/g, '')
 		.replace(/天そば/g, 'そば')
@@ -298,6 +344,7 @@ const normalizeName = (rawName: string) : { n: string; amt: string | null} => {
 		.replace(/白桃|黄桃/g, 'もも')
 		.replace(/つ割/g, '')
 		.replace(/朝からフルーツ/g, '')
+		.replace(/香り/g, '')
 		.replace(/甘みあっさり/g, '')
 		.replace(/杏仁(豆腐)?/g, '杏仁豆腐')
 		// ドライフルーツ・表記ゆれ
@@ -325,7 +372,7 @@ const normalizeName = (rawName: string) : { n: string; amt: string | null} => {
 		.replace(/くるみちりめん/g, 'ちりめん')
 		.replace(/とびっこ/g, 'とびうお 卵')
 		.replace(/塩紅鮭|紅鮭/g, 'べにざけ')
-		.replace(/黒胡椒|ブラックペッパー/g, 'こしょう')
+		.replace(/黒胡椒|ブラックペッパー|ソースこしょう/g, 'こしょう')
 		.replace(/橋本幹造/g, '')
 		.replace(/いわしの生姜煮/g, 'いわし')
 		.replace(/うま煮/g, '')
@@ -486,11 +533,13 @@ const normalizeName = (rawName: string) : { n: string; amt: string | null} => {
 		.replace(/小茄子|小なす/g, 'なす')
 		.replace(/丸永/g, '')
 		.replace(/アイスミルクデザート/g, 'アイスミルク')
+		.replace(/焼売/g, 'しゅうまい')
 		// 塩類
 		.replace(/サル\s*シー\s*(粗粒|細粒)?/g, '食塩')
 		// 数量表現・末尾ピリオド・p
 		.replace(/\b\d+\s*[Pp]\b/g, '')
 		.replace(/\s*[．.]\s*$/g, '')
+		.replace(/スーパー大麦/g, '')
 		// アルコール銘柄→種別
 		.replace(/サッポロビール|キリンビール/g, '')
 		.replace(/ビーフィーター|ボンベイ/g, 'ジン')
@@ -726,6 +775,7 @@ const normalizeName = (rawName: string) : { n: string; amt: string | null} => {
 		.replace(/若どりむね/g, 'にわとり むね 皮なし 生')
 		.replace(/若どりもも/g, 'にわとり もも 皮なし 生')
 		.replace(/にわとり もも 生/g, 'にわとり もも 皮なし 生')
+		.replace(/鴨/g, 'かも')
 		.replace(/ウィ?ンナー/g, 'ウインナーソーセージ')
 		.replace(/フランク(?:フルト)?/g, 'フランクフルトソーセージ')
 		.replace(/おさかな(?:の)?(?:ウィンナー|ウインナー|ソーセージ)/g, '魚肉ソーセージ')
@@ -748,11 +798,15 @@ const normalizeName = (rawName: string) : { n: string; amt: string | null} => {
 		.replace(/九条ねぎ|きざみねぎ/g, '葉ねぎ')
 		.replace(/白ねぎ/g, '根深ねぎ')
 		.replace(/青ねぎ/g, '葉ねぎ')
+		.replace(/むね肉/g, 'にわとり むね 皮なし 生')
+		.replace(/もも肉/g, 'にわとり もも 皮なし 生')
 		.replace(/白菜/g, 'はくさい')
 		.replace(/大豆/g, 'だいず')
 		.replace(/豆苗/g, 'とうみょう')
 		.replace(/キウイ/g, 'キウイフルーツ')
 		.replace(/パイン/g, 'パイナップル')
+		.replace(/昆布/g, 'こんぶ')
+		.replace(/^栗$/g, 'くり')
 		.replace(/ホワイトマッシュルーム/g, 'マッシュルーム')
 		.replace(/ホワイトぶなしめじ/g, 'ぶなしめじ')
 		.replace(/霜降りひらたけ/g, 'ひらたけ')
@@ -792,9 +846,11 @@ const normalizeName = (rawName: string) : { n: string; amt: string | null} => {
 		.replace(/揚げなす/g, 'なす')
 		// キット・用途語
 		.replace(/炒め|鍋|スープ|の具材|の具|の素|用|セット|盛合せ|盛り合わせ|アソート|焼肉/g, '')
+		.replace(/レンジ対応袋/g, '')
 		// 調味・味付け・だしなど
 		.replace(/生食|腹身|骨取り|骨取|腹骨取り|うす塩味|うす塩|薄塩|味付け|西京味噌漬け|味噌漬け|味噌煮|照り焼き|だし|昆布だし|ゆず風味|梅酢|黒酢|三杯酢|米黒酢|だし醤油|ガーリックチーズ|真空|和風おろし|ハーブ|レモン|スモーク|藻塩仕立て|そのまま/g, '')
 		.replace(/丼のたれ|のたれ|たれ/g, '')
+		.replace(/煮魚つゆ/g, '調味ソース')
 		// 容態表現
 		.replace(/水煮|缶詰|瓶詰/g, '')
 		.replace(/固形量/g, '')
@@ -803,12 +859,52 @@ const normalizeName = (rawName: string) : { n: string; amt: string | null} => {
 		.replace(/蒲焼/g, 'かば焼')
 		.replace(/本鮪り/g, '本まぐろ')
 		.replace(/ししゃも\s*オス|オスししゃも/g, 'ししゃも')
+		.replace(/イタヤ貝|イタヤガイ/g, 'いたやがい')
+		.replace(/アタカマサーモン[^\s]*/g, 'サーモン')
+		.replace(/焼き?鳥/g, '')
+		.replace(/ねぎま串|ももねぎ串|もも串|皮串/g, 'にわとり もも 皮なし 生')
+		.replace(/鮪/g, 'まぐろ')
+		.replace(/いがいトマト/g, 'トマト')
+		.replace(/ディルさばの/g, 'さば')
+		.replace(/の旨みさばの/g, 'さば')
+		.replace(/米みそと麦みそのさばの/g, 'さば')
+		.replace(/まさば/g, 'さば')
+		.replace(/〆さば/g, 'さば')
+		.replace(/鹿の子いか/g, 'いか')
+		.replace(/工場直送/g, '')
+		.replace(/加工品/g, '')
+		.replace(/仕立て/g, '')
+		.replace(/とびうお\s*卵/g, 'とびうお 卵')
+		.replace(/焼いわし/g, 'いわし 焼き')
+		.replace(/イクラ/g, 'いくら')
+		.replace(/蒸しだこ/g, 'たこ')
+		.replace(/ぎんざけチーズ味/g, 'ぎんざけ')
+		.replace(/塩ぎんざけ/g, 'ぎんざけ')
+		.replace(/本まぐろ\s*まぐろ/g, 'まぐろ')
+		.replace(/いくら醤油漬け|味付けいくら/g, 'いくら')
 		// 料理名をざっくりカテゴリ化
 		.replace(/青椒肉絲|回鍋肉|回肉|麻婆なす|チャンプルー|チャンプル|ムニエル|アヒージョ|アクアパッツァ|パエリア|炊き込みご飯/g, '調味ソース')
 		.replace(/炊込みご飯/g, '調味ソース')
 		// その他
 		.replace(/べんり野菜|Vegetive|減の恵み|野菜ソムリエ監修/g, '')
+		.replace(/野菜ソムリエ/g, '')
 		.replace(/お米のかわりに食べる/g, '')
+		.replace(/ドレッシング/g, '調味ソース')
+		.replace(/乾燥唐子/g, 'とうがらし')
+		.replace(/(めかぶ|わかめ)使/g, '$1')
+		.replace(/スチームあさり身/g, 'あさり')
+		.replace(/ずわい[^\s]*ポーション/g, 'ずわいがに')
+		.replace(/パンガシウス/g, 'なまず')
+		.replace(/和惣菜/g, '')
+		.replace(/参鶏湯/g, '調味ソース')
+		.replace(/豆乳粥/g, '豆乳')
+		.replace(/台湾風|Happiness腸活/g, '')
+		.replace(/道華そば/g, 'そば')
+		.replace(/ランドエース/g, '')
+		.replace(/和菜/g, '')
+		.replace(/スペアリブソース/g, '調味ソース')
+		.replace(/鍋スープ/g, '調味ソース')
+		.replace(/太腹/g, '')
 		.replace(/(^|\s)揚げ(\s|$)/g, ' 油揚げ ')
 		.replace(/きれている|切れている/g, '')
 		.replace(/ピリ辛|たたき/g, '')
@@ -818,10 +914,12 @@ const normalizeName = (rawName: string) : { n: string; amt: string | null} => {
 		.replace(/たっこにんにく|田子にんにく/g, 'にんにく')
 		.replace(/おろしにんにく|にんにくのガツンと/g, 'にんにく')
 		.replace(/株とり/g, '')
+		.replace(/盛[合り]せ/g, '')
 		.replace(/※.*$/g, '')
 		.replace(/午前便お届け不可|ヤマト便地域全便お届け不可/g, '')
 		.replace(/地[:：]\s*[^\s]+/g, '')
 		.replace(/[×✕✖︎]/g, '')
+		.replace(/豆腐り/g, '')
 		.replace(/千切り|乱切り|細切り|薄切り|厚切り|みじん切り|短冊切り/g, '')
 		.replace(/乱/g, '')
 		.replace(/小袋|袋入り|袋入/g, '')
@@ -830,6 +928,15 @@ const normalizeName = (rawName: string) : { n: string; amt: string | null} => {
 		.replace(/唐王/g, '')
 		.replace(/手仕込み|シルキー|香る|グリル|旨味/g, '')
 		.replace(/塩[茹ゆ]で/g, '')
+		.replace(/ボイル/g, '')
+		.replace(/清湯/g, '調味ソース')
+		.replace(/サムゲタン/g, '調味ソース')
+		.replace(/サムギョプサル/g, '調味ソース')
+		.replace(/躍動の/g, '')
+		.replace(/フライド/g, '')
+		.replace(/ソテー/g, '')
+		.replace(/が決め手の/g, '')
+		.replace(/ファイヤー/g, '')
 		.replace(/ほうれん草/g, 'ほうれんそう')
 		.replace(/大根/g, 'だいこん')
 		.replace(/長いも/g, 'ながいも')
@@ -839,12 +946,16 @@ const normalizeName = (rawName: string) : { n: string; amt: string | null} => {
 		.replace(/葱/g, 'ねぎ')
 		.replace(/ゴーヤ/g, 'にがうり')
 		.replace(/焼そば/g, '焼きそば')
+		.replace(/やきそば/g, '焼きそば')
+		.replace(/だいこんおろしり?/g, 'だいこんおろし')
 		.replace(/ブロッコリーの新芽/g, 'ブロッコリースプラウト')
 		.replace(/イタリアンパセリ/g, 'パセリ')
 		.replace(/サンチュみどりちゃん/g, 'サンチュ')
 		.replace(/緑豆もやし/g, 'りょくとうもやし')
 		.replace(/(^|\s)ねぎ(\s|$)/g, '$1葉ねぎ$2')
 		.replace(/焼きなす/g, 'なす')
+		.replace(/胡麻油(付き)?/g, '')
+		.replace(/京都$/g, '')
 		.replace(/皮ごと食べられる|そのまま食べられる|食べやすい大きさ/g, '')
 		.replace(/／/g,'/')
 		.replace(/\u00A0/g, ' ')
@@ -863,9 +974,12 @@ const normalizeName = (rawName: string) : { n: string; amt: string | null} => {
 		.replace(/.+フランスパン?|ツナオニオンフランス|ラクレット.*チーズフランス/g, 'フランスパン')
 		.replace(/パンオショコラ|ダノワーズショコラ/g, 'クロワッサン レギュラータイプ')
 		.replace(/グレーズクリンクル/g, 'ドーナッツ イーストドーナッツ プレーン')
+		.replace(/ストロベリークリンクル/g, 'ドーナッツ イーストドーナッツ プレーン')
 		.replace(/りんごとカスタードの食パン/g, '食パン')
 		.replace(/はっぴぃ?めろんぱん|メロンパン/g, 'メロンパン')
 		.replace(/イタリアンパニーニ/g, 'フランスパン')
+		.replace(/ディチェコマカロニ/g, 'マカロニ・スパゲッティ')
+		.replace(/ディチェコ/g, '')
 		// ベーコンエピはパン扱い（ベーコン語より前に評価）
 		.replace(/ベーコンエピ/g, 'フランスパン')
 		// すし酢の重複・助六など
@@ -873,6 +987,7 @@ const normalizeName = (rawName: string) : { n: string; amt: string | null} => {
 		.replace(/割烹/g, '')
 		// すし酢の前に余計な語が付くケースを丸ごと圧縮
 		.replace(/^.*?すし酢/g, 'すし酢')
+		.replace(/ちらし/g, 'すし酢 ちらし・稲荷用')
 		.replace(/すし酢[\s・]*(?:にぎり用酢|巻きすし酢|箱すし酢|にぎり用用|にぎり用|巻き寿司・箱寿司用|酢|用)+/g, 'すし酢 にぎり用')
 		.replace(/^すし酢\s*にぎり用.*$/g, 'すし酢 にぎり用')
 		.replace(/^すし酢\s*巻き寿司・箱寿司用.*$/g, 'すし酢 巻き寿司・箱寿司用')
@@ -882,8 +997,10 @@ const normalizeName = (rawName: string) : { n: string; amt: string | null} => {
 		.replace(/にゅうめん|素麺|そうめん/g, 'そうめん・ひやむぎ ゆで')
 		.replace(/(ご|御)飯/g, 'うるち米')
 		.replace(/.+丼.*$/g, 'うるち米')
+		.replace(/.+重.*$/g, 'うるち米')
 		.replace(/.*(うるち米).*/g, '$1')
 		.replace(/つけ麺/g, '即席中華めん')
+		.replace(/即席中華めん[^\s]*マカロニ/g, '即席中華めん')
 		.replace(/鶏照焼の五目/g, '')
 		// 惣菜・料理名の寄せ
 		.replace(/茶碗むし|茶碗蒸し/g, '鶏卵 全卵 生')
@@ -891,6 +1008,7 @@ const normalizeName = (rawName: string) : { n: string; amt: string | null} => {
 		.replace(/オムライス|オムレツ/g, '鶏卵 全卵 生')
 		.replace(/ミートソースのラザニア風/g, 'ミートソース')
 		.replace(/うしとが利いた|旨みが利いた|炭火焼風/g, '')
+		.replace(/アーモンド/g, '')
 		.replace(/とろーりれん乳三昧れん乳ホワイト/g, '加糖練乳')
 		.replace(/ちゃんちゃん焼き/g, '調味ソース')
 		.replace(/お魚の香味野菜焼き/g, '調味ソース')
@@ -1129,6 +1247,12 @@ const normalizeName = (rawName: string) : { n: string; amt: string | null} => {
 		.replace(/午後の紅茶.*おいしい無糖/g, '紅茶 浸出液')
 		.replace(/生茶/g, 'せん茶 浸出液')
 		.replace(/コーヒー\s*飲料/g, 'コーヒー 浸出液')
+		.replace(/CoCo壱番屋|ココイチ/g, '')
+		.replace(/りゅうじ|リュウジ/g, '')
+		.replace(/たちばな/g, '')
+		.replace(/四川/g, '')
+		.replace(/麻婆(?!豆腐)/g, '麻婆豆腐')
+		.replace(/タイカレールウ\s*(グリーン|イエロー)/g, 'カレールウ')
 		// アルコール・ノンアル関連
 		.replace(/トリス(?:クラシック)?|ブラックニッカ|角瓶|WHISKY|ウィスキー/g, 'ウイスキー')
 		.replace(/ボジョレー|ボージョレ|赤ワイン|白ワイン|ワイン/g, 'スイートワイン')
@@ -1141,8 +1265,11 @@ const normalizeName = (rawName: string) : { n: string; amt: string | null} => {
 		.replace(/(ピザ生地)(?:\s*\1)+/g, '$1')
 		.replace(/(にわとり)(?:\s*\1)+/g, '$1')
 		.replace(/(たらこ)(?:\s*\1)+/g, '$1')
+		.replace(/(豆腐)(?:\s*\1)+/g, '$1')
+		.replace(/(まぐろ)(?:\s*\1)+/g, '$1')
 		.replace(/カレールウ即席中華めん/g, '即席中華めん')
 		.replace(/カレールウカレールウ/g, 'カレールウ')
+		.replace(/こどものための|野菜と豆の|うしの旨み|デミ|の$/g, '')
 		.replace(/(白湯|シーフード|チリトマト|トマト|カレー|塩|しょうゆ|とんこつ|旨辛|濃厚)\s*即席中華めん/g, '即席中華めん')
 		.replace(/(^|\s)(本|個|枚|玉|袋|箱|パック)(?=\s|$)/g, ' ')
 		.replace(/\s{2,}/g, ' ');

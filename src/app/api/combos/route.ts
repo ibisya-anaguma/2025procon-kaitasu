@@ -19,6 +19,8 @@ export async function POST(_req: Request) {
 				{ error: 'Checkout script failed.', details: stderr.trim() },
 			);
 		}
+
+		const items 
 		return NextResponse.json({
 			msg: 'success',
 		});
