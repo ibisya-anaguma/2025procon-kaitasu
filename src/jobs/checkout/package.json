@@ -3,10 +3,12 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "start": "node -r ts-node/register/transpile-only ./autocart.ts"
+    "build": "tsc --project ./tsconfig.json"
   },
   "devDependencies": {
-    "ts-node": "^10.9.1",
     "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.0.0"
   }
 }

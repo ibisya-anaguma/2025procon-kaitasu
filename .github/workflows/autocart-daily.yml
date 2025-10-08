@@ -1,10 +1,9 @@
 name: autocart-daily
 
-# 毎日 01:00 JST -> UTC 前日 16:00
 on:
+  workflow_dispatch:
   schedule:
-    - cron: "0 16 * * *"
-  workflow_dispatch: {}
+    - cron: "0 16 * * *" # 01:00 JST
 
 concurrency:
   group: autocart-${{ github.ref }}
@@ -13,7 +12,7 @@ concurrency:
 jobs:
   run-autocart:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 180
 
     steps:
       - name: Checkout repo
@@ -24,21 +23,20 @@ jobs:
         with:
           node-version: "18"
 
-      - name: Cache checkout node_modules
-        uses: actions/cache@v4
-        with:
-          path: src/jobs/checkout/node_modules
-          key: ${{ runner.os }}-autocart-${{ hashFiles('src/jobs/checkout/package-lock.json', 'src/jobs/checkout/package.json') }}
-          restore-keys: |
-            ${{ runner.os }}-autocart-
+      # NOTE: キャッシュはトラブルの元になりやすいので一時的に無効化する（コメントアウト）。
+      # - name: Cache checkout node_modules
+      #   uses: actions/cache@v4
+      #   with:
+      #     path: src/jobs/checkout/node_modules
+      #     key: ${{ runner.os }}-autocart-${{ hashFiles('src/jobs/checkout/package-lock.json', 'src/jobs/checkout/package.json') }}
+      #     restore-keys: |
+      #       ${{ runner.os }}-autocart-
 
-      - name: Install dependencies (autocart)
+      - name: Install dependencies for autocart
         run: |
           if [ -f src/jobs/checkout/package.json ]; then
-            echo "Installing dependencies for src/jobs/checkout..."
             npm ci --prefix src/jobs/checkout
           else
-            echo "No package.json in src/jobs/checkout; falling back to root npm ci"
             npm ci
           fi
 
@@ -60,24 +58,26 @@ jobs:
           set -euo pipefail
           if [ -z "${CART_API_KEY:-}" ]; then
             echo "ERROR: required secret CART_API_KEY is not set"
-            echo "Add it at: Settings → Secrets and variables → Actions"
             exit 2
           fi
           echo "Secrets check OK"
 
-      - name: Run autocart with Firebase creds
+      - name: Build TypeScript (explicit) and run
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/.firebase/firebase-key.json
           CART_API_KEY: ${{ secrets.CART_API_KEY }}
         run: |
           set -euo pipefail
+          echo "=== Building checkout TypeScript ==="
+          # ビルド（失敗時にログを表示して exit 1）
+          npm run build --prefix src/jobs/checkout 2>&1 | tee build.log || (cat build.log && exit 1)
+          echo "=== Running built JS ==="
           mkdir -p logs
           OUT="logs/autocart-$(date -u +%Y%m%dT%H%M%SZ).log"
-          echo "Starting autocart, logging to $OUT"
-          npm run start --prefix src/jobs/checkout 2>&1 | tee "$OUT"
-          EXITCODE=${PIPESTATUS[0]}
-          echo "autocart exited with $EXITCODE"
-          exit "$EXITCODE"
+          node src/jobs/checkout/dist/autocart.js 2>&1 | tee "$OUT"
+          EXIT=${PIPESTATUS[0]}
+          echo "autocart exited with $EXIT"
+          exit "$EXIT"
 
       - name: Upload logs/artifact
         uses: actions/upload-artifact@v4
@@ -85,6 +85,6 @@ jobs:
           name: autocart-logs
           path: logs/*.log
 
-      - name: Post-cache cleanup (noop)
+      - name: Post-run
         if: always()
         run: echo "job finished"
