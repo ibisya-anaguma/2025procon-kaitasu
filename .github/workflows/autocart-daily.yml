@@ -23,16 +23,7 @@ jobs:
         with:
           node-version: "18"
 
-      # NOTE: キャッシュはトラブルの元になりやすいので一時的に無効化する（コメントアウト）。
-      # - name: Cache checkout node_modules
-      #   uses: actions/cache@v4
-      #   with:
-      #     path: src/jobs/checkout/node_modules
-      #     key: ${{ runner.os }}-autocart-${{ hashFiles('src/jobs/checkout/package-lock.json', 'src/jobs/checkout/package.json') }}
-      #     restore-keys: |
-      #       ${{ runner.os }}-autocart-
-
-      - name: Install dependencies for autocart
+      - name: Install dependencies (autocart)
         run: |
           if [ -f src/jobs/checkout/package.json ]; then
             npm ci --prefix src/jobs/checkout
@@ -51,32 +42,25 @@ jobs:
           fi
         shell: bash
 
-      - name: Check required secrets (strict)
-        env:
-          CART_API_KEY: ${{ secrets.CART_API_KEY }}
+      - name: Check required secrets (optional-dummy-friendly)
+        # NOTE: runner doesn't require CART_API_KEY; keep check permissive for now.
         run: |
-          set -euo pipefail
-          if [ -z "${CART_API_KEY:-}" ]; then
-            echo "ERROR: required secret CART_API_KEY is not set"
-            exit 2
-          fi
-          echo "Secrets check OK"
+          echo "Secrets: FIREBASE_SERVICE_ACCOUNT => ${FIREBASE_SERVICE_ACCOUNT:+present}"
 
-      - name: Build TypeScript (explicit) and run
+      - name: Build TypeScript and run runner (dry-run)
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/.firebase/firebase-key.json
-          CART_API_KEY: ${{ secrets.CART_API_KEY }}
         run: |
           set -euo pipefail
           echo "=== Building checkout TypeScript ==="
-          # ビルド（失敗時にログを表示して exit 1）
-          npm run build --prefix src/jobs/checkout 2>&1 | tee build.log || (cat build.log && exit 1)
-          echo "=== Running built JS ==="
+          npm run build --prefix src/jobs/checkout 2>&1 | tee build.log
+          echo "=== Running autocart-runner (dry, limit 20) ==="
           mkdir -p logs
-          OUT="logs/autocart-$(date -u +%Y%m%dT%H%M%SZ).log"
-          node src/jobs/checkout/dist/autocart.js 2>&1 | tee "$OUT"
+          OUT="logs/autocart-runner-$(date -u +%Y%m%dT%H%M%SZ).log"
+          # dry-run + limit をつけてまずは安全に走らせる
+          node src/jobs/checkout/dist/autocart-runner.js --dry --limit 20 --delay-ms 200 --days 30 2>&1 | tee "$OUT"
           EXIT=${PIPESTATUS[0]}
-          echo "autocart exited with $EXIT"
+          echo "runner exited with $EXIT"
           exit "$EXIT"
 
       - name: Upload logs/artifact

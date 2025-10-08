@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "build": "tsc --project ./tsconfig.json"
+    "build": "tsc --project ./tsconfig.json",
+    "start": "node ./dist/autocart.js",
+    "start:runner": "node ./dist/autocart-runner.js"
   },
   "devDependencies": {
     "typescript": "^5.0.0"
