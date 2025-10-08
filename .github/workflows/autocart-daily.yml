@@ -1,0 +1,57 @@
+name: autocart-daily
+
+# 毎日 01:00 JST -> UTC 前日 16:00
+on:
+  schedule:
+    - cron: "0 16 * * *"
+  workflow_dispatch: {}
+
+concurrency:
+  group: autocart-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  run-autocart:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+
+      - name: Cache checkout node_modules
+        uses: actions/cache@v4
+        with:
+          path: src/jobs/checkout/node_modules
+          key: ${{ runner.os }}-autocart-${{ hashFiles('src/jobs/checkout/package-lock.json', 'src/jobs/checkout/package.json') }}
+          restore-keys: |
+            ${{ runner.os }}-autocart-
+
+      - name: Install dependencies (autocart)
+        run: |
+          if [ -f src/jobs/checkout/package-lock.json ] || [ -f src/jobs/checkout/package.json ]; then
+            npm ci --prefix src/jobs/checkout
+          else
+            echo "No package.json in src/jobs/checkout; skipping npm ci"
+          fi
+
+      - name: Run autocart (TypeScript)
+        env:
+          # 必要な secret があればここで渡す、例:
+          # CART_API_KEY: ${{ secrets.CART_API_KEY }}
+        run: |
+          # 推奨: package.json に "start" script を用意しておき、これを呼ぶ
+          npm run start --prefix src/jobs/checkout
+          # もし直接 ts-node で実行したい場合は上をコメントアウトして下を使う:
+          # npx ts-node --transpile-only src/jobs/checkout/autocart.ts
+
+      - name: Upload logs/artifact (optional)
+        uses: actions/upload-artifact@v4
+        with:
+          name: autocart-output
+          path: ./logs/autocart-*.log || true
