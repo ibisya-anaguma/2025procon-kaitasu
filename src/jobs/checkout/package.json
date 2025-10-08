@@ -3,10 +3,10 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "start": "ts-node --transpile-only --compiler-options '{\"module\":\"commonjs\"}' ./autocart.ts"
+    "start": "node -r ts-node/register/transpile-only ./autocart.ts"
   },
   "devDependencies": {
-    "ts-node": "^10.9.2",
-    "typescript": "^5.9.3"
+    "ts-node": "^10.9.1",
+    "typescript": "^5.0.0"
   }
 }
