@@ -1,4 +1,5 @@
 // firebase初期化処理
+// src/lib/firebase.ts
 
 import { initializeApp, getApps } from 'firebase/app';
 import { getAuth } from 'firebase/auth';

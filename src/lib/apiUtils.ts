@@ -5,7 +5,7 @@ import foodData from '@/data/foodData.json'
 import { getFirestore, FieldValue } from 'firebase-admin/firestore'
 const db = getFirestore();
 
-// users/{uid}/collecitonの中の全てのドキュメント取得
+// users/{uid}/collectionの中の全てのドキュメント取得
 export function getCollection (uid:string, collection: string) {
 	const snapshot = await db
 		.collection("users")
@@ -33,7 +33,7 @@ export function addFoodDetails<T extends { id: string }>(items: T[]) {
 // postKey
 export function postCollection (
 	uid:string,
-	colleciton: string,
+	collection: string,
 	items: Array<{ id:string; quantity: number }>
 ) {
 	postKey(uid, cart);
@@ -51,6 +51,20 @@ export function postCollection (
 	await batch.commit();
 }
 
-// 
-export function patchCollection(params:type) {
+// patch処理、quantity以外にも対応
+export function patchCollection(
+	uid:string,
+	collection: string,
+	data: {
+		quantity?: number;
+		frequency?: number;
+	}
+) {
+	const ref = db.collection("users").doc(uid).collection(collection).doc(itemId);
+	await ref.set(data, { merge: true });
+}
+
+export async function deleteCollection(uid: string, itemId: string) {
+  const ref = db.collection("users").doc(uid).collection("cart").doc(itemId);
+  await ref.delete();
 }
