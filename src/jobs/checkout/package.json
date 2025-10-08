@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "start": "ts-node --transpile-only src/jobs/checkout/autocart.ts"
+    "start": "ts-node --transpile-only ./autocart.ts"
   },
   "devDependencies": {
     "ts-node": "^10.9.1",
