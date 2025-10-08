@@ -22,6 +22,7 @@ type HistItem = {
   quantity?: number;
   timeStamp?: any;
   timestamp?: any;
+  createdAt?: any;
 };
 
 type Args = {
@@ -83,7 +84,6 @@ function daysBetween(a: Date, b: Date) {
 
 // ===== Firestore init (robust) =====
 function initAdmin(credPath?: string) {
-  // 1) If env JSON present, write it to .firebase/firebase-key.json
   const envJson = process.env.FIREBASE_SERVICE_ACCOUNT || process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
   const workspaceSaPath = path.join(process.cwd(), ".firebase", "firebase-key.json");
 
@@ -91,11 +91,9 @@ function initAdmin(credPath?: string) {
     if (envJson) {
       fs.mkdirSync(path.dirname(workspaceSaPath), { recursive: true });
       fs.writeFileSync(workspaceSaPath, envJson, { encoding: "utf8" });
-      // do NOT log JSON contents
       console.log("WROTE service account to", workspaceSaPath);
       process.env.GOOGLE_APPLICATION_CREDENTIALS = workspaceSaPath;
     } else if (credPath) {
-      // respect explicit --cred
       const resolved = path.resolve(credPath);
       if (fs.existsSync(resolved)) {
         process.env.GOOGLE_APPLICATION_CREDENTIALS = resolved;
@@ -107,7 +105,6 @@ function initAdmin(credPath?: string) {
     console.warn("Warning writing service account JSON:", e);
   }
 
-  // Initialize admin app:
   const credFile = process.env.GOOGLE_APPLICATION_CREDENTIALS || "";
   if (credFile && fs.existsSync(credFile)) {
     const sa = JSON.parse(fs.readFileSync(credFile, "utf8"));
@@ -117,19 +114,65 @@ function initAdmin(credPath?: string) {
     });
     process.env.GOOGLE_CLOUD_PROJECT = process.env.GCLOUD_PROJECT = sa.project_id;
   } else {
-    // If no file, try default initialization (useful for environments with ADC)
     admin.initializeApp();
   }
 
   return admin.firestore();
 }
 
-// ===== history 読み =====
+// ===== history 読み（collection または single doc。doc内サブコレクションも探す） =====
 async function buildLastBoughtMap(db: admin.firestore.Firestore, histPath: string, debug = false, explain = false) {
-  const map = new Map<string, Date>();
-  const pathSegs = histPath.split("/").filter(Boolean);
-  let docs: admin.firestore.QueryDocumentSnapshot[];
+  const map = new Map<string, Date>(); // key -> lastDate
 
+  const pathSegs = histPath.split("/").filter(Boolean);
+  // Helper to extract items from a document (either items array or its subcollections)
+  async function extractItemsFromDoc(doc: admin.firestore.QueryDocumentSnapshot | admin.firestore.DocumentSnapshot) {
+    const out: HistItem[] = [];
+    const data = (doc.data && doc.data()) || {};
+    // 1) common case: doc contains items array
+    if (Array.isArray((data as any).items)) {
+      out.push(...((data as any).items));
+      return out;
+    }
+    if (Array.isArray((data as any).history)) {
+      out.push(...((data as any).history));
+      return out;
+    }
+    // 2) try to detect item fields directly on doc (e.g. single-item doc)
+    // If doc itself looks like an item (has id/name/timeStamp), include it
+    const maybeKeys = ["id", "url", "name", "timeStamp", "timestamp", "createdAt"];
+    const looksLikeItem = maybeKeys.some((k) => Object.prototype.hasOwnProperty.call(data, k));
+    if (looksLikeItem) {
+      out.push(data as HistItem);
+      return out;
+    }
+
+    // 3) fallback: look into subcollections under this doc (e.g. users/{uid}/history/{historyId}/{ItemId})
+    try {
+      if ((doc as any).ref && typeof (doc as any).ref.listCollections === "function") {
+        const subcols = await (doc as any).ref.listCollections();
+        for (const sc of subcols) {
+          try {
+            const snap = await sc.get();
+            for (const sd of snap.docs) {
+              const sdata = sd.data() || {};
+              // include doc id as possible id
+              if (!sdata.id) sdata.id = sd.id;
+              out.push(sdata as HistItem);
+            }
+          } catch (e) {
+            if (debug) console.warn("subcollection read failed", sc.path, e);
+          }
+        }
+      }
+    } catch (e) {
+      if (debug) console.warn("listCollections failed for doc", e);
+    }
+
+    return out;
+  }
+
+  // If path refers to a collection (odd number of segments), iterate docs
   if (pathSegs.length % 2 === 1) {
     const col = db.collection(histPath);
     let snap: admin.firestore.QuerySnapshot;
@@ -138,39 +181,91 @@ async function buildLastBoughtMap(db: admin.firestore.Firestore, histPath: strin
     } catch {
       snap = await col.get();
     }
-    docs = snap.docs;
-    if (debug) console.log("[DEBUG] history docs:", docs.length);
+    const docs = snap.docs;
+    if (debug) console.log("[DEBUG] history collection docs:", docs.length);
+
+    for (const d of docs) {
+      const data = d.data() || {};
+      // candidate doc timestamp (fallback)
+      const docTs =
+        toDateAny((data as any).createdAt) ||
+        toDateAny((data as any).created_at) ||
+        toDateAny((data as any).timeStamp) ||
+        (d.createTime ? d.createTime.toDate() : null);
+
+      const items: HistItem[] = await extractItemsFromDoc(d);
+      for (const it of items) {
+        // determine item timestamp candidate
+        const itemTs =
+          toDateAny((it as any).timeStamp) ||
+          toDateAny((it as any).timestamp) ||
+          toDateAny((it as any).createdAt) ||
+          null;
+
+        const usedTs = itemTs || docTs;
+        if (!usedTs) continue;
+
+        if (explain) {
+          const nm = (it as any).name || (it as any).url || (it as any).id || "(no-name)";
+          const via = itemTs ? "item.timeStamp" : docTs ? "doc.createdAt" : "doc.createTime";
+          console.log(`[EXPLAIN] hist item "${nm}" -> ${usedTs.toISOString().slice(0, 10)} via=${via}`);
+        }
+
+        const key = stableKeyFrom(it);
+        const prev = map.get(key);
+        if (!prev || prev < usedTs) map.set(key, usedTs);
+      }
+    }
+
+    if (debug) console.log("[DEBUG] lastBought keys:", map.size);
+    return map;
   } else {
+    // Path refers to a single document
     const doc = await db.doc(histPath).get();
     if (!doc.exists) {
       if (debug) console.log("[DEBUG] history doc NOT FOUND:", histPath);
       return map;
     }
-    docs = [doc as admin.firestore.QueryDocumentSnapshot];
-    if (debug) console.log("[DEBUG] history doc:", histPath);
-  }
-
-  for (const d of docs) {
-    const data = d.data() || {};
+    const data = doc.data() || {};
     const docTs =
       toDateAny((data as any).createdAt) ||
       toDateAny((data as any).created_at) ||
       toDateAny((data as any).timeStamp) ||
-      (d.createTime?.toDate() || null);
+      (doc.createTime ? doc.createTime.toDate() : null);
 
-    const items: HistItem[] = Array.isArray((data as any).items) ? (data as any).items : [];
+    // If doc has items array, use that; otherwise check subcollections
+    const items: HistItem[] = await (async () => {
+      if (Array.isArray((data as any).items)) return (data as any).items as HistItem[];
+      if (Array.isArray((data as any).history)) return (data as any).history as HistItem[];
+      // try look into subcollections
+      const out: HistItem[] = [];
+      try {
+        const subcols = await doc.ref.listCollections();
+        for (const sc of subcols) {
+          const snap = await sc.get();
+          for (const sd of snap.docs) {
+            const sdata = sd.data() || {};
+            if (!sdata.id) sdata.id = sd.id;
+            out.push(sdata as HistItem);
+          }
+        }
+      } catch (e) {
+        if (debug) console.warn("failed to read subcollections for history doc", e);
+      }
+      return out;
+    })();
+
     for (const it of items) {
       const itemTs =
         toDateAny((it as any).timeStamp) ||
         toDateAny((it as any).timestamp) ||
         toDateAny((it as any).createdAt) ||
         null;
-
       const usedTs = itemTs || docTs;
       if (!usedTs) continue;
 
       if (explain) {
-        const nm = it.name || it.url || it.id || "(no-name)";
+        const nm = (it as any).name || (it as any).url || (it as any).id || "(no-name)";
         const via = itemTs ? "item.timeStamp" : docTs ? "doc.createdAt" : "doc.createTime";
         console.log(`[EXPLAIN] hist item "${nm}" -> ${usedTs.toISOString().slice(0, 10)} via=${via}`);
       }
@@ -179,12 +274,13 @@ async function buildLastBoughtMap(db: admin.firestore.Firestore, histPath: strin
       const prev = map.get(key);
       if (!prev || prev < usedTs) map.set(key, usedTs);
     }
+
+    if (debug) console.log("[DEBUG] lastBought keys:", map.size);
+    return map;
   }
-  if (debug) console.log("[DEBUG] lastBought keys:", map.size);
-  return map;
 }
 
-// ===== subscriptions 読み & 期日判定 =====
+// ===== subscriptions 読み & 期日判定（同じ） =====
 async function collectDueItems(
   db: admin.firestore.Firestore,
   subsPath: string,
@@ -217,7 +313,7 @@ async function collectDueItems(
           const nm = it.name || it.url || it.id || "(no-name)";
           console.log(`[EXPLAIN] ${doc.id} :: ${nm} -> last=N/A => skip (まだ買っていない)`);
         }
-        continue;
+        continue; // skip if never bought
       }
 
       const itemFreq = Number((it as any).frequency) || 0;
@@ -250,7 +346,7 @@ async function collectDueItems(
   return dueByDoc;
 }
 
-// ===== writePurchase （cart collection 対応 + 既存互換） =====
+// ===== writePurchase （cart 対応 + 既存互換） =====
 async function writePurchase(
   db: admin.firestore.Firestore,
   uid: string,
@@ -348,7 +444,6 @@ async function writePurchase(
     return wrote;
   }
 
-  // purchaseDoc: single doc update (existing behavior)
   if (purchaseDoc) {
     const docPath = purchasePath;
     const ref = db.doc(docPath);
@@ -398,7 +493,6 @@ async function writePurchase(
     if (debug) console.log(`added ${toAppend.length} item(s) to ${docPath}`);
     return toAppend.length;
   } else {
-    // collection -> add per-bundle doc (existing behavior)
     const col = db.collection(purchasePath);
     let wrote = 0;
 
@@ -495,7 +589,6 @@ async function main() {
       if (bundles.length === 0) {
         console.log("[INFO] no due items for user:", uid);
       } else {
-        // purchase path: users/{uid}/cart  (collection) に書き込む想定
         const wrote = await writePurchase(db, uid, `users/${uid}/cart`, undefined, bundles, args.dry, args.debug);
         console.log(`[INFO] user=${uid} wrote=${wrote}`);
         totalAdded += wrote;
