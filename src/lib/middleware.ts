@@ -32,6 +32,7 @@ async function getUidFromToken(request: NextRequest): Promise<string> {
 
 export function withAuth(
 	handler: (req: NextRequest, uid: string) => Promise<NextResponse>
+	handler: (req: NextRequest, context: any) => { ... handler(req, context, uid) }
 ) {
 	return async (req: NextRequest) => {
 		try {
