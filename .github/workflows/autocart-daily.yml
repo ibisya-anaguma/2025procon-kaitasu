@@ -8,18 +8,19 @@ on:
 
 concurrency:
   group: autocart-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   run-autocart:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # 必要に応じて増やしてください（デフォルトは 60 分）
+    timeout-minutes: 120
 
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Use Node.js
+      - name: Use Node.js 18
         uses: actions/setup-node@v4
         with:
           node-version: "18"
@@ -34,24 +35,55 @@ jobs:
 
       - name: Install dependencies (autocart)
         run: |
-          if [ -f src/jobs/checkout/package-lock.json ] || [ -f src/jobs/checkout/package.json ]; then
+          if [ -f src/jobs/checkout/package.json ]; then
+            echo "Installing dependencies for src/jobs/checkout..."
             npm ci --prefix src/jobs/checkout
           else
-            echo "No package.json in src/jobs/checkout; skipping npm ci"
+            echo "No package.json in src/jobs/checkout; falling back to root npm ci"
+            npm ci
           fi
 
-      - name: Run autocart (TypeScript)
+      - name: Check required secrets
+        # ここに必要な secret 名を並べる（例: CART_API_KEY, AUTOCART_SECRET）
         env:
-          # 必要な secret があればここで渡す、例:
-          # CART_API_KEY: ${{ secrets.CART_API_KEY }}
+          CART_API_KEY: ${{ secrets.CART_API_KEY }}
+          AUTOCART_SECRET: ${{ secrets.AUTOCART_SECRET }}
         run: |
-          # 推奨: package.json に "start" script を用意しておき、これを呼ぶ
-          npm run start --prefix src/jobs/checkout
-          # もし直接 ts-node で実行したい場合は上をコメントアウトして下を使う:
-          # npx ts-node --transpile-only src/jobs/checkout/autocart.ts
+          set -euo pipefail
+          MISSING=false
+          if [ -z "${CART_API_KEY:-}" ]; then
+            echo "ERROR: required secret CART_API_KEY is not set"
+            MISSING=true
+          fi
+          # AUTOCART_SECRET は任意ならこのチェックをコメントアウトしておく
+          if [ -z "${AUTOCART_SECRET:-}" ]; then
+            echo "WARN: AUTOCART_SECRET is not set (if required, add it to repo secrets)"
+          fi
+          if [ "$MISSING" = "true" ]; then
+            echo "One or more required secrets are missing. Add them at: Settings → Secrets and variables → Actions"
+            exit 2
+          fi
+          echo "Secrets check OK (values hidden)"
 
-      - name: Upload logs/artifact (optional)
+      - name: Run autocart (TypeScript) and capture logs
+        run: |
+          set -euo pipefail
+          mkdir -p logs
+          OUT="logs/autocart-$(date -u +%Y%m%dT%H%M%SZ).log"
+          echo "Starting autocart, logging to $OUT"
+          # 実行（package.json の "start" を推奨）
+          # 出力を即時ログに流しつつファイルにも保存する。終了コードを正しく伝搬。
+          npm run start --prefix src/jobs/checkout 2>&1 | tee "$OUT"
+          EXITCODE=${PIPESTATUS[0]}
+          echo "autocart exited with $EXITCODE"
+          exit "$EXITCODE"
+
+      - name: Upload logs/artifact
         uses: actions/upload-artifact@v4
         with:
-          name: autocart-output
-          path: ./logs/autocart-*.log || true
+          name: autocart-logs
+          path: logs/*.log
+
+      - name: Post-cache cleanup (noop)
+        if: always()
+        run: echo "job finished"
