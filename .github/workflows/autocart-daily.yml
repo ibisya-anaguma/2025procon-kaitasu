@@ -1,4 +1,3 @@
-cat > .github/workflows/autocart-daily.yml <<'YML'
 name: autocart-daily
 
 on:
