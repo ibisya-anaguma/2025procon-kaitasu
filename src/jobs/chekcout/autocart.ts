@@ -1,3 +1,4 @@
+import * as admin from "firebase-admin";
 import * as fs from "fs";
 import * as path from "path";
 
@@ -86,6 +87,7 @@ function initAdmin(credPath?: string) {
     });
     process.env.GOOGLE_CLOUD_PROJECT = process.env.GCLOUD_PROJECT = sa.project_id;
   } else {
+    // application default / environment fallback
     admin.initializeApp();
   }
   return admin.firestore();
