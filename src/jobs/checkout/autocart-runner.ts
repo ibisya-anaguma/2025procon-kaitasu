@@ -3,12 +3,26 @@ import * as admin from "firebase-admin";
 import * as fs from "fs";
 import * as path from "path";
 
+// ===== Types =====
 type SubItem = {
-  id?: any; url?: string; name?: string; image?: string;
-  price?: number; priceTax?: number; quantity?: number;
-  genre?: number | string; frequency?: number;
+  id?: any;
+  url?: string;
+  name?: string;
+  image?: string;
+  price?: number;
+  priceTax?: number;
+  quantity?: number;
+  genre?: number | string;
+  frequency?: number;
 };
-type HistItem = { id?: any; url?: string; name?: string; quantity?: number; timeStamp?: any; timestamp?: any; };
+type HistItem = {
+  id?: any;
+  url?: string;
+  name?: string;
+  quantity?: number;
+  timeStamp?: any;
+  timestamp?: any;
+};
 
 type Args = {
   cred?: string;
@@ -16,11 +30,11 @@ type Args = {
   dry: boolean;
   debug: boolean;
   explain: boolean;
-  limit?: number;      // test用: 最大処理ユーザー数
-  delayMs?: number;    // 各ユーザー間の遅延 (ms)
+  limit?: number;
+  delayMs?: number;
 };
 
-// ----- utils (ほぼ autocart.ts と同じ) -----
+// ===== utils =====
 const DAY_MS = 86400000;
 
 function toDateAny(v: any): Date | null {
@@ -29,15 +43,18 @@ function toDateAny(v: any): Date | null {
   const d = new Date(v);
   return isNaN(d.getTime()) ? null : d;
 }
+
 function intQty(v: any, def = 1) {
   const n = Number(v);
   return Number.isFinite(n) && n > 0 ? Math.floor(n) : def;
 }
+
 function idFromUrl(url?: string): string {
   if (!url) return "";
-  const m = String(url).match(/\/(\d{8,})\.html(?:[?#].*)?$/);
+  const m = String(url).match(/\/(\d{6,})\.html(?:[?#].*)?$/);
   return m ? m[1] : "";
 }
+
 function normalizeId(val: any, url?: string): string {
   if (url) {
     const u = idFromUrl(url);
@@ -50,6 +67,7 @@ function normalizeId(val: any, url?: string): string {
   }
   return "";
 }
+
 function stableKeyFrom(item: { id?: any; url?: string; name?: string }): string {
   const id = normalizeId(item.id, item.url);
   if (id) return `id:${id}`;
@@ -58,29 +76,57 @@ function stableKeyFrom(item: { id?: any; url?: string; name?: string }): string 
   if (item.name) return `name:${String(item.name).trim().toLowerCase()}`;
   return `row:${Math.random()}`;
 }
+
 function daysBetween(a: Date, b: Date) {
   return Math.floor((a.getTime() - b.getTime()) / DAY_MS);
 }
 
-// ------ Firestore init (autocart.ts と互換) ------
+// ===== Firestore init (robust) =====
 function initAdmin(credPath?: string) {
-  const resolved = credPath ? path.resolve(credPath) : "";
-  if (resolved && fs.existsSync(resolved)) {
-    const sa = JSON.parse(fs.readFileSync(resolved, "utf8"));
+  // 1) If env JSON present, write it to .firebase/firebase-key.json
+  const envJson = process.env.FIREBASE_SERVICE_ACCOUNT || process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+  const workspaceSaPath = path.join(process.cwd(), ".firebase", "firebase-key.json");
+
+  try {
+    if (envJson) {
+      fs.mkdirSync(path.dirname(workspaceSaPath), { recursive: true });
+      fs.writeFileSync(workspaceSaPath, envJson, { encoding: "utf8" });
+      // do NOT log JSON contents
+      console.log("WROTE service account to", workspaceSaPath);
+      process.env.GOOGLE_APPLICATION_CREDENTIALS = workspaceSaPath;
+    } else if (credPath) {
+      // respect explicit --cred
+      const resolved = path.resolve(credPath);
+      if (fs.existsSync(resolved)) {
+        process.env.GOOGLE_APPLICATION_CREDENTIALS = resolved;
+      }
+    } else if (fs.existsSync(workspaceSaPath)) {
+      process.env.GOOGLE_APPLICATION_CREDENTIALS = workspaceSaPath;
+    }
+  } catch (e) {
+    console.warn("Warning writing service account JSON:", e);
+  }
+
+  // Initialize admin app:
+  const credFile = process.env.GOOGLE_APPLICATION_CREDENTIALS || "";
+  if (credFile && fs.existsSync(credFile)) {
+    const sa = JSON.parse(fs.readFileSync(credFile, "utf8"));
     admin.initializeApp({
       credential: admin.credential.cert(sa),
       projectId: sa.project_id,
     });
     process.env.GOOGLE_CLOUD_PROJECT = process.env.GCLOUD_PROJECT = sa.project_id;
   } else {
+    // If no file, try default initialization (useful for environments with ADC)
     admin.initializeApp();
   }
+
   return admin.firestore();
 }
 
-// ------ history 読み（collection でも specific doc でもOK） ------
-async function buildLastBoughtMap(db: admin.firestore.Firestore, histPath: string, debug = false, explain=false) {
-  const map = new Map<string, Date>(); // key -> lastDate
+// ===== history 読み =====
+async function buildLastBoughtMap(db: admin.firestore.Firestore, histPath: string, debug = false, explain = false) {
+  const map = new Map<string, Date>();
   const pathSegs = histPath.split("/").filter(Boolean);
   let docs: admin.firestore.QueryDocumentSnapshot[];
 
@@ -126,7 +172,7 @@ async function buildLastBoughtMap(db: admin.firestore.Firestore, histPath: strin
       if (explain) {
         const nm = it.name || it.url || it.id || "(no-name)";
         const via = itemTs ? "item.timeStamp" : docTs ? "doc.createdAt" : "doc.createTime";
-        console.log(`[EXPLAIN] hist item "${nm}" -> ${usedTs.toISOString().slice(0,10)} via=${via}`);
+        console.log(`[EXPLAIN] hist item "${nm}" -> ${usedTs.toISOString().slice(0, 10)} via=${via}`);
       }
 
       const key = stableKeyFrom(it);
@@ -138,7 +184,7 @@ async function buildLastBoughtMap(db: admin.firestore.Firestore, histPath: strin
   return map;
 }
 
-// ------ subscriptions 読み & 期日判定 ------
+// ===== subscriptions 読み & 期日判定 =====
 async function collectDueItems(
   db: admin.firestore.Firestore,
   subsPath: string,
@@ -182,7 +228,7 @@ async function collectDueItems(
 
       if (daysSince >= threshold) {
         if (explain) {
-          console.log(`[EXPLAIN] ${doc.id} :: ${nm} -> last=${last.toISOString().slice(0,10)} daysSince=${daysSince} threshold=${threshold} => DUE`);
+          console.log(`[EXPLAIN] ${doc.id} :: ${nm} -> last=${last.toISOString().slice(0, 10)} daysSince=${daysSince} threshold=${threshold} => DUE`);
         }
         const add: SubItem = {
           ...it,
@@ -191,7 +237,7 @@ async function collectDueItems(
         dueItems.push(add);
         info.push({ key, last, daysSince, threshold });
       } else if (explain) {
-        console.log(`[EXPLAIN] ${doc.id} :: ${nm} -> last=${last.toISOString().slice(0,10)} daysSince=${daysSince} threshold=${threshold} => not yet`);
+        console.log(`[EXPLAIN] ${doc.id} :: ${nm} -> last=${last.toISOString().slice(0, 10)} daysSince=${daysSince} threshold=${threshold} => not yet`);
       }
     }
 
@@ -204,7 +250,7 @@ async function collectDueItems(
   return dueByDoc;
 }
 
-// ------ writePurchase （purchasePath は users/{uid}/purchase or users/{uid}/purchase/{doc}） ------
+// ===== writePurchase （cart collection 対応 + 既存互換） =====
 async function writePurchase(
   db: admin.firestore.Firestore,
   uid: string,
@@ -216,6 +262,93 @@ async function writePurchase(
 ) {
   if (!bundles.length) return 0;
 
+  const isCartCollection = purchasePath.split("/").filter(Boolean).slice(-1)[0] === "cart";
+
+  if (isCartCollection) {
+    const col = db.collection(purchasePath);
+    let wrote = 0;
+
+    for (const b of bundles) {
+      for (const it of b.items) {
+        const docId = normalizeId((it as any).id, it.url) || null;
+        const qty = intQty((it as any).quantity ?? (it as any).qty ?? (it as any).quantify ?? 1, 1);
+
+        if (docId) {
+          const ref = col.doc(docId);
+          const snap = await ref.get();
+          if (snap.exists) {
+            const data = snap.data() || {};
+            const existingQty = Number((data as any).quantify ?? (data as any).quantity ?? 0) || 0;
+            const newQty = existingQty + qty;
+            const updateBody: any = {
+              quantify: newQty,
+              updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+              url: it.url || data.url || "",
+              name: it.name || data.name || "",
+              image: it.image || data.image || "",
+              price: typeof (it as any).price === "number" ? (it as any).price : (data.price ?? null),
+              priceTax: typeof (it as any).priceTax === "number" ? (it as any).priceTax : (data.priceTax ?? null),
+              genre: (it as any).genre ?? (data.genre ?? null),
+              frequency: typeof (it as any).frequency === "number" ? (it as any).frequency : (data.frequency ?? null),
+            };
+
+            if (dry) {
+              if (debug) console.log("[DRY RUN] would update cart doc:", ref.path, JSON.stringify(updateBody));
+            } else {
+              await ref.set(updateBody, { merge: true });
+              if (debug) console.log(`[DEBUG] updated cart doc=${ref.path} quantify=${newQty}`);
+            }
+            wrote++;
+          } else {
+            const body: any = {
+              createdAt: admin.firestore.FieldValue.serverTimestamp(),
+              quantify: qty,
+              url: it.url || "",
+              name: it.name || "",
+              image: it.image || "",
+              price: typeof (it as any).price === "number" ? (it as any).price : null,
+              priceTax: typeof (it as any).priceTax === "number" ? (it as any).priceTax : null,
+              genre: (it as any).genre ?? null,
+              frequency: typeof (it as any).frequency === "number" ? (it as any).frequency : null,
+              source: "auto-subscription",
+            };
+
+            if (dry) {
+              if (debug) console.log("[DRY RUN] would create cart doc:", col.doc(docId).path, JSON.stringify(body));
+            } else {
+              await col.doc(docId).set(body, { merge: true });
+              if (debug) console.log(`[DEBUG] created cart doc=${col.doc(docId).path}`);
+            }
+            wrote++;
+          }
+        } else {
+          const body: any = {
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            quantify: qty,
+            url: it.url || "",
+            name: it.name || "",
+            image: it.image || "",
+            price: typeof (it as any).price === "number" ? (it as any).price : null,
+            priceTax: typeof (it as any).priceTax === "number" ? (it as any).priceTax : null,
+            genre: (it as any).genre ?? null,
+            frequency: typeof (it as any).frequency === "number" ? (it as any).frequency : null,
+            source: "auto-subscription",
+          };
+
+          if (dry) {
+            if (debug) console.log("[DRY RUN] would add cart doc (auto-id):", JSON.stringify(body));
+          } else {
+            await col.add(body);
+            if (debug) console.log("[DEBUG] added cart doc (auto-id)");
+          }
+          wrote++;
+        }
+      }
+    }
+    return wrote;
+  }
+
+  // purchaseDoc: single doc update (existing behavior)
   if (purchaseDoc) {
     const docPath = purchasePath;
     const ref = db.doc(docPath);
@@ -229,7 +362,7 @@ async function writePurchase(
       for (const it of b.items) {
         const key = stableKeyFrom(it);
         if (existing.has(key)) {
-          if (debug) console.log("[DEBUG] SKIP already-in-cart:", it.name || it.url || it.id);
+          if (debug) console.log("[DEBUG] SKIP already-in-purchase-doc:", it.name || it.url || it.id);
           continue;
         }
         const outItem: any = {
@@ -237,8 +370,6 @@ async function writePurchase(
           url: it.url || "",
           name: it.name || "",
           image: it.image || "",
-          price: typeof (it as any).price === "number" ? (it as any).price : null,
-          priceTax: typeof (it as any).priceTax === "number" ? (it as any).priceTax : null,
           quantity: intQty((it as any).quantity ?? (it as any).qty ?? 1, 1),
           genre: (it as any).genre ?? null,
           frequency: typeof (it as any).frequency === "number" ? (it as any).frequency : null,
@@ -249,24 +380,25 @@ async function writePurchase(
     }
 
     if (!toAppend.length) {
-      if (debug) console.log("no new items (already in cart). nothing to add.");
+      if (debug) console.log("no new items (already in purchase doc). nothing to add.");
       return 0;
     }
 
     const updateBody: any = {
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       source: "auto-subscription",
+      items: [...currentItems, ...toAppend],
     };
-    updateBody.items = [...currentItems, ...toAppend];
 
     if (dry) {
-      if (debug) console.log("[DRY RUN] would update:", docPath, JSON.stringify(updateBody, null, 2));
+      if (debug) console.log("[DRY RUN] would update purchase doc:", docPath, JSON.stringify(updateBody, null, 2));
       return toAppend.length;
     }
     await ref.set(updateBody, { merge: true });
     if (debug) console.log(`added ${toAppend.length} item(s) to ${docPath}`);
     return toAppend.length;
   } else {
+    // collection -> add per-bundle doc (existing behavior)
     const col = db.collection(purchasePath);
     let wrote = 0;
 
@@ -276,8 +408,6 @@ async function writePurchase(
         url: it.url || "",
         name: it.name || "",
         image: it.image || "",
-        price: typeof (it as any).price === "number" ? (it as any).price : null,
-        priceTax: typeof (it as any).priceTax === "number" ? (it as any).priceTax : null,
         quantity: intQty((it as any).quantity ?? (it as any).qty ?? 1, 1),
         genre: (it as any).genre ?? null,
         frequency: typeof (it as any).frequency === "number" ? (it as any).frequency : null,
@@ -298,7 +428,7 @@ async function writePurchase(
       };
 
       if (dry) {
-        if (debug) console.log("[DRY RUN] would add:", JSON.stringify(body, null, 2));
+        if (debug) console.log("[DRY RUN] would add purchase doc:", JSON.stringify(body, null, 2));
         wrote++;
         continue;
       }
@@ -310,7 +440,7 @@ async function writePurchase(
   }
 }
 
-// ------ runner ------
+// ===== runner (main) =====
 function parseArgs(): Args {
   const argv = process.argv.slice(2);
   const get = (k: string, d = "") => {
@@ -332,11 +462,9 @@ function parseArgs(): Args {
 async function getUserIdsWithSubscriptions(db: admin.firestore.Firestore, limit?: number, debug = false) {
   const ids: string[] = [];
   const coll = db.collection("users");
-  // paginate via .get(); for huge datasets you'd use admin SDK pagination / listDocuments
   const snap = await coll.get();
   for (const doc of snap.docs) {
     const uid = doc.id;
-    // check if subscriptions subcollection has at least one doc
     const subsSnap = await db.collection(`users/${uid}/subscriptions`).limit(1).get();
     if (!subsSnap.empty) {
       ids.push(uid);
@@ -367,14 +495,14 @@ async function main() {
       if (bundles.length === 0) {
         console.log("[INFO] no due items for user:", uid);
       } else {
-        const wrote = await writePurchase(db, uid, `users/${uid}/purchase`, undefined, bundles, args.dry, args.debug);
+        // purchase path: users/{uid}/cart  (collection) に書き込む想定
+        const wrote = await writePurchase(db, uid, `users/${uid}/cart`, undefined, bundles, args.dry, args.debug);
         console.log(`[INFO] user=${uid} wrote=${wrote}`);
         totalAdded += wrote;
       }
     } catch (e: any) {
       console.error(`[ERROR] user=${uid} ->`, e && e.stack ? e.stack : e);
     }
-    // polite delay to avoid bursting Firestore
     if (args.delayMs) await new Promise((r) => setTimeout(r, args.delayMs));
   }
 
