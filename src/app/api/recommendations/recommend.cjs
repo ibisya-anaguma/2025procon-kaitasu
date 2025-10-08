@@ -1,25 +1,3 @@
-#!/usr/bin/env node
-/**
- * Firestore の users/{uid}/history を読み、
- * - 周期っぽい定期購入（periodic）
- * - 履歴に似たカタログ品 from all_products.json（similar）
- * - 履歴が無くてもカタログからランダム（catalog-random）
- * を users/{uid}/recommendations に書き出す。
- *
- * 使い方:
- *   node recommend.cjs <UID> --cred ./sa.json --catalog ./all_products.json [options]
- *
- * 主なオプション:
- *   --catalog ./all_products.json    # カタログ（省略時は all_products.json → fast_all_products.json を順に探索）
- *   --limit 12                       # 最終的に書き出す件数の上限（既定 12）
- *   --add-random 6                   # コールドスタート用ランダム上限（既定 4）
- *   --min-occurrences 3              # 周期推定の最小出現回数（既定 3）
- *   --period-min 3 --period-max 120  # 周期日数の範囲
- *   --jitter 0.35                    # ばらつき許容（MAD/median）
- *   --due-window 5                   # 次回予測日が今日±N日 → dueSoon
- *   --debug                          # 進行ログ
- */
-
 const fs = require("fs");
 const path = require("path");
 const admin = require("firebase-admin");
