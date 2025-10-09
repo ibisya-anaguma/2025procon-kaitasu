@@ -1,5 +1,5 @@
 // うめ
-// all_products.json(あらともの取得した材料)の名前をfoodCompositionDatabbase.csv(文部科学省食品成分DB)
+// all_products.json(あらともの取得した材料)の名前をfoodCompositionDatabase.json(文部科学省食品成分DB)
 // にあうように単語をフォーマット、検索をかける
 // firestoreではなく、jsonで保存するようにする
 
@@ -17,73 +17,153 @@ import foodCompositionDatabase from "./foodCompositionDatabase.json" with { type
 const logPath = "./src/jobs/foodDataUpdate/log.txt";
 
 type ProductRaw = {
-	genre: number;
 	id: string; // idのサイズが大きすぎるため、bigIntではないのは計算しないから
 	url: string;
 	name: string;
 	image: string;
-	price: number;
+	price: number; // 使わない
 	price_tax: number;
+	genre: number; // 使わない
+	genres: number[];
 };
 
 type Product = {
-	genre: number;
 	id: string;
 	url: string;
 	name: string;
 	amount: string | null;
 	priceTax: number;
 	imgUrl: string;
-	cholesterol_mg: number | null; // 以後栄養素
-	fiber_g: number | null;
-	K_mg: number | null;
-	Ca_mg: number | null;
-	VitaminC_mg: number | null;
-	NaCl_EQ_g: number | null;
+	genres: number[];
+	ENERC_KCAL: number | null;
+	PROT: number | null;
+	FATNLEA: number | null;
+	CHOLE: number | null;
+	FAT: number | null;
+	CHOAVLM: number | null;
+	FIB: number | null;
+	CHOCDF: number | null;
+	NA: number | null;
+	K: number | null;
+	CA: number | null;
+	MG: number | null;
+	P: number | null;
+	FE: number | null;
+	ZN: number | null;
+	CU: number | null;
+	MN: number | null;
+	VITA_RAE: number | null;
+	VITD: number | null;
+	TOCPHA: number | null;
+	VITK: number | null;
+	THIA: number | null;
+	RIBF: number | null;
+	NIA: number | null;
+	NE: number | null;
+	VITB6A: number | null;
+	VITB12: number | null;
+	FOL: number | null;
+	PANTAC: number | null;
+	BIOT: number | null;
+	VITC: number | null;
+	NACL_EQ: number | null;
 };
 type Products = Product[];
 
 type FoodCompositionDatabase = {
 	number: string;
 	name: string;
-	cholesterol_mg: number;
-	fiber_g: number;
-	K_mg: number;
-	Ca_mg: number;
-	VitaminC_mg: number;
-	NaCl_EQ_g: number;
+	ENERC_KCAL: string;
+	PROT: string;
+	FATNLEA: string;
+	CHOLE: string;
+	FAT: string;
+	CHOAVLM: string;
+	FIB: string;
+	CHOCDF: string;
+	NA: string;
+	K: string;
+	CA: string;
+	MG: string;
+	P: string;
+	FE: string;
+	ZN: string;
+	CU: string;
+	MN: string;
+	VITA_RAE: string;
+	VITD: string;
+	TOCPHA: string;
+	VITK: string;
+	THIA: string;
+	RIBF: string;
+	NIA: string;
+	NE: string;
+	VITB6A: string;
+	VITB12: string;
+	FOL: string;
+	PANTAC: string;
+	BIOT: string;
+	VITC: string;
+	NACL_EQ: string;
 	remarks: string;
 }
 
 // 変換
 const flattenRaw = (() => {
-  if (Array.isArray(rawData)) return rawData as ProductRaw[];
-  const byGenre = rawData as Record<string, ProductRaw[]>;
-  return Object.entries(byGenre).flatMap(([g, list]) =>
-    (list || []).map((item) => ({
-      ...item,
-      genre: item.genre ?? Number(g),
-    })),
-  );
+	if (Array.isArray(rawData)) return rawData as ProductRaw[];
+	const byGenre = rawData as Record<string, ProductRaw[]>;
+	return Object.entries(byGenre).flatMap(([g, list]) =>
+		(list || []).map((item) => ({
+			...item,
+			genres: item.genres ?? [Number(g)],
+		})),
+	);
 })();
 
 // 生データをproductsに入れる
 const products: Products = (flattenRaw as ProductRaw[]).map(
-	({ id, url, name, price_tax, image }) => ({
-		id,
-		url,
-		name,
-		priceTax: price_tax,
-		imgUrl: image,
-		amount: null,
-		cholesterol_mg: null,
-		fiber_g: null,
-		K_mg: null,
-		Ca_mg: null,
-		VitaminC_mg: null,
-		NaCl_EQ_g: null,
-	})
-)
+    ({ id, url, name, price_tax, image, genres }) => ({
+        id,
+        url,
+        name,
+        amount: null,
+        priceTax: price_tax,
+        imgUrl: image,
+        genres,
+        ENERC_KCAL: null,
+        PROT: null,
+        FATNLEA: null,
+        CHOLE: null,
+        FAT: null,
+        CHOAVLM: null,
+        FIB: null,
+        CHOCDF: null,
+        NA: null,
+        K: null,
+        CA: null,
+        MG: null,
+        P: null,
+        FE: null,
+        ZN: null,
+        CU: null,
+        MN: null,
+        VITA_RAE: null,
+        VITD: null,
+        TOCPHA: null,
+        VITK: null,
+        THIA: null,
+        RIBF: null,
+        NIA: null,
+        NE: null,
+        VITB6A: null,
+        VITB12: null,
+        FOL: null,
+        PANTAC: null,
+        BIOT: null,
+        VITC: null,
+        NACL_EQ: null,
+    })
+);
 
 // productsのnameを正規化
 // 【】とその中を削除
@@ -604,7 +684,6 @@ const normalizeName = (rawName: string) : { n: string; amt: string | null} => {
 		// 日本酒
 		.replace(/住乃井酒造/g, '')
 		.replace(/米だけの酒|生貯蔵酒/g, '清酒')
-		// その他
 		.replace(/ココット/g, '')
 		.replace(/れん乳/g, '加糖練乳')
 		.replace(/果実酒の季節/g, 'スイートワイン')
@@ -825,7 +904,6 @@ const normalizeName = (rawName: string) : { n: string; amt: string | null} => {
 		.replace(/大盛り|小盛り/g, '')
 		.replace(/\d+合炊き/g, '')
 		.replace(/\b\d+(?:\.\d+)?\b/g, '')
-		// その他ノイズ・ブランド
 		.replace(/三宝本家|赤から/g, '')
 		.replace(/業\b/g, '')
 		.replace(/牛骨/g, '')
@@ -961,7 +1039,6 @@ const normalizeName = (rawName: string) : { n: string; amt: string | null} => {
 		.replace(/青椒肉絲|回鍋肉|回肉|麻婆なす|チャンプルー|チャンプル|ムニエル|アヒージョ|アクアパッツァ|パエリア|炊き込みご飯/g, '調味ソース')
 		.replace(/炊込みご飯/g, '調味ソース')
 		.replace(/炊き込み調味ソース/g, '調味ソース')
-		// その他
 		.replace(/べんり野菜|Vegetive|減の恵み|野菜ソムリエ監修/g, '')
 		.replace(/野菜ソムリエ/g, '')
 		.replace(/お米のかわりに食べる/g, '')
@@ -1222,15 +1299,12 @@ const normalizeName = (rawName: string) : { n: string; amt: string | null} => {
 		.replace(/ヨード卵\s*光|平飼い(たまご|卵)/g, '鶏卵 全卵 生')
 		.replace(/乳酸菌飲料.*Y1000.*/g, '乳酸菌飲料 乳製品')
 		.replace(/カルシウム乳酸菌飲料|おいしい免疫ケア|毎朝爽快/g, '乳酸菌飲料 乳製品')
-		// その他微修正
 		.replace(/カレールウパン/g, 'カレーパン 皮及び具')
 		.replace(/チョリソー/g, 'ドライソーセージ')
 		.replace(/店内手作り/g, '')
 		.replace(/人気のネタを味わう|具材を味わう|出汁が決め手！|自社製/g, '')
 		.replace(/ジュワうま！|さっくり衣|サクッと衣|パリッと|ごろっと大粒肉/g, '')
 		.replace(/阿波鶏/g, '')
-		.replace(/巻き子/g, 'すし酢 巻き寿司・箱寿司用')
-		.replace(/細巻/g, 'すし酢 巻き寿司・箱寿司用')
 		.replace(/おにぎり.*$/g, 'おにぎり')
 		.replace(/\s*声$/g, '')
 		.replace(/穴子めし/g, 'あなご 蒸し')
@@ -1400,6 +1474,21 @@ for (let i = 0; i < products.length; i++) {
 
 // foodCompositionDatabase読み込み
 const DB = foodCompositionDatabase as FoodCompositionDatabase[];
+// DBの文字列値を number|null に変換
+function parseDBNumber(input: string | number | null | undefined): number | null {
+    if (input === null || input === undefined) return null;
+    if (typeof input === "number") return Number.isFinite(input) ? input : null;
+    let s = String(input).trim();
+    if (!s) return null;
+    // 括弧、全角括弧、カンマを除去
+    s = s.replace(/[()（）]/g, "").replace(/,/g, "");
+    // Tr(微量) は 0 
+    if (/^[-−]?tr\.?$/i.test(s)) return 0;
+    // ハイフン等はnull扱い
+    if (s === "-" || s === "—") return null;
+    const n = Number(s);
+    return Number.isFinite(n) ? n : null;
+}
 const options = {
 	keys: [
 		{name : "name", weight: 0.8},
@@ -1427,17 +1516,43 @@ for (let i = 0; i < total; i++) {
 	const matches = fuse.search(normalizedName[i], { limit: 1 });
 	const match = matches[0];
 
-	if (match) {
-		const foodData = match.item;
+    if (match) {
+        const foodData = match.item;
 
-		Object.assign(products[i], {
-			cholesterol_mg: foodData.cholesterol_mg,
-			fiber_g: foodData.fiber_g,
-			K_mg: foodData.K_mg,
-			Ca_mg: foodData.Ca_mg,
-			VitaminC_mg: foodData.VitaminC_mg,
-			NaCl_EQ_g: foodData.NaCl_EQ_g,
-		});
+        Object.assign(products[i], {
+            ENERC_KCAL: parseDBNumber(foodData.ENERC_KCAL),
+            PROT: parseDBNumber(foodData.PROT),
+            FATNLEA: parseDBNumber(foodData.FATNLEA),
+            CHOLE: parseDBNumber(foodData.CHOLE),
+            FAT: parseDBNumber(foodData.FAT),
+            CHOAVLM: parseDBNumber(foodData.CHOAVLM),
+            FIB: parseDBNumber(foodData.FIB),
+            CHOCDF: parseDBNumber(foodData.CHOCDF),
+            NA: parseDBNumber(foodData.NA),
+            K: parseDBNumber(foodData.K),
+            CA: parseDBNumber(foodData.CA),
+            MG: parseDBNumber(foodData.MG),
+            P: parseDBNumber(foodData.P),
+            FE: parseDBNumber(foodData.FE),
+            ZN: parseDBNumber(foodData.ZN),
+            CU: parseDBNumber(foodData.CU),
+            MN: parseDBNumber(foodData.MN),
+            VITA_RAE: parseDBNumber(foodData.VITA_RAE),
+            VITD: parseDBNumber(foodData.VITD),
+            TOCPHA: parseDBNumber(foodData.TOCPHA),
+            VITK: parseDBNumber(foodData.VITK),
+            THIA: parseDBNumber(foodData.THIA),
+            RIBF: parseDBNumber(foodData.RIBF),
+            NIA: parseDBNumber(foodData.NIA),
+            NE: parseDBNumber(foodData.NE),
+            VITB6A: parseDBNumber(foodData.VITB6A),
+            VITB12: parseDBNumber(foodData.VITB12),
+            FOL: parseDBNumber(foodData.FOL),
+            PANTAC: parseDBNumber(foodData.PANTAC),
+            BIOT: parseDBNumber(foodData.BIOT),
+            VITC: parseDBNumber(foodData.VITC),
+            NACL_EQ: parseDBNumber(foodData.NACL_EQ),
+        });
 
 		logData.push(`✅ ${normalizedName[i]} > ${foodData.name} / ${match.item.remarks} | id=${products[i].id} score=${typeof match.score === 'number' ? match.score.toFixed(3) : 'n/a'}`);
 		matchProducts++;
