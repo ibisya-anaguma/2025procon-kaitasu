@@ -2,10 +2,6 @@ import json
 from pathlib import Path
 import numpy as np
 
-# 正規化対象の栄養素
-HEALTH_POS = ["vitamin_c_mg", "fiber_g", "calcium_mg"]        # 多いほど良い
-HEALTH_NEG = ["salt_g", "cholesterol_mg", "potassium_mg"]     # 少ないほど良い
-
 def as_float(v):
     if v is None:
         return None
@@ -27,46 +23,56 @@ def compute_p10_p90(data, key):
     p90 = float(np.percentile(values, 90))
     return p10, p90
 
-def normalize_health(data):
-    """健康モード用に 0〜1 正規化して health_score を付与"""
-    stats = {col: compute_p10_p90(data, col) for col in (HEALTH_POS + HEALTH_NEG)}
+
+
+def normalize_health(data, prefs: dict):
+    """
+    data: 製品配列（foodData.json）
+    prefs: { nutrient_key: "up"|"down" }  ※"none"は来ない想定、来たら無視
+    """
+
+    # up/down のみ採用
+    raw_keys = [k for k, v in prefs.items() if v in ("up", "down")]
+
+    # データ側にそのキーが1つでも存在するものだけに絞る（安全対策）
+    active_keys = []
+    for k in raw_keys:
+        if any(k in item for item in data):
+            active_keys.append(k)
+
+    # 何も有効キーが無ければ health_score を付けられないので素通し
+    if not active_keys:
+        normalized = []
+        for item in data:
+            new_item = item.copy()
+            new_item["health_score"] = None
+            normalized.append(new_item)
+        return normalized
+
+    # 各キーの P10/P90
+    stats = {k: compute_p10_p90(data, k) for k in active_keys}
 
     normalized = []
     for item in data:
         scores = []
-
-        # 多いほど良い
-        for col in HEALTH_POS:
-            p10, p90 = stats[col]
-            val = as_float(item.get(col))
+        for k in active_keys:
+            direction = prefs[k]
+            p10, p90 = stats.get(k, (None, None))
+            val = as_float(item.get(k))
             if val is None or p10 is None or p90 is None or p10 == p90:
                 continue
-            if val <= p10:
-                s = 0.0
-            elif val >= p90:
-                s = 1.0
+
+            if direction == "up":
+                s = 0.0 if val <= p10 else (1.0 if val >= p90 else (val - p10) / (p90 - p10))
+            elif direction == "down":
+                s = 1.0 if val <= p10 else (0.0 if val >= p90 else (p90 - val) / (p90 - p10))
             else:
-                s = (val - p10) / (p90 - p10)
+                continue  # 念のため
             scores.append(s)
 
-        # 少ないほど良い（逆向き）
-        for col in HEALTH_NEG:
-            p10, p90 = stats[col]
-            val = as_float(item.get(col))
-            if val is None or p10 is None or p90 is None or p10 == p90:
-                continue
-            if val <= p10:
-                s = 1.0
-            elif val >= p90:
-                s = 0.0
-            else:
-                s = (p90 - val) / (p90 - p10)
-            scores.append(s)
-
-        # 健康スコア（単純平均）
-        item = item.copy()
-        item["health_score"] = float(np.mean(scores)) if scores else None
-        normalized.append(item)
+        new_item = item.copy()
+        new_item["health_score"] = float(np.mean(scores)) if scores else None
+        normalized.append(new_item)
 
     return normalized
 
@@ -182,42 +188,46 @@ def to_api_shape(products, ids):
 # ====== main ======
 if __name__ == "__main__":
     import argparse
+    import json
+    from pathlib import Path
 
+    # --- 引数の定義 ---
     parser = argparse.ArgumentParser(description="かいたす: 組み合わせ最適化スクリプト")
-    # src/data/foodData.json
-    default_input = Path(__file__).resolve().parents[3] / "data" / "foodData.json"
-    parser.add_argument( 
-        "--input",
-        type=str,
-        default=str(default_input),
-        help="入力JSONファイルパス"
-    )
+    parser.add_argument("--prefs-json", type=str, default="", help="Firebaseから渡す up/down の辞書(JSON文字列)")
+    parser.add_argument("--input", type=str, default="", help="入力JSONファイルパス")
+
     parser.add_argument("--budget", type=int, default=2500, help="予算（円）")
     parser.add_argument("--health", type=str, default="true", help="健康重視モード true/false")
     args = parser.parse_args()
 
-    input_path = Path(args.input)
+    # --- 基本設定 ---
     BUDGET_YEN = args.budget
     HEALTH_MODE = args.health.lower() in ["true", "1", "yes", "on"]
 
-    # ==== JSON読込 ====
-    with open(input_path, "r", encoding="utf-8") as f:
+    # --- json読み込み ---
+    with open(Path(__file__).resolve().parent.parent / "data" / "foodData.json", "r", encoding="utf-8") as f:
         products = json.load(f)
 
+    # --- Firebaseからの prefs を読み取り ---
+    user_prefs = {}
+    if args.prefs_json:
+        try:
+            user_prefs = json.loads(args.prefs_json)
+        except Exception:
+            user_prefs = {}
+
+    normalized = normalize_health(products, user_prefs)
+            
     # ==== モード分岐 ====
     if HEALTH_MODE:
-        print("[MODE] 健康重視 ON")
-        normalized = normalize_health(products)
         Items = build_items_for_solver(normalized, require_health=True)
 
         if not Items:
-            print("[ERROR] 健康スコア計算済みアイテムなし")
             raise SystemExit(1)
 
         # 第1段：H最大化
         sol_opt = solve_one(Items, BUDGET_YEN, selected_categories=None)
         if sol_opt is None or not sol_opt["ids"]:
-            print("[ERROR] 解が見つかりません（H最大化）")
             raise SystemExit(1)
         H_star = sol_opt["H"]
 
@@ -236,16 +246,13 @@ if __name__ == "__main__":
         }
 
     else:
-        print("[MODE] 健康重視 OFF（価格重視）")
         Items = build_items_for_solver(products, require_health=False)
 
         if not Items:
-            print("[ERROR] 価格情報のあるアイテムがありません")
             raise SystemExit(1)
 
         sol_price = _solve_price_only(Items, BUDGET_YEN)
         if sol_price is None or not sol_price["ids"]:
-            print("[ERROR] 解が見つかりません（価格最大化）")
             raise SystemExit(1)
 
         result = {
@@ -255,6 +262,5 @@ if __name__ == "__main__":
         }
 
     # ==== 出力 ====
-    out_path = Path(__file__).resolve().parent / "optimized_results.json"
     result_items = to_api_shape(products, result["ids"])
-    print(json.dumps(result_items, ensure_ascii=False, indent=4))
+    print(json.dumps(result_items, ensure_ascii=False))
