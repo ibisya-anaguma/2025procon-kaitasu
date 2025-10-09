@@ -100,14 +100,14 @@ export default function ProfilePage() {
                     計算期間
                   </h3>
                   <div className="flex flex-wrap" style={{ gap: "37px" }} data-oid="calc-period-buttons">
-                    {[1, 2, 3, 4, 5, 6].map((num) => (
+                    {[1, 5, 10, 15, 20, 25].map((num) => (
                       <Button
                         key={`calc-period-${num}`}
                         variant="ghost"
                         className="border border-transparent p-0"
                         style={FILTER_BUTTON_INACTIVE_STYLE}
                         data-oid={`calc-period-${num}`}>
-                        <span style={FILTER_BUTTON_TEXT_STYLE}>期間 {num}</span>
+                        <span style={FILTER_BUTTON_TEXT_STYLE}>{num}日</span>
                       </Button>
                     ))}
                   </div>

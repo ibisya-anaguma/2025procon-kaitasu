@@ -1,12 +1,14 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { exec } from "child_process";
 import path from "path";
 import { promisify } from "util";
 
+import { withAuth } from "@/lib/middleware";
+
 const execAsync = promisify(exec);
 const SCRIPT_PATH = path.resolve(process.cwd(), "src/app/api/combos/combination.py");
 
-export async function POST() {
+export const POST = withAuth(async (_req: NextRequest) => {
   try {
     const command = `python3 ${SCRIPT_PATH}`;
     const { stdout, stderr } = await execAsync(command);
@@ -42,4 +44,4 @@ export async function POST() {
       { status: 500 }
     );
   }
-}
+});
