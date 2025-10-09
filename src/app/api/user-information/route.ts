@@ -1,42 +1,22 @@
-// src/app/api/user-information/route.ts
-import { headers } from "next/headers";
-import { initializeApp, applicationDefault, getApps, getApp } from "firebase-admin/app";
-import { getAuth } from "firebase-admin/auth";
-import { getFirestore } from "firebase-admin/firestore";
+export const runtime = "nodejs";
 
-// Firebase Admin 初期化
-function getAdmin() {
-  const app = getApps().length
-    ? getApp()
-    : initializeApp({ credential: applicationDefault() });
-  return { auth: getAuth(app), db: getFirestore(app) };
-}
+import { NextRequest } from "next/server";
+import { getApps, initializeApp, cert, getApp } from "firebase-admin/app";
+import { withAuth } from "@/lib/middleware"
+import { adminDb as db } from "@/lib/firebaseAdmin";
 
-export const get GET = withAuth(async (_req: NextRequest, uid: string) => {
+export const GET = withAuth(async (_req: NextRequest, uid: string) => {
   try {
-    const { db } = getAdmin();
+    console.log("[DBG] firestore read start for uid:", uid);
+    const snap = await db.collection("users").doc(uid).collection("userInformation").get();
 
-    // 🔹 userInformation 以下の全ドキュメントを取得
-    const snap = await db
-      .collection("users")
-      .doc(uid)
-      .collection("userInformation")
-      .get();
-
-    if (snap.empty) {
-      console.warn("[user-information] no documents found for", uid);
+    if (snap && snap.empty) {
       return Response.json({ error: "not found" }, { status: 404 });
     }
-
-    // 複数ドキュメントを配列で返す
-    const userInfos = snap.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
-
-    return Response.json({ uid, userInformation: userInfos });
+    const userInformation = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    return Response.json({ uid, userInformation });
   } catch (err: any) {
-    console.error("[user-information] internal error:", err?.stack || err);
-    return Response.json({ error: "Internal server error" }, { status: 500 });
+    console.error("[ERR] handler:", err?.name, err?.message);
+    return Response.json({ error: "Internal server error", message: String(err?.message || err) }, { status: 500 });
   }
 });
