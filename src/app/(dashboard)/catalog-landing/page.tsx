@@ -1,46 +1,29 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Search } from "lucide-react";
-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FILTER_BUTTON_INACTIVE_STYLE, FILTER_BUTTON_TEXT_STYLE } from "@/components/screens/filterStyles";
-import type { LandingCardContent, Screen } from "@/types/page";
+import { useAppContext } from "@/contexts/AppContext";
 
 const LANDING_FILTER_BUTTONS = [
   { label: "健康重視", buttonDataOid: ".zvc9j.", textDataOid: "btn-text-health" },
   { label: "お気に入り", buttonDataOid: "jm:hia2", textDataOid: "btn-text-favorite" }
 ];
 
-type CatalogLandingProps = {
-  landingPage: number;
-  totalLandingPages: number;
-  onLandingPageChange: (page: number) => void;
-  onNavigate: (screen: Screen) => void;
-  currentLandingCards: LandingCardContent[];
-};
-
-export function CatalogLanding({
-  landingPage,
-  totalLandingPages,
-  onLandingPageChange,
-  onNavigate,
-  currentLandingCards
-}: CatalogLandingProps) {
+export default function CatalogLandingPage() {
+  const router = useRouter();
+  const { landingPage, totalLandingPages, onLandingPageChange, currentLandingCards } = useAppContext();
   const [selectedCards, setSelectedCards] = useState<number[]>([]);
 
   const handleCardToggle = (index: number) => {
-    setSelectedCards((prev) =>
-      prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index]
-    );
+    setSelectedCards((prev) => (prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index]));
   };
 
   return (
-    <div
-      className="flex-1 bg-white p-6 ml-[232px] min-h-screen"
-      data-oid="catalog-landing">
-
+    <div className="flex-1 bg-white p-6 ml-[232px] min-h-screen" data-oid="catalog-landing">
       <div className="mx-auto w-[1000px]">
         <div className="relative mb-6" data-oid="catalog-landing-search">
           <Search
@@ -48,7 +31,6 @@ export function CatalogLanding({
             size={18}
             data-oid="catalog-landing-search-icon"
           />
-
           <Input
             placeholder="商品名で検索"
             className="pl-12 h-12 border-2 border-[#fda900] text-sm rounded-lg bg-white shadow-sm focus:border-[#209fde] focus:ring-2 focus:ring-[#209fde]/20"
@@ -71,34 +53,27 @@ export function CatalogLanding({
           ))}
         </div>
 
-        <div
-        className="relative mt-[23px] mb-[24px] w-[1000px]"
-        data-oid="catalog-landing-card-background">
+        <div className="relative mt-[23px] mb-[24px] w-[1000px]" data-oid="catalog-landing-card-background">
           <div
-          className="pointer-events-none absolute top-0 left-0 z-0 h-[507px] w-[1000px]"
-          style={{
-            borderRadius: "20px",
-            background: "rgba(253, 169, 0, 0.5)"
-          }}
-          aria-hidden="true"
+            className="pointer-events-none absolute top-0 left-0 z-0 h-[507px] w-[1000px]"
+            style={{ borderRadius: "20px", background: "rgba(253, 169, 0, 0.5)" }}
+            aria-hidden="true"
           />
           <div
-          className="relative z-10 h-[507px] w-[1000px] overflow-hidden pt-[18px] flex flex-col items-center gap-[36px]"
-          data-oid="catalog-landing-pagination-wrapper">
-            <div
-            className="flex items-center justify-center gap-[25px]"
-            data-oid="catalog-landing-pagination">
+            className="relative z-10 h-[507px] w-[1000px] overflow-hidden pt-[18px] flex flex-col items-center gap-[36px]"
+            data-oid="catalog-landing-pagination-wrapper">
+            <div className="flex items-center justify-center gap-[25px]" data-oid="catalog-landing-pagination">
               <span
-              style={{
-                color: "var(--, #101010)",
-                fontFamily: '"BIZ UDPGothic"',
-                fontSize: "32px",
-                fontStyle: "normal",
-                fontWeight: 700,
-                lineHeight: "normal",
-                letterSpacing: "1.664px"
-              }}
-              data-oid="catalog-landing-page-label">
+                style={{
+                  color: "var(--, #101010)",
+                  fontFamily: '"BIZ UDPGothic"',
+                  fontSize: "32px",
+                  fontStyle: "normal",
+                  fontWeight: 700,
+                  lineHeight: "normal",
+                  letterSpacing: "1.664px"
+                }}
+                data-oid="catalog-landing-page-label">
                 ページ
               </span>
               {Array.from({ length: totalLandingPages }, (_, i) => i + 1).map((num) => {
@@ -122,9 +97,7 @@ export function CatalogLanding({
                       borderRadius: "20px",
                       background: isActive ? "var(--, #FDA900)" : "var(--, #FFF)",
                       backgroundColor: isActive ? "#FDA900" : "#FFF",
-                      boxShadow: isActive
-                        ? "0 4px 4px 0 rgba(0, 0, 0, 0.25) inset"
-                        : "0 4px 4px 0 rgba(0, 0, 0, 0.25)",
+                      boxShadow: isActive ? "0 4px 4px 0 rgba(0, 0, 0, 0.25) inset" : "0 4px 4px 0 rgba(0, 0, 0, 0.25)",
                       color: "var(--, #101010)",
                       fontFamily: '"BIZ UDPGothic"',
                       fontSize: "32px",
@@ -140,10 +113,7 @@ export function CatalogLanding({
                 );
               })}
             </div>
-            <div
-            className="grid grid-cols-4"
-            style={{ gap: "45px" }}
-            data-oid="catalog-landing-card-grid">
+            <div className="grid grid-cols-4" style={{ gap: "45px" }} data-oid="catalog-landing-card-grid">
               {currentLandingCards.map((card, index) => {
                 const Icon = card.renderIcon;
                 const isSelected = selectedCards.includes(index);
@@ -168,12 +138,27 @@ export function CatalogLanding({
                         <rect x="4.44434" y="4.44434" width="151.111" height="151.111" rx="10" fill="white" />
                       </g>
                       <defs>
-                        <filter id="catalog-card-filter" x="0" y="0" width="164.5" height="164.5" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
+                        <filter
+                          id="catalog-card-filter"
+                          x="0"
+                          y="0"
+                          width="164.5"
+                          height="164.5"
+                          filterUnits="userSpaceOnUse"
+                          colorInterpolationFilters="sRGB">
                           <feFlood floodOpacity="0" result="BackgroundImageFix" />
-                          <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha" />
+                          <feColorMatrix
+                            in="SourceAlpha"
+                            type="matrix"
+                            values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"
+                            result="hardAlpha"
+                          />
                           <feOffset dx="4.5" dy="4.5" />
                           <feComposite in2="hardAlpha" operator="out" />
-                          <feColorMatrix type="matrix" values="0 0 0 0 0.895207 0 0 0 0 0.887003 0 0 0 0 0.887003 0 0 0 1 0" />
+                          <feColorMatrix
+                            type="matrix"
+                            values="0 0 0 0 0.895207 0 0 0 0 0.887003 0 0 0 0 0.887003 0 0 0 1 0"
+                          />
                           <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_3977_578" />
                           <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_3977_578" result="shape" />
                         </filter>
@@ -213,29 +198,29 @@ export function CatalogLanding({
                       className="relative z-10 flex h-full w-full flex-col items-center pt-[13px]"
                       data-oid={`catalog-landing-card-content-${index}`}>
                       <span
-                      style={{
-                        color: "var(--, #101010)",
-                        fontFamily: '"BIZ UDPGothic"',
-                        fontSize: "24px",
-                        fontStyle: "normal",
-                        fontWeight: 700,
-                        lineHeight: "24px",
-                        letterSpacing: "1.248px"
-                      }}
-                      data-oid={`catalog-landing-card-title-${index}`}>
+                        style={{
+                          color: "var(--, #101010)",
+                          fontFamily: '"BIZ UDPGothic"',
+                          fontSize: "24px",
+                          fontStyle: "normal",
+                          fontWeight: 700,
+                          lineHeight: "24px",
+                          letterSpacing: "1.248px"
+                        }}
+                        data-oid={`catalog-landing-card-title-${index}`}>
                         {card.title}
                       </span>
                       <div className="flex w-full flex-1 items-center justify-center pt-[13px]">
                         {Icon ? (
                           <div
-                          className="flex h-[100px] w-[100px] items-center justify-center"
-                          data-oid={`catalog-landing-card-icon-${index}`}>
+                            className="flex h-[100px] w-[100px] items-center justify-center"
+                            data-oid={`catalog-landing-card-icon-${index}`}>
                             <Icon />
                           </div>
                         ) : (
                           <div
-                          className="h-[100px] w-[100px] rounded-lg border border-dashed border-[#cfcfcf] bg-[#f5f5f5]"
-                          data-oid={`catalog-landing-card-icon-${index}`}
+                            className="h-[100px] w-[100px] rounded-lg border border-dashed border-[#cfcfcf] bg-[#f5f5f5]"
+                            data-oid={`catalog-landing-card-icon-${index}`}
                           />
                         )}
                       </div>
@@ -261,7 +246,7 @@ export function CatalogLanding({
             height: "60px",
             flexShrink: 0
           }}
-          onClick={() => onNavigate("catalog")}
+          onClick={() => router.push("/catalog")}
           data-oid="catalog-landing-next-button">
           <span
             style={{
