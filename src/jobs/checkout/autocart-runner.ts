@@ -1,78 +1,26 @@
 //あらとも
 
-// src/jobs/checkout/autocart-runner.ts
-// Final complete autocart runner - robustly finds history items (including nested arrays and subcollections)
-// No extra files required. Use FIREBASE_SERVICE_ACCOUNT (JSON string) or GOOGLE_APPLICATION_CREDENTIALS (file).
-
 import * as admin from "firebase-admin";
 import * as fs from "fs";
+import * as path from "path";
 
-type SubItem = {
-  id?: any;
-  itemId?: any;
-  productId?: any;
-  url?: string;
-  name?: string;
-  image?: string;
-  price?: number;
-  priceTax?: number;
-  quantity?: number;
-  qty?: number;
-  genre?: number | string;
-  frequency?: number;
-};
-type HistItem = {
-  id?: any;
-  itemId?: any;
-  productId?: any;
-  url?: string;
-  name?: string;
-  quantity?: number;
-  timeStamp?: any;
-  timestamp?: any;
-  createdAt?: any;
-};
+type SubItem = { id?: any; itemId?: any; productId?: any; url?: string; name?: string; image?: string; price?: number; priceTax?: number; quantity?: number; qty?: number; genre?: number | string; frequency?: number; };
+type HistItem = { id?: any; itemId?: any; productId?: any; url?: string; name?: string; quantity?: number; timeStamp?: any; timestamp?: any; createdAt?: any; };
 
-type Args = {
-  cred?: string;
-  days: number;
-  dry: boolean;
-  debug: boolean;
-  explain: boolean;
-  limit?: number;
-  delayMs?: number;
-  uid?: string | undefined;
-  includeNever?: boolean;
-  forceAdd?: boolean;
-};
+type Args = { cred?: string; days: number; dry: boolean; debug: boolean; explain: boolean; limit?: number; delayMs?: number; uid?: string | undefined; includeNever?: boolean; forceAdd?: boolean; };
 
 const DAY_MS = 24 * 3600 * 1000;
 
-/* ----------------- small util functions ----------------- */
+/* ---------------- utils ---------------- */
 function toDateAny(v: any): Date | null {
   if (!v) return null;
-  if (typeof v === "object" && v !== null && typeof v.toDate === "function") return v.toDate();
   if (v instanceof Date) return v;
+  if (typeof v === "object" && v !== null && typeof v.toDate === "function") return v.toDate();
   if (typeof v === "number") return v < 1e12 ? new Date(v * 1000) : new Date(v);
   const s = String(v || "").trim();
   if (!s) return null;
   const d = new Date(s);
   if (!isNaN(d.getTime())) return d;
-  try {
-    const m = s.match(/^(\d{4})年\s*(\d{1,2})月\s*(\d{1,2})日\s+(\d{1,2}):(\d{2}):(\d{2})(?:\s*UTC\+?([0-9:+-]+))?/);
-    if (m) {
-      const [, Y, M, D, hh, mm, ss, tz] = m;
-      let tzpart = "+09:00";
-      if (tz) {
-        if (/^[0-9]{1,2}$/.test(tz)) tzpart = (tz.length === 1 ? `+0${tz}:00` : `+${tz}:00`);
-        else if (/^[+-]?[0-9]{1,2}$/.test(tz)) tzpart = `${tz}:00`;
-        else tzpart = (tz.includes(":") ? `${tz}` : `+${tz}:00`);
-      }
-      const iso = `${Y}-${String(Number(M)).padStart(2,"0")}-${String(Number(D)).padStart(2,"0")}T${String(Number(hh)).padStart(2,"0")}:${mm}:${ss}${tzpart}`;
-      const dd = new Date(iso);
-      if (!isNaN(dd.getTime())) return dd;
-    }
-  } catch {}
   return null;
 }
 
@@ -111,7 +59,7 @@ function normalizeId(val: any, url?: string): string {
   if (typeof val === "object") {
     try { val = JSON.stringify(val); } catch { val = String(val); }
   }
-  const s = String(val).trim();
+  const s = String(val || "").trim();
   if (!s) return "";
   if (/^[A-Za-z0-9\-_]{4,}$/.test(s)) return s;
   const any = s.match(/[A-Za-z0-9]{4,}/g);
@@ -121,47 +69,44 @@ function normalizeId(val: any, url?: string): string {
   return "";
 }
 
+function stableKeyFromObj(item: any): string {
+  const id = normalizeId(item?.id ?? item?.itemId ?? item?.productId, item?.url);
+  if (id) return `id:${id}`;
+  if (item?.name) return `name:${String(item.name).trim().toLowerCase()}`;
+  const urlId = idFromUrl(item?.url || "");
+  if (urlId) return `id:${urlId}`;
+  return `rawobj:${JSON.stringify(item)}`;
+}
+
 function candidateKeysForItem(item: any): string[] {
   const keys = new Set<string>();
-  const add = (v: any) => {
-    if (v == null) return;
-    const s = String(v).trim();
-    if (!s) return;
-    const n = normalizeId(s, item?.url);
-    if (n) keys.add(`id:${n}`);
-    const digits = extractLongestDigitRun(s);
+  const addRaw = (s: any) => {
+    if (s == null) return;
+    const str = String(s).trim();
+    if (!str) return;
+    keys.add(`raw:${str}`);
+    const digits = extractLongestDigitRun(str);
     if (digits) keys.add(`num:${digits}`);
-    keys.add(`raw:${s}`);
+    const nid = normalizeId(str, item?.url);
+    if (nid) keys.add(`id:${nid}`);
   };
-  const fields = ["itemId","item_id","productId","product_id","id","sku","skuId","shop_item_id","product_id_jp"];
-  for (const f of fields) {
-    if (item && Object.prototype.hasOwnProperty.call(item, f)) add(item[f]);
-    for (const k of Object.keys(item || {})) {
-      if (k.toLowerCase() === f.toLowerCase() && k !== f) add(item[k]);
-    }
+  if (!item) return [];
+  const possible = ['itemId','item_id','productId','product_id','id','sku','skuId','url','name'];
+  for (const k of possible) {
+    if (Object.prototype.hasOwnProperty.call(item, k)) addRaw((item as any)[k]);
   }
-  if (item && item.url) {
-    const u = idFromUrl(item.url);
-    if (u) keys.add(`id:${u}`);
-    const digits = extractLongestDigitRun(String(item.url || ""));
-    if (digits) keys.add(`num:${digits}`);
-    keys.add(`raw:${item.url}`);
-  }
-  if (item && item.name) {
-    const nm = String(item.name).trim().toLowerCase().replace(/\s+/g," ");
-    if (nm) keys.add(`name:${nm}`);
-  }
-  if (item && item.id) add(item.id);
+  if (item.url) addRaw(item.url);
+  if (item.name) keys.add(`name:${String(item.name).trim().toLowerCase()}`);
   try { keys.add(`rawobj:${JSON.stringify(item)}`); } catch {}
   return Array.from(keys);
 }
 
 function daysBetween(a: Date, b: Date) { return Math.floor((a.getTime() - b.getTime()) / DAY_MS); }
 
-/* ----------------- Firebase init ----------------- */
+/* ---------------- Firebase init ---------------- */
 function initAdmin(credPath?: string) {
   if ((admin as any).apps && (admin as any).apps.length) return admin.firestore();
-  const envCredJson = process.env.FIREBASE_SERVICE_ACCOUNT?.trim();
+  const envJson = (process.env.FIREBASE_SERVICE_ACCOUNT || "").trim();
   const envPath = process.env.GOOGLE_APPLICATION_CREDENTIALS || credPath;
   if (envPath && fs.existsSync(envPath)) {
     const sa = JSON.parse(fs.readFileSync(envPath, "utf8"));
@@ -169,9 +114,9 @@ function initAdmin(credPath?: string) {
     process.env.GOOGLE_CLOUD_PROJECT = process.env.GCLOUD_PROJECT = sa.project_id;
     return admin.firestore();
   }
-  if (envCredJson) {
+  if (envJson) {
     try {
-      const sa = JSON.parse(envCredJson);
+      const sa = JSON.parse(envJson);
       admin.initializeApp({ credential: admin.credential.cert(sa), projectId: sa.project_id });
       process.env.GOOGLE_CLOUD_PROJECT = process.env.GCLOUD_PROJECT = sa.project_id;
       return admin.firestore();
@@ -183,29 +128,36 @@ function initAdmin(credPath?: string) {
   return admin.firestore();
 }
 
-/* ----------------- nested array finder ----------------- */
+/* ---------------- detect item-like object ---------------- */
+function looksLikeItemObject(obj: any) {
+  if (!obj || typeof obj !== "object") return false;
+  const keys = Object.keys(obj).map(k => k.toLowerCase());
+  if (keys.includes("timestamp") || keys.includes("timestamp") || keys.includes("timeStamp".toLowerCase())) return true;
+  if (keys.includes("id") || keys.includes("itemid") || keys.includes("productid")) return true;
+  if (keys.includes("url") || keys.includes("name")) return true;
+  return false;
+}
+
+/* ---------------- find nested arrays or item objects ---------------- */
 function looksLikeHistoryItemArray(arr: any[]): boolean {
   if (!Array.isArray(arr) || arr.length === 0) return false;
-  const wantKeys = ["id","itemId","productId","url","name","timeStamp","timestamp","createdAt"];
-  let score = 0, checked = 0;
-  for (let i = 0; i < Math.min(arr.length, 10); i++) {
+  let hits = 0, checked = 0;
+  for (let i = 0; i < Math.min(arr.length, 20); i++) {
     const el = arr[i];
     if (el && typeof el === "object") {
       checked++;
-      for (const k of Object.keys(el)) {
-        if (wantKeys.includes(k) || wantKeys.includes(k.replace(/[-_]/g,""))) { score++; break; }
-      }
+      if (looksLikeItemObject(el)) hits++;
     }
   }
-  return checked > 0 && score / Math.max(1, checked) >= 0.3;
+  return checked > 0 && hits / Math.max(1, checked) >= 0.25;
 }
 
-function findItemArrays(obj: any, depth = 0, maxDepth = 6, path = ""): Array<{path:string,arr:any[]}> {
+function findItemArrays(obj: any, depth = 0, maxDepth = 8, path = ""): Array<{path:string,arr:any[]}> {
   const out: Array<{path:string,arr:any[]}> = [];
   if (depth > maxDepth || obj == null) return out;
   if (Array.isArray(obj)) {
     if (looksLikeHistoryItemArray(obj)) out.push({ path, arr: obj });
-    for (let i = 0; i < Math.min(obj.length, 50); i++) out.push(...findItemArrays(obj[i], depth+1, maxDepth, path + `[${i}]`));
+    for (let i = 0; i < Math.min(obj.length, 50); i++) out.push(...findItemArrays(obj[i], depth+1, maxDepth, `${path}[${i}]`));
     return out;
   }
   if (typeof obj === "object") {
@@ -215,35 +167,46 @@ function findItemArrays(obj: any, depth = 0, maxDepth = 6, path = ""): Array<{pa
         if (looksLikeHistoryItemArray(v)) out.push({ path: path ? path + "." + k : k, arr: v });
         else out.push(...findItemArrays(v, depth+1, maxDepth, path ? path + "." + k : k));
       } else if (v && typeof v === "object") {
-        out.push(...findItemArrays(v, depth+1, maxDepth, path ? path + "." + k : k));
+        if (looksLikeItemObject(v)) out.push({ path: path ? path + "." + k : k, arr: [v] });
+        else out.push(...findItemArrays(v, depth+1, maxDepth, path ? path + "." + k : k));
       }
     }
   }
   return out;
 }
 
-/* ----------------- build last-bought map (improved) ----------------- */
+/* ---------------- build lastBought map (robust) ---------------- */
 async function buildLastBoughtMap(db: admin.firestore.Firestore, histPath: string, debug = false, explain=false) {
   const map = new Map<string, Date>();
   const pathSegs = histPath.split("/").filter(Boolean);
-  const visitedDocs = new Set<string>();
+  const visited = new Set<string>();
 
   async function collectFromDoc(docSnap: admin.firestore.DocumentSnapshot, depth = 0) {
     if (!docSnap || !docSnap.exists) return;
     const docPath = docSnap.ref.path;
-    if (visitedDocs.has(docPath) || depth > 8) return;
-    visitedDocs.add(docPath);
+    if (visited.has(docPath) || depth > 10) return;
+    visited.add(docPath);
 
     const data = (docSnap.data && docSnap.data()) || {};
-    const docTs = toDateAny((data as any).createdAt) || toDateAny((data as any).created_at) || toDateAny((data as any).timeStamp) || (docSnap.createTime ? docSnap.createTime.toDate() : null);
+    const docTs = toDateAny((data as any).createdAt) || toDateAny((data as any).timeStamp) || (docSnap.createTime ? docSnap.createTime.toDate() : null);
 
-    let rawItems: any = (data as any).items ?? (data as any).history ?? (data as any).purchases ?? null;
+    // Candidate arrays or items:
     let arr: any[] = [];
+
+    // 1) if common key 'items' or 'history' or 'purchases'
+    let rawItems = (data as any).items ?? (data as any).history ?? (data as any).purchases ?? null;
     if (Array.isArray(rawItems)) arr = rawItems;
     else if (rawItems && typeof rawItems === "object") arr = Object.values(rawItems);
 
-    if (!arr.length) {
-      const found = findItemArrays(data, 0, 6);
+    // 2) if no array found, check if doc data itself *looks like* an item
+    if (arr.length === 0 && looksLikeItemObject(data)) {
+      arr = [data];
+      if (debug) console.log("[DEBUG] treating doc as single item:", docPath);
+    }
+
+    // 3) if still empty, try find nested arrays / objects
+    if (arr.length === 0) {
+      const found = findItemArrays(data, 0, 8);
       if (found && found.length) {
         arr = found[0].arr;
         if (debug) console.log("[DEBUG] found nested item array at", found[0].path, "len=", arr.length, "in", docPath);
@@ -254,10 +217,14 @@ async function buildLastBoughtMap(db: admin.firestore.Firestore, histPath: strin
 
     for (const it of arr) {
       const itemTs = toDateAny((it as any).timeStamp) || toDateAny((it as any).timestamp) || toDateAny((it as any).createdAt) || null;
-      let usedTs = itemTs || docTs;
-      if (!usedTs) usedTs = toDateAny((it as any).timeStamp) || toDateAny((it as any).timestamp) || null;
-      if (!usedTs) continue;
-
+      const usedTs = itemTs || docTs;
+      if (!usedTs) {
+        if (explain) {
+          const nm = it?.name || it?.url || it?.id || "(no-name)";
+          console.log(`[EXPLAIN] history doc ${docPath} item "${nm}" -> no timestamp -> skip`);
+        }
+        continue;
+      }
       const keys = candidateKeysForItem(it);
       if (explain) console.log(`[EXPLAIN] history doc ${docPath} item keys:`, keys);
       for (const k of keys) {
@@ -267,18 +234,14 @@ async function buildLastBoughtMap(db: admin.firestore.Firestore, histPath: strin
           const digits = extractLongestDigitRun(k.slice(3));
           if (digits) { const nk = `num:${digits}`; const p2 = map.get(nk); if (!p2 || p2 < usedTs) map.set(nk, usedTs); }
         }
-        if (k.startsWith("raw:") || k.startsWith("rawobj:")) {
-          const digits = extractLongestDigitRun(k);
-          if (digits) { const nk = `num:${digits}`; const p2 = map.get(nk); if (!p2 || p2 < usedTs) map.set(nk, usedTs); }
-        }
       }
     }
 
+    // 4) also recurse into subcollections (if any)
     try {
       const subcols = await docSnap.ref.listCollections();
       for (const sc of subcols) {
         const scSnap = await sc.get();
-        if (scSnap.empty) continue;
         for (const sd of scSnap.docs) {
           await collectFromDoc(sd, depth + 1);
         }
@@ -289,10 +252,12 @@ async function buildLastBoughtMap(db: admin.firestore.Firestore, histPath: strin
   }
 
   if (pathSegs.length % 2 === 1) {
+    // collection
     let snap: admin.firestore.QuerySnapshot;
     try { snap = await db.collection(histPath).orderBy("createdAt","asc").get(); } catch { snap = await db.collection(histPath).get(); }
     for (const d of snap.docs) await collectFromDoc(d, 0);
   } else {
+    // single doc
     const doc = await db.doc(histPath).get();
     if (doc.exists) await collectFromDoc(doc, 0);
   }
@@ -305,16 +270,8 @@ async function buildLastBoughtMap(db: admin.firestore.Firestore, histPath: strin
   return map;
 }
 
-/* ----------------- collectDueItems (full robust implementation) ----------------- */
-async function collectDueItems(
-  db: admin.firestore.Firestore,
-  subsPath: string,
-  lastMap: Map<string, Date>,
-  defaultDays: number,
-  debug = false,
-  explain = false,
-  includeNever = false
-) {
+/* ---------------- collectDueItems ---------------- */
+async function collectDueItems(db: admin.firestore.Firestore, subsPath: string, lastMap: Map<string, Date>, defaultDays: number, debug = false, explain = false, includeNever=false) {
   const dueByDoc: Array<{ subId: string; items: SubItem[]; dueInfo: Array<{ key: string; last: Date | null; daysSince: number; threshold: number }> }> = [];
 
   const subsSnap = await db.collection(subsPath).get();
@@ -344,6 +301,7 @@ async function collectDueItems(
       }
 
       if (!last) {
+        // fallback numeric candidate match
         const numericCandidates = new Set<string>();
         for (const k of keys) {
           if (k.startsWith("num:")) numericCandidates.add(k.slice(4));
@@ -362,13 +320,13 @@ async function collectDueItems(
       }
 
       if (!last) {
+        // fallback name-token fuzzy
         const keyNameTokens: string[] = [];
         for (const k of keys) if (k.startsWith("name:")) keyNameTokens.push(...String(k.slice(5)).toLowerCase().split(/\s+/).filter(Boolean));
         if (keyNameTokens.length) {
           for (const [lk, ld] of lastMap.entries()) {
             if (!lk.startsWith("name:")) continue;
             const lkTokens = String(lk.slice(5)).toLowerCase().split(/\s+/).filter(Boolean);
-            if (!lkTokens.length) continue;
             const matched = lkTokens.filter(t => keyNameTokens.includes(t));
             const ratio = matched.length / Math.max(1, Math.min(lkTokens.length, keyNameTokens.length));
             if (ratio >= 0.5) { last = ld; matchedKey = lk; break; }
@@ -382,7 +340,7 @@ async function collectDueItems(
           info.push({ key: keys[0] || "(no-key)", last: null, daysSince: Number.MAX_SAFE_INTEGER, threshold });
           if (explain) console.log(`[EXPLAIN] ${doc.id} :: ${(it as any).name || it.url || it.id} -> last=N/A includeNever => DUE thr=${threshold}`);
         } else {
-          if (explain) console.log(`[EXPLAIN] ${doc.id} :: ${(it as any).name || it.url || it.id} -> last=N/A keys=${keys} => skip`);
+          if (explain) console.log(`[EXPLAIN] ${doc.id} :: ${(it as any).name || it.url || it.id} -> last=N/A => skip`);
           continue;
         }
       } else {
@@ -406,15 +364,8 @@ async function collectDueItems(
   return dueByDoc;
 }
 
-/* ----------------- writePurchase: write to users/{uid}/cart/{itemId} ----------------- */
-async function writePurchase(
-  db: admin.firestore.Firestore,
-  uid: string,
-  bundles: Array<{ subId: string; items: SubItem[]; dueInfo: Array<{ key: string; last: Date | null; daysSince: number; threshold: number }> }>,
-  dry: boolean,
-  debug = false,
-  forceAdd = false
-) {
+/* ---------------- writePurchase -> users/{uid}/cart/{itemId} ---------------- */
+async function writePurchase(db: admin.firestore.Firestore, uid: string, bundles: Array<{ subId: string; items: SubItem[]; dueInfo: any[] }>, dry: boolean, debug = false, forceAdd = false) {
   if (!bundles.length) return 0;
   const col = db.collection(`users/${uid}/cart`);
   let wrote = 0;
@@ -422,11 +373,7 @@ async function writePurchase(
   for (const b of bundles) {
     for (const it of b.items) {
       const docIdCandidate = normalizeId((it as any).itemId ?? (it as any).item_id ?? (it as any).productId ?? (it as any).product_id ?? (it as any).id, it.url);
-      let docId = docIdCandidate;
-      if (!docId) {
-        const byUrlDigits = extractLongestDigitRun(String(it.url || ""));
-        if (byUrlDigits) docId = byUrlDigits;
-      }
+      let docId = docIdCandidate || extractLongestDigitRun(String(it.url || "")) || "";
       const qty = intQty((it as any).quantity ?? (it as any).qty ?? 1, 1);
 
       if (docId) {
@@ -499,7 +446,7 @@ async function writePurchase(
   return wrote;
 }
 
-/* ----------------- helper: parse args & get user ids ----------------- */
+/* ---------------- args & helper ---------------- */
 function parseArgs(): Args {
   const argv = process.argv.slice(2);
   const get = (k: string, d = "") => {
@@ -540,7 +487,7 @@ async function getUserIdsWithSubscriptions(db: admin.firestore.Firestore, limit?
   return ids;
 }
 
-/* ----------------- main runner ----------------- */
+/* ---------------- main ---------------- */
 (async () => {
   const args = parseArgs();
   const db = initAdmin(args.cred);
@@ -571,7 +518,4 @@ async function getUserIdsWithSubscriptions(db: admin.firestore.Firestore, limit?
   }
   console.log(`\nDone. users_processed=${totalProcessed} total_added=${totalAdded} (dry=${args.dry})`);
   process.exit(0);
-})().catch((e) => {
-  console.error(e);
-  process.exit(1);
-});
+})().catch((e) => { console.error(e); process.exit(1); });
