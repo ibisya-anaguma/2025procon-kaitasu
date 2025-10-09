@@ -1,0 +1,190 @@
+.container {
+  display: flex;
+  min-height: 100vh;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 16px;
+  background: radial-gradient(circle at top left, #fde9bb 0%, #fdf7e9 45%, #ffffff 100%);
+}
+
+.card {
+  width: 100%;
+  max-width: 420px;
+  background-color: #ffffff;
+  border-radius: 20px;
+  padding: 36px 32px 40px;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.12);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+.brand img {
+  width: 56px;
+  height: 56px;
+}
+
+.brandImage {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+}
+
+.brand h1 {
+  font-family: "BIZ UDPGothic", "Noto Sans JP", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #101010;
+}
+
+.description {
+  text-align: center;
+  color: #4f4f4f;
+  font-size: 15px;
+  line-height: 1.6;
+  margin-bottom: 28px;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #303030;
+  letter-spacing: 0.04em;
+}
+
+.inputBox {
+  position: relative;
+}
+
+.input {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background-color: #fafafa;
+  font-size: 15px;
+  color: #202020;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.input:focus {
+  outline: none;
+  border-color: #209fde;
+  box-shadow: 0 0 0 3px rgba(32, 159, 222, 0.18);
+  background-color: #ffffff;
+}
+
+.toggleButton {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #209fde;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 6px 8px;
+}
+
+.toggleButton:focus-visible {
+  outline: 2px solid rgba(32, 159, 222, 0.6);
+  border-radius: 8px;
+}
+
+.error {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background-color: rgba(220, 38, 38, 0.15);
+  color: #b91c1c;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.submitButton {
+  width: 100%;
+  padding: 14px 16px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #ffffff;
+  background: linear-gradient(135deg, #209fde 0%, #2185bf 100%);
+  border: none;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+}
+
+.submitButton:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 24px rgba(32, 159, 222, 0.2);
+}
+
+.submitButton:active {
+  transform: translateY(0);
+  box-shadow: 0 6px 12px rgba(32, 159, 222, 0.18);
+}
+
+.submitButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.supporting {
+  margin-top: 18px;
+  font-size: 13px;
+  color: #636363;
+  text-align: center;
+  line-height: 1.6;
+}
+
+.link {
+  color: #209fde;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.link:hover {
+  text-decoration: underline;
+}
+
+.loading {
+  text-align: center;
+  color: #555555;
+  font-size: 14px;
+}
+
+@media (max-width: 480px) {
+  .card {
+    padding: 28px 24px 32px;
+    border-radius: 18px;
+  }
+
+  .brand h1 {
+    font-size: 22px;
+  }
+
+  .description {
+    font-size: 14px;
+  }
+}
