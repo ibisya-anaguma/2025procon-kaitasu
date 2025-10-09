@@ -1,8 +1,9 @@
 name: autocart-daily
 
+# JST 01:00 -> UTC 16:00
 on:
   schedule:
-    - cron: "0 16 * * *"  # 毎日 01:00 JST
+    - cron: "0 16 * * *"
   workflow_dispatch: {}
 
 concurrency:
@@ -12,63 +13,53 @@ concurrency:
 jobs:
   run-autocart:
     runs-on: ubuntu-latest
-    timeout-minutes: 180
+    timeout-minutes: 120
 
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Use Node.js 18
+      - name: Setup Node.js 18
         uses: actions/setup-node@v4
         with:
           node-version: "18"
 
-      - name: Cache node_modules for checkout job
-        uses: actions/cache@v4
-        with:
-          path: src/jobs/checkout/node_modules
-          key: ${{ runner.os }}-autocart-${{ hashFiles('src/jobs/checkout/package-lock.json', 'src/jobs/checkout/package.json') }}
-          restore-keys: |
-            ${{ runner.os }}-autocart-
-
-      - name: Install dependencies (autocart)
-        working-directory: src/jobs/checkout
-        run: |
-          set -euo pipefail
-          if [ -f package-lock.json ]; then
-            npm ci
-          else
-            npm install
-          fi
-
-      - name: Write firebase credentials file (optional, safe)
-        run: |
-          set -euo pipefail
-          if [ -n "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" ]; then
-            printf '%s' "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" > /tmp/firebase-service-account.json
-            chmod 600 /tmp/firebase-service-account.json
-            echo "/tmp/firebase-service-account.json written"
-          else
-            echo "FIREBASE_SERVICE_ACCOUNT not provided; proceeding without file"
-          fi
-
-      - name: Run autocart (TypeScript) via ts-node (no dist committed)
-        working-directory: src/jobs/checkout
+      - name: Prepare Firebase credentials and run autocart (dry)
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-          CART_API_KEY: ${{ secrets.CART_API_KEY }}
-          GOOGLE_APPLICATION_CREDENTIALS: /tmp/firebase-service-account.json
-          TS_NODE_TRANSPILE_ONLY: "true"
         run: |
           set -euo pipefail
-          echo "Node: $(node --version)"
-          echo "Running ts-node: src/jobs/checkout/autocart-runner.ts (dry run)"
-          # dry run for safety; remove --dry to actually write to Firestore
-          npx ts-node --project ./tsconfig.json --transpile-only ./autocart-runner.ts --days 30 --dry
 
-      - name: Upload logs/artifact (optional)
+          # secret チェック（ここで失敗させる・メッセージをわかりやすく）
+          if [ -z "${FIREBASE_SERVICE_ACCOUNT:-}" ]; then
+            echo "::error::FIREBASE_SERVICE_ACCOUNT secret is not set. Add it at Settings → Secrets and variables → Actions"
+            exit 1
+          fi
+
+          # 一時ファイルに書き出して GOOGLE_APPLICATION_CREDENTIALS を設定
+          mkdir -p .firebase
+          printf "%s" "$FIREBASE_SERVICE_ACCOUNT" > .firebase/firebase-key.json
+          export GOOGLE_APPLICATION_CREDENTIALS=$(pwd)/.firebase/firebase-key.json
+          echo "Using GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS}"
+
+          # ディレクトリを確実に移動（repo root を想定）
+          cd "$(pwd)"
+
+          # ここはテスト段階なので --dry を付ける（本番化時は --dry を外す）
+          npx -y ts-node --transpile-only src/jobs/checkout/autocart-runner.ts --dry --limit 50 --debug --explain 2>&1 | tee autocart-runner.log
+          EXIT_CODE=${PIPESTATUS[0]}
+          echo "autocart-runner exit code: $EXIT_CODE"
+          if [ "$EXIT_CODE" -ne 0 ]; then
+            exit "$EXIT_CODE"
+          fi
+
+      - name: Upload logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: autocart-logs
-          path: src/jobs/checkout/logs/**/*.log
+          path: autocart-runner.log
+
+      - name: Cleanup credential file
+        if: always()
+        run: rm -f .firebase/firebase-key.json || true
