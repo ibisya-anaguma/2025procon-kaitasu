@@ -1,0 +1,71 @@
+name: autocart-daily
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 16 * * *" # 01:00 JST
+
+concurrency:
+  group: autocart-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  run-autocart:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 18
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+
+      - name: Install dependencies (autocart)
+        run: |
+          if [ -f src/jobs/checkout/package.json ]; then
+            npm ci --prefix src/jobs/checkout
+          else
+            npm ci
+          fi
+
+      - name: Ensure Firebase service account file exists (from secret)
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$GITHUB_WORKSPACE/.firebase"
+          if [ -n "${FIREBASE_SERVICE_ACCOUNT:-}" ]; then
+            # secret の内容をファイルに書き出す（中身はログに出さない）
+            printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$GITHUB_WORKSPACE/.firebase/firebase-key.json"
+            echo "WROTE $GITHUB_WORKSPACE/.firebase/firebase-key.json"
+          else
+            echo "No FIREBASE_SERVICE_ACCOUNT secret provided; skipping file write"
+          fi
+
+      - name: Build TypeScript and run runner (dry, limit 20)
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/.firebase/firebase-key.json
+        run: |
+          set -euo pipefail
+          echo "=== Building checkout TypeScript ==="
+          npm run build --prefix src/jobs/checkout 2>&1 | tee build.log
+          echo "=== Running autocart-runner (dry, limit 20) ==="
+          mkdir -p logs
+          OUT="logs/autocart-runner-$(date -u +%Y%m%dT%H%M%SZ).log"
+          node src/jobs/checkout/dist/autocart-runner.js --dry --limit 20 --delay-ms 200 --days 30 2>&1 | tee "$OUT"
+          EXIT=${PIPESTATUS[0]}
+          echo "runner exited with $EXIT"
+          exit "$EXIT"
+
+      - name: Upload logs/artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: autocart-logs
+          path: logs/*.log
+
+      - name: Post-run
+        if: always()
+        run: echo "job finished"
