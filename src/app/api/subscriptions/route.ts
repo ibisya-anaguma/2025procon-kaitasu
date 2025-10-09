@@ -18,7 +18,7 @@ export const GET = withAuth(async (_req: NextRequest, uid: string) => {
 export const POST = withAuth(async (req: NextRequest, uid: string) => {
 	try {
 		const items = await req.json();
-		postCollection(uid, collection, items);
+		await postCollection(uid, collection, items);
 		return NextResponse.json({ msg: "success" })
 	} catch (error) {
 		return NextResponse.json({ error: `Failed to add ${collection}` }, {status: 500});

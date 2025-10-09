@@ -2,6 +2,7 @@
 // うめ
 
 import foodData from '@/data/foodData.json'
+import { FieldValue } from "firebase-admin/firestore";
 import { adminDb as db } from "@/lib/firebaseAdmin";
 
 // users/{uid}/collectionの中の全てのドキュメント取得
@@ -40,33 +41,44 @@ export async function postCollection (
 	const arr = Array.isArray(items) ? items : [items];
 	const cartRef = db.collection("users").doc(uid).collection(collection);
 
-	const batch = db.batch();
+    const batch = db.batch();
 
-	// idとquantityのみ追加
+	// idとquantity, frequencyのみ追加
 	for (const item of arr) {
-		const docRef = cartRef.doc(item.id);
-		batch.set(
-			docRef,
-			{ quantity: FieldValue.increment(item.quantity) }
-		)
+	        const docRef = cartRef.doc(item.id);
+			const data: Record<string, any> = {
+				quantity: FieldValue.increment(item.quantity ?? 1),
+			};
+
+			if (item.frequency !== undefined) {
+				data.frequency = item.frequency;
+			}
+
+			batch.set(docRef, data, { merge: true });
+
 	}
 	await batch.commit();
 }
 
 // patch処理、quantity以外にも対応
 export async function patchCollection(
-	uid:string,
-	collection: string,
-	data: {
-		quantity?: number;
-		frequency?: number;
-	}
+  uid: string,
+  collection: string,
+  itemId: string,
+  data: {
+    quantity?: number;
+    frequency?: number;
+  }
 ) {
-	const ref = db.collection("users").doc(uid).collection(collection).doc(itemId);
-	await ref.set(data, { merge: true });
+  const ref = db.collection("users").doc(uid).collection(collection).doc(itemId);
+  await ref.set(data, { merge: true });
 }
 
-export async function deleteCollection(uid: string, collection: string, itemId: string) {
-  const ref = db.collection("users").doc(uid).collection("cart").doc(itemId);
+export async function deleteCollection(
+  uid: string,
+  collection: string,
+  itemId: string
+) {
+  const ref = db.collection("users").doc(uid).collection(collection).doc(itemId);
   await ref.delete();
 }

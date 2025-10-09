@@ -3,22 +3,21 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth } from "@/lib/middleware";
-import { getFirestore } from 'firebase-admin/firestore'
-import { patchCollection, deleteCollection };
+import { patchCollection, deleteCollection } from "@/lib/apiUtils";
 
-const collection = cart;
+const collection = "cart";
 
 export const PATCH = withAuth(async (
 	req: NextRequest,
 	uid: string,
-	context : { params: { id: string } } // 本来は第二引数、withAuthで第二にしているため第三になっている
+	{ params }: { params: { id: string } }
 ) => {
 	try {
-		patchCollection(uid, collection, req.json);
-
-		return NextResponse.json({ msg: "success"})
+		const body = await req.json();
+		await patchCollection(uid, collection, params.id, body);
+		return NextResponse.json({ msg: "success" });
 	} catch (error) {
-		return NextResponse.json({ error: `fail to patch ${collection}`}, { status: 500 });
+		return NextResponse.json({ error: `fail to patch ${collection}` }, { status: 500 });
 	}
 });
 
@@ -28,11 +27,9 @@ export const DELETE = withAuth(async (
 	{ params }: { params: { id: string } }
 ) => {
 	try {
-		const itemId = context.params.id;
-		deleteCollection(uid, itemId);
-
-		return NextResponse.json({ msg: "success"})
+		await deleteCollection(uid, collection, params.id);
+		return NextResponse.json({ msg: "success" });
 	} catch (error) {
-		return NextResponse.json({ error: `fail to delete ${collection}`}, { status: 500 });
+		return NextResponse.json({ error: `fail to delete ${collection}` }, { status: 500 });
 	}
 });
