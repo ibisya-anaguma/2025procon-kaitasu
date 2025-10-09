@@ -1,4 +1,3 @@
-# .github/workflows/scrape-daily.yml
 name: daily-scrape
 
 # 毎日 01:00 JST -> UTC 前日 16:00
@@ -19,7 +18,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 360
 
-    # job-level env に集約（トップレベルで大きな値を展開しない）
     env:
       SRC_PATH: src/jobs/scraper/all_products.json
       LOG_DIR: src/jobs/scraper/logs
@@ -71,7 +69,6 @@ jobs:
           TIMESTAMP=$(date -u +%Y%m%dT%H%M%SZ)
           LOG="${{ env.LOG_DIR }}/scrape-${TIMESTAMP}.log"
           echo "Starting scraper, logging to ${LOG}"
-          # ← 実際のスクレイパー起動コマンドに合わせてください
           python -u src/jobs/scraper/scraper.py --headless 2>&1 | tee "$LOG"
           EXIT=${PIPESTATUS[0]}
           echo "Scraper exited with $EXIT"
@@ -91,7 +88,6 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          # シークレットが設定されてなければスキップ（安全な実装）
           if [ -z "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" ]; then
             echo "FIREBASE_SERVICE_ACCOUNT not set - skipping writing file"
             exit 0
@@ -101,7 +97,7 @@ jobs:
           chmod 600 .firebase/firebase-key.json
           echo "Wrote .firebase/firebase-key.json (permission 600)"
 
-      - name: Commit all_products.json to data-latest branch
+      - name: Commit all_products.json to data-latest branch (safe)
         env:
           GIT_AUTHOR_NAME: "github-actions[bot]"
           GIT_AUTHOR_EMAIL: "actions@github.com"
@@ -115,33 +111,36 @@ jobs:
           set -euo pipefail
           echo "Preparing to push ${SRC_PATH} -> ${TARGET_BRANCH}:${DEST_PATH}"
 
+          # 存在チェック（見つからなければスキップ）
           if [ ! -f "$SRC_PATH" ]; then
             echo "No scrape output found at $SRC_PATH - skipping push"
+            # artifact は upload されているはずなので、必要ならダウンロードして代替処理を追加して下さい
             exit 0
           fi
 
           git config user.name "$GIT_AUTHOR_NAME"
           git config user.email "$GIT_AUTHOR_EMAIL"
+          git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${REPO}"
 
-          git fetch origin "$TARGET_BRANCH" || true
-
+          # 既存ブランチならチェックアウトして更新、無ければ orphan ブランチを作る
           if git ls-remote --exit-code --heads origin "$TARGET_BRANCH" >/dev/null 2>&1; then
             echo "Switching to existing branch $TARGET_BRANCH"
+            git fetch origin "$TARGET_BRANCH"
             git checkout "$TARGET_BRANCH"
             git reset --hard "origin/$TARGET_BRANCH" || true
           else
-            echo "Creating orphan branch $TARGET_BRANCH"
+            echo "Creating orphan branch $TARGET_BRANCH (safe: NOT removing working tree)"
             git checkout --orphan "$TARGET_BRANCH"
-            git rm -rf .
-            git clean -fdx || true
-            git commit --allow-empty -m "init $TARGET_BRANCH"
-            git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${REPO}" HEAD:"$TARGET_BRANCH"
+            # reset index but keep worktree files; we will commit only the DEST_PATH
+            git reset --quiet
           fi
 
+          # copy only the one file we care about
           mkdir -p "$(dirname "$DEST_PATH")"
           cp "$SRC_PATH" "$DEST_PATH"
-          git add "$DEST_PATH"
+          git add -f "$DEST_PATH"
 
+          # commit only if changes staged
           if git diff --cached --quiet; then
             echo "No changes to $DEST_PATH; nothing to commit"
           else
