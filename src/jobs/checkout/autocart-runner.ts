@@ -5,10 +5,31 @@ import * as fs from "fs";
 import * as path from "path";
 
 type SubItem = {
-  id?: any; itemId?: any; productId?: any; url?: string; name?: string; image?: string;
-  price?: number; priceTax?: number; quantity?: number; qty?: number; genre?: number | string; frequency?: number;
+  id?: any;
+  itemId?: any;
+  productId?: any;
+  url?: string;
+  name?: string;
+  image?: string;
+  price?: number;
+  priceTax?: number;
+  quantity?: number;
+  qty?: number;
+  genre?: number | string;
+  frequency?: number;
 };
-type HistItem = { id?: any; itemId?: any; productId?: any; url?: string; name?: string; quantity?: number; timeStamp?: any; timestamp?: any; createdAt?: any; };
+
+type HistItem = {
+  id?: any;
+  itemId?: any;
+  productId?: any;
+  url?: string;
+  name?: string;
+  quantity?: number;
+  timeStamp?: any;
+  timestamp?: any;
+  createdAt?: any;
+};
 
 type Args = {
   cred?: string;
@@ -27,44 +48,41 @@ const DAY_MS = 24 * 3600 * 1000;
 
 function toDateAny(v: any): Date | null {
   if (!v) return null;
-  // Firestore Timestamp-like
-  if (typeof v === "object" && v && typeof v.toDate === "function") return v.toDate();
-  // ISO / standard parsable strings
-  const d1 = new Date(v);
-  if (!isNaN(d1.getTime())) return d1;
-  // try common numeric timestamp (seconds/millis)
+  // Firestore Timestamp
+  if (typeof v === "object" && v !== null && typeof v.toDate === "function") return v.toDate();
+  // Date or numeric
+  if (v instanceof Date) return v;
   if (typeof v === "number") {
-    // treat as seconds if small, else ms
+    // seconds -> ms if reasonable
     if (v < 1e12) return new Date(v * 1000);
     return new Date(v);
   }
-  // try to parse some localized formats (e.g. "2025年8月1日 19:09:15 UTC+9")
+  // try native Date parse
+  const s = String(v).trim();
+  const d = new Date(s);
+  if (!isNaN(d.getTime())) return d;
+
+  // try parse japanese-like "YYYY年M月D H:MM:SS UTC+9"
   try {
-    const s = String(v).trim();
-    // match: YYYY年M月D HH:MM:SS UTC+9  or variants
-    const jp = s.match(/^(\d{4})年\s*(\d{1,2})月\s*(\d{1,2})日\s+(\d{1,2}):(\d{2}):(\d{2})\s*UTC\+?([0-9:+-]+)?/);
-    if (jp) {
-      const [, Y, M, D, hh, mm, ss, tz] = jp;
+    const m = s.match(/^(\d{4})年\s*(\d{1,2})月\s*(\d{1,2})日\s+(\d{1,2}):(\d{2}):(\d{2})(?:\s*UTC\+?([0-9:+-]+))?/);
+    if (m) {
+      const [, Y, M, D, hh, mm, ss, tz] = m;
       let tzpart = "+09:00";
       if (tz) {
-        // tz might be "9" or "09" or "9:00" etc.
-        if (/^\d+$/.test(tz)) tzpart = (tz.length === 1 ? `+0${tz}:00` : `+${tz}:00`);
-        else if (/^[\+\-]\d{1,2}$/.test(tz)) tzpart = (tz.length === 2 ? `+0${tz}:00` : tz);
-        else if (/^\d{1,2}:\d{2}$/.test(tz)) tzpart = `+${tz}`;
+        if (/^[0-9]{1,2}$/.test(tz)) tzpart = (tz.length === 1 ? `+0${tz}:00` : `+${tz}:00`);
+        else if (/^[+-]?[0-9]{1,2}$/.test(tz)) tzpart = (tz.length === 2 ? `+0${tz}:00` : `${tz}:00`);
+        else tzpart = (tz.includes(":") ? `+${tz}` : `+${tz}:00`);
       }
       const iso = `${Y}-${String(Number(M)).padStart(2,"0")}-${String(Number(D)).padStart(2,"0")}T${String(Number(hh)).padStart(2,"0")}:${mm}:${ss}${tzpart}`;
       const dd = new Date(iso);
       if (!isNaN(dd.getTime())) return dd;
     }
-    // fallback: try replace japanese separators
-    const alt = s.replace(/[年]/g,'-').replace(/[月]/g,'-').replace(/[日]/g,' ').replace(/UTC\+? ?/i,'+');
-    const d2 = new Date(alt);
-    if (!isNaN(d2.getTime())) return d2;
   } catch {}
+  // fallback null
   return null;
 }
 
-function intQty(v: any, def = 1) {
+function intQty(v: any, def = 1): number {
   const n = Number(v);
   return Number.isFinite(n) && n > 0 ? Math.floor(n) : def;
 }
@@ -72,16 +90,16 @@ function intQty(v: any, def = 1) {
 function extractLongestDigitRun(s: string) {
   const m = s.match(/\d+/g);
   if (!m) return "";
-  return m.sort((a,b)=>b.length-a.length)[0];
+  return m.sort((a,b)=>b.length - a.length)[0];
 }
 
 function idFromUrl(url?: string): string {
   if (!url) return "";
   const s = String(url);
-  const m = s.match(/\/([A-Za-z0-9\-_.]{4,})\.html(?:[?#].*)?$|[?&]id=([A-Za-z0-9\-_.]{4,})/);
+  const m = s.match(/\/([A-Za-z0-9\-_]{4,})\.html(?:[?#].*)?$|[?&]id=([A-Za-z0-9\-_]{4,})/);
   if (m && (m[1] || m[2])) return (m[1] || m[2]).trim();
   const any = s.match(/[A-Za-z0-9]{4,}/g);
-  if (any && any.length) return any.sort((a,b)=>b.length-a.length)[0];
+  if (any && any.length) return any.sort((a,b)=>b.length - a.length)[0];
   return extractLongestDigitRun(s);
 }
 
@@ -101,17 +119,17 @@ function normalizeId(val: any, url?: string): string {
   }
   const s = String(val).trim();
   if (!s) return "";
-  if (/^[A-Za-z0-9\-_.]{4,}$/.test(s)) return s;
+  if (/^[A-Za-z0-9\-_]{4,}$/.test(s)) return s;
   const any = s.match(/[A-Za-z0-9]{4,}/g);
-  if (any && any.length) return any.sort((a,b)=>b.length-a.length)[0];
+  if (any && any.length) return any.sort((a,b)=>b.length - a.length)[0];
   const num = s.match(/\d{4,}/g);
-  if (num && num.length) return num.sort((a,b)=>b.length-a.length)[0];
+  if (num && num.length) return num.sort((a,b)=>b.length - a.length)[0];
   return "";
 }
 
 function candidateKeysForItem(item: any): string[] {
   const keys = new Set<string>();
-  const addCandidate = (v: any) => {
+  const add = (v: any) => {
     if (v == null) return;
     const s = String(v).trim();
     if (!s) return;
@@ -124,9 +142,9 @@ function candidateKeysForItem(item: any): string[] {
 
   const fields = ["itemId","item_id","productId","product_id","id","sku","skuId","shop_item_id","product_id_jp"];
   for (const f of fields) {
-    if (item && Object.prototype.hasOwnProperty.call(item,f)) addCandidate(item[f]);
+    if (item && Object.prototype.hasOwnProperty.call(item, f)) add(item[f]);
     for (const k of Object.keys(item || {})) {
-      if (k.toLowerCase() === f.toLowerCase() && k !== f) addCandidate(item[k]);
+      if (k.toLowerCase() === f.toLowerCase() && k !== f) add(item[k]);
     }
   }
 
@@ -139,44 +157,47 @@ function candidateKeysForItem(item: any): string[] {
   }
 
   if (item && item.name) {
-    const nm = String(item.name).trim().toLowerCase().replace(/\s+/g,' ');
+    const nm = String(item.name).trim().toLowerCase().replace(/\s+/g," ");
     if (nm) keys.add(`name:${nm}`);
   }
 
-  if (item && item.id) addCandidate(item.id);
+  if (item && item.id) add(item.id);
   try { keys.add(`rawobj:${JSON.stringify(item)}`); } catch {}
 
   return Array.from(keys);
 }
 
-function daysBetween(a: Date, b: Date) { return Math.floor((a.getTime() - b.getTime()) / DAY_MS); }
+function daysBetween(a: Date, b: Date) {
+  return Math.floor((a.getTime() - b.getTime()) / DAY_MS);
+}
 
+// init admin without creating files. Prefer GOOGLE_APPLICATION_CREDENTIALS file, else parse FIREBASE_SERVICE_ACCOUNT JSON env.
 function initAdmin(credPath?: string) {
-  try {
-    const wsa = path.resolve(".firebase/firebase-key.json");
-    if (credPath) {
-      const resolved = path.resolve(credPath);
-      if (fs.existsSync(resolved)) process.env.GOOGLE_APPLICATION_CREDENTIALS = resolved;
-    } else if (fs.existsSync(wsa)) {
-      process.env.GOOGLE_APPLICATION_CREDENTIALS = wsa;
-    } else if (process.env.FIREBASE_SERVICE_ACCOUNT) {
-      const tmp = "/tmp/firebase-action-key.json";
-      fs.writeFileSync(tmp, process.env.FIREBASE_SERVICE_ACCOUNT, { encoding: "utf8", mode: 0o600 });
-      process.env.GOOGLE_APPLICATION_CREDENTIALS = tmp;
-    }
-  } catch (e) {}
-  const credFile = process.env.GOOGLE_APPLICATION_CREDENTIALS || "";
-  if (credFile && fs.existsSync(credFile)) {
-    const sa = JSON.parse(fs.readFileSync(credFile,"utf8"));
+  if (admin.apps && admin.apps.length) return admin.firestore();
+  const envCredJson = process.env.FIREBASE_SERVICE_ACCOUNT?.trim();
+  const envPath = process.env.GOOGLE_APPLICATION_CREDENTIALS || credPath;
+  if (envPath && fs.existsSync(envPath)) {
+    const sa = JSON.parse(fs.readFileSync(envPath, "utf8"));
     admin.initializeApp({ credential: admin.credential.cert(sa), projectId: sa.project_id });
     process.env.GOOGLE_CLOUD_PROJECT = process.env.GCLOUD_PROJECT = sa.project_id;
     return admin.firestore();
-  } else {
-    admin.initializeApp();
-    return admin.firestore();
   }
+  if (envCredJson) {
+    try {
+      const sa = JSON.parse(envCredJson);
+      admin.initializeApp({ credential: admin.credential.cert(sa), projectId: sa.project_id });
+      process.env.GOOGLE_CLOUD_PROJECT = process.env.GCLOUD_PROJECT = sa.project_id;
+      return admin.firestore();
+    } catch (e) {
+      throw new Error("FIREBASE_SERVICE_ACCOUNT is set but invalid JSON");
+    }
+  }
+  // fallback to default application credentials if available on the environment
+  admin.initializeApp();
+  return admin.firestore();
 }
 
+// build last-bought map from users/{uid}/history (supports docs where items is array or object)
 async function buildLastBoughtMap(db: admin.firestore.Firestore, histPath: string, debug = false, explain=false) {
   const map = new Map<string, Date>();
   const pathSegs = histPath.split("/").filter(Boolean);
@@ -185,33 +206,19 @@ async function buildLastBoughtMap(db: admin.firestore.Firestore, histPath: strin
     const data = (docSnap.data && docSnap.data()) || {};
     const docTs = toDateAny((data as any).createdAt) || toDateAny((data as any).created_at) || toDateAny((data as any).timeStamp) || (docSnap.createTime ? docSnap.createTime.toDate() : null);
 
-    // items may be array OR object (map with numeric keys) -> support both
     let rawItems: any = (data as any).items ?? (data as any).history ?? [];
     let arr: any[] = [];
     if (Array.isArray(rawItems)) arr = rawItems;
-    else if (rawItems && typeof rawItems === 'object') arr = Object.values(rawItems);
+    else if (rawItems && typeof rawItems === "object") arr = Object.values(rawItems);
     else arr = [];
 
     if (debug) console.log("[DEBUG] history doc", docSnap.id, "items count:", arr.length);
 
     for (const it of arr) {
       const itemTs = toDateAny((it as any).timeStamp) || toDateAny((it as any).timestamp) || toDateAny((it as any).createdAt) || null;
-      // if itemTs still null, try parsing string with tolerant parser
       let usedTs = itemTs || docTs;
       if (!usedTs) {
-        // try parsing common fields that may be string in Japanese format
         usedTs = toDateAny((it as any).timeStamp) || toDateAny((it as any).timestamp) || null;
-      }
-      if (!usedTs) {
-        // last resort: try to parse numeric-ish strings inside the item
-        try {
-          const s = JSON.stringify(it);
-          const digits = extractLongestDigitRun(s);
-          if (digits && digits.length >= 8) {
-            // no time, but still set to doc createTime if exists
-            if (docSnap.createTime) usedTs = docSnap.createTime.toDate();
-          }
-        } catch {}
       }
       if (!usedTs) continue;
 
@@ -251,7 +258,7 @@ async function buildLastBoughtMap(db: admin.firestore.Firestore, histPath: strin
 
   if (debug) {
     console.log("[DEBUG] lastBought map size:", map.size);
-    if (map.size <= 200) console.log("[DEBUG] lastBought keys (sample):", Array.from(map.entries()).map(([k,v])=>`${k} -> ${v.toISOString().slice(0,10)}`));
+    if (map.size <= 200) console.log("[DEBUG] lastBought keys (sample):", Array.from(map.entries()).map(([k,v]) => `${k} -> ${v.toISOString().slice(0,10)}`));
     else console.log("[DEBUG] lastBought keys sample:", Array.from(map.keys()).slice(0,50));
   }
   return map;
@@ -274,9 +281,8 @@ async function collectDueItems(
   for (const doc of subsSnap.docs) {
     const data = doc.data() || {};
     const subLevelFreq = Number((data as any).frequency) || 0;
-    // subscriptions.items should usually be array; but support object->array as above
     let rawItems = (data as any).items ?? [];
-    const items: SubItem[] = Array.isArray(rawItems) ? rawItems : (rawItems && typeof rawItems === 'object' ? Object.values(rawItems) : []);
+    const items: SubItem[] = Array.isArray(rawItems) ? rawItems : (rawItems && typeof rawItems === "object" ? Object.values(rawItems) : []);
     const dueItems: SubItem[] = [];
     const info: Array<{ key: string; last: Date | null; daysSince: number; threshold: number }> = [];
 
@@ -287,15 +293,16 @@ async function collectDueItems(
       const itemFreq = Number((it as any).frequency) || 0;
       const threshold = itemFreq > 0 ? itemFreq : (subLevelFreq > 0 ? subLevelFreq : defaultDays);
 
-      // find last: try exact first, then num:, then substr/name tokens (simple)
+      // try exact keys
       let last: Date | null = null;
       let matchedKey: string | null = null;
       for (const k of keys) {
         const f = lastMap.get(k);
         if (f) { last = f; matchedKey = k; break; }
       }
+
+      // try numeric fuzzy
       if (!last) {
-        // try numeric candidates
         const numericCandidates = new Set<string>();
         for (const k of keys) {
           if (k.startsWith("num:")) numericCandidates.add(k.slice(4));
@@ -305,23 +312,22 @@ async function collectDueItems(
           }
         }
         if (numericCandidates.size) {
+          outer:
           for (const [lk, ld] of lastMap.entries()) {
             if (!lk.startsWith("num:") && !lk.startsWith("id:") && !lk.startsWith("raw:") && !lk.startsWith("rawobj:")) continue;
             const lkDigits = extractLongestDigitRun(lk);
-            for (const nc of Array.from(numericCandidates)) {
-              if (!nc) continue;
-              if (!lkDigits) continue;
+            for (const nc of numericCandidates) {
+              if (!nc || !lkDigits) continue;
               if (lkDigits === nc || lkDigits.endsWith(nc) || nc.endsWith(lkDigits) || lkDigits.includes(nc) || nc.includes(lkDigits)) {
-                last = ld; matchedKey = lk; break;
+                last = ld; matchedKey = lk; break outer;
               }
             }
-            if (last) break;
           }
         }
       }
 
+      // try name token fuzzy
       if (!last) {
-        // try name-token overlap (simple)
         const keyNameTokens: string[] = [];
         for (const k of keys) if (k.startsWith("name:")) keyNameTokens.push(...String(k.slice(5)).toLowerCase().split(/\s+/).filter(Boolean));
         if (keyNameTokens.length) {
@@ -338,8 +344,7 @@ async function collectDueItems(
 
       if (!last) {
         if (includeNever) {
-          const addItem: SubItem = { ...(it as any), quantity: intQty((it as any).quantity ?? (it as any).qty ?? 1, 1) };
-          dueItems.push(addItem);
+          dueItems.push({ ...(it as any), quantity: intQty((it as any).quantity ?? (it as any).qty ?? 1, 1) });
           info.push({ key: keys[0] || "(no-key)", last: null, daysSince: Number.MAX_SAFE_INTEGER, threshold });
           if (explain) console.log(`[EXPLAIN] ${doc.id} :: ${(it as any).name || it.url || it.id} -> last=N/A includeNever => DUE thr=${threshold}`);
         } else {
@@ -398,8 +403,12 @@ async function writePurchase(
           const existingQty = Number((data as any).quantity ?? (data as any).quantify ?? 0) || 0;
           const newQty = existingQty + qty;
           const updateBody: any = {
-            quantity: newQty, quantify: newQty, updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-            url: it.url || data.url || "", name: it.name || data.name || "", image: it.image || data.image || "",
+            quantity: newQty,
+            quantify: newQty,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            url: it.url || data.url || "",
+            name: it.name || data.name || "",
+            image: it.image || data.image || "",
             price: typeof it.price === "number" ? it.price : (data.price ?? null),
             priceTax: typeof it.priceTax === "number" ? it.priceTax : (data.priceTax ?? null),
             source: "auto-subscription",
@@ -410,8 +419,13 @@ async function writePurchase(
         } else {
           const body: any = {
             createdAt: admin.firestore.FieldValue.serverTimestamp(),
-            quantity: qty, quantify: qty, url: it.url || "", name: it.name || "", image: it.image || "",
-            price: typeof it.price === "number" ? it.price : null, priceTax: typeof it.priceTax === "number" ? it.priceTax : null,
+            quantity: qty,
+            quantify: qty,
+            url: it.url || "",
+            name: it.name || "",
+            image: it.image || "",
+            price: typeof it.price === "number" ? it.price : null,
+            priceTax: typeof it.priceTax === "number" ? it.priceTax : null,
             source: "auto-subscription",
           };
           if (dry) console.log("[DRY RUN] would create cart doc:", col.doc(docId).path, JSON.stringify(body));
@@ -421,8 +435,13 @@ async function writePurchase(
       } else {
         const body: any = {
           createdAt: admin.firestore.FieldValue.serverTimestamp(),
-          quantity: qty, quantify: qty, url: it.url || "", name: it.name || "", image: it.image || "",
-          price: typeof it.price === "number" ? it.price : null, priceTax: typeof it.priceTax === "number" ? it.priceTax : null,
+          quantity: qty,
+          quantify: qty,
+          url: it.url || "",
+          name: it.name || "",
+          image: it.image || "",
+          price: typeof it.price === "number" ? it.price : null,
+          priceTax: typeof it.priceTax === "number" ? it.priceTax : null,
           source: "auto-subscription",
         };
         if (dry) console.log("[DRY RUN] would add cart doc (auto-id):", JSON.stringify(body));
@@ -437,25 +456,41 @@ async function writePurchase(
 
 function parseArgs(): Args {
   const argv = process.argv.slice(2);
-  const get = (k: string, d = "") => { const i = argv.indexOf(k); return i >= 0 ? String(argv[i+1]) : d; };
+  const get = (k: string, d = "") => {
+    const i = argv.indexOf(k);
+    return i >= 0 ? String(argv[i + 1]) : d;
+  };
   const has = (k: string) => argv.includes(k);
+
   return {
     cred: get("--cred", process.env.GOOGLE_APPLICATION_CREDENTIALS || ""),
     days: Number(get("--days", "30")) || 30,
-    dry: has("--dry"), debug: has("--debug"), explain: has("--explain"),
-    limit: Number(get("--limit", "0")) || undefined, delayMs: Number(get("--delay-ms", "200")) || 200,
-    uid: get("--uid", "") || undefined, includeNever: has("--include-never"), forceAdd: has("--force-add"),
+    dry: has("--dry"),
+    debug: has("--debug"),
+    explain: has("--explain"),
+    limit: Number(get("--limit", "0")) || undefined,
+    delayMs: Number(get("--delay-ms", "200")) || 200,
+    uid: get("--uid", "") || undefined,
+    includeNever: has("--include-never"),
+    forceAdd: has("--force-add"),
   };
 }
 
 async function getUserIdsWithSubscriptions(db: admin.firestore.Firestore, limit?: number, debug = false, uid?: string) {
   if (uid) {
     const doc = await db.collection("users").doc(uid).get();
-    if (!doc.exists) { if (debug) console.log(`[DEBUG] user ${uid} does not exist`); return []; }
+    if (!doc.exists) {
+      if (debug) console.log(`[DEBUG] user ${uid} does not exist`);
+      return [];
+    }
     const subsSnap = await db.collection(`users/${uid}/subscriptions`).limit(1).get();
-    if (subsSnap.empty) { if (debug) console.log(`[DEBUG] user ${uid} has no subscriptions`); return []; }
+    if (subsSnap.empty) {
+      if (debug) console.log(`[DEBUG] user ${uid} has no subscriptions`);
+      return [];
+    }
     return [uid];
   }
+
   const ids: string[] = [];
   const coll = db.collection("users");
   const snap = await coll.get();
@@ -506,4 +541,7 @@ async function getUserIdsWithSubscriptions(db: admin.firestore.Firestore, limit?
 
   console.log(`\nDone. users_processed=${totalProcessed} total_added=${totalAdded} (dry=${args.dry})`);
   process.exit(0);
-})().catch((e) => { console.error(e); process.exit(1); });
+})().catch((e) => {
+  console.error(e);
+  process.exit(1);
+});
