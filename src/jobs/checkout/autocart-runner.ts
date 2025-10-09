@@ -5,27 +5,10 @@ import * as fs from "fs";
 import * as path from "path";
 
 type SubItem = {
-  id?: any;
-  url?: string;
-  name?: string;
-  image?: string;
-  price?: number;
-  priceTax?: number;
-  quantity?: number;
-  genre?: number | string;
-  frequency?: number;
+  id?: any; url?: string; name?: string; image?: string;
+  price?: number; priceTax?: number; quantity?: number;
+  genre?: number | string; frequency?: number;
 };
-type HistItem = {
-  id?: any;
-  url?: string;
-  name?: string;
-  quantity?: number;
-  timeStamp?: any;
-  timestamp?: any;
-  createdAt?: any;
-  rawobj?: any;
-};
-
 type Args = {
   cred?: string;
   days: number;
@@ -35,21 +18,24 @@ type Args = {
   limit?: number;
   delayMs?: number;
   uid?: string;
+  histPath?: string;
 };
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 function toDateAny(v: any): Date | null {
   if (!v) return null;
-  // Firestore Timestamp w/ toDate
-  if (typeof v === "object" && typeof (v as any).toDate === "function") {
-    try { return (v as any).toDate(); } catch { /* fallthrough */ }
+  // Firestore Timestamp (has toDate)
+  if (typeof v === "object" && typeof v.toDate === "function") {
+    try { return (v as any).toDate(); } catch {}
   }
-  // object-like { _seconds, _nanoseconds }
-  if (typeof v === "object" && v._seconds) {
-    return new Date(Number(v._seconds) * 1000 + Math.floor(Number(v._nanoseconds || 0) / 1e6));
+  // Raw proto form
+  if (typeof v === "object" && (v._seconds !== undefined || v.seconds !== undefined)) {
+    const seconds = Number(v._seconds ?? v.seconds ?? 0);
+    const nanos = Number(v._nanoseconds ?? v.nanoseconds ?? 0);
+    return new Date(seconds * 1000 + Math.floor(nanos / 1e6));
   }
-  // string / number
+  // number/string
   const d = new Date(v);
   if (!isNaN(d.getTime())) return d;
   return null;
@@ -88,69 +74,66 @@ function stableKeyFrom(item: { id?: any; url?: string; name?: string }): string 
   return `row:${Math.random()}`;
 }
 
-function daysBetween(a: Date, b: Date) {
-  return Math.floor((a.getTime() - b.getTime()) / DAY_MS);
-}
+function daysBetween(a: Date, b: Date) { return Math.floor((a.getTime() - b.getTime()) / DAY_MS); }
 
-// --- Firestore init (credPath optional) ---
-function initAdmin(credPath?: string) {
-  if (credPath) {
-    const resolved = path.resolve(credPath);
-    if (fs.existsSync(resolved)) {
-      const sa = JSON.parse(fs.readFileSync(resolved, "utf8"));
-      admin.initializeApp({
-        credential: admin.credential.cert(sa),
-        projectId: sa.project_id,
-      });
-      process.env.GOOGLE_CLOUD_PROJECT = process.env.GCLOUD_PROJECT = sa.project_id;
-      return admin.firestore();
-    }
-  }
-  // fallback: ADC
-  admin.initializeApp();
-  return admin.firestore();
-}
-
-// --- attempt to extract timestamp from a history item robustly ---
-function extractTimestampFromItem(it: any) : Date | null {
+// --- robust timestamp extractor
+function extractTimestampFromItem(it: any): Date | null {
   if (!it) return null;
-  // direct fields
-  const candidates = [
-    it.timeStamp,
-    it.timestamp,
-    it.createdAt,
-    (it as any).time || null
-  ];
-  for (const c of candidates) {
+  // common direct fields
+  const direct = [it.timeStamp, it.timestamp, it.createdAt, it.updatedAt];
+  for (const c of direct) {
     const d = toDateAny(c);
     if (d) return d;
   }
-  // rawobj might be object or JSON string
+
+  // rawobj may be object or JSON string
   if (it.rawobj) {
     try {
-      const obj = typeof it.rawobj === "string" ? JSON.parse(it.rawobj) : it.rawobj;
-      const cands2 = [obj.timeStamp, obj.timestamp, obj.createdAt, obj.updatedAt, obj.time];
-      for (const c of cands2) {
+      const ro = typeof it.rawobj === "string" ? JSON.parse(it.rawobj) : it.rawobj;
+      const cand = [ro.timeStamp, ro.timestamp, ro.createdAt, ro.updatedAt];
+      for (const c of cand) {
         const d = toDateAny(c);
         if (d) return d;
       }
-      // sometimes nested: rawobj.{item}.timeStamp
-      // try JSON-string inside rawobj fields as fallback
-    } catch {
-      // ignore JSON parse error
+    } catch {}
+  }
+
+  // some items are themselves JSON in a "raw" or similar field
+  const rawCandidates = [it.raw, it.rawObj, it.rawObjString];
+  for (const r of rawCandidates) {
+    if (!r) continue;
+    if (typeof r === "string") {
+      try {
+        const p = JSON.parse(r);
+        return extractTimestampFromItem(p);
+      } catch {}
+    } else if (typeof r === "object") {
+      const d = extractTimestampFromItem(r);
+      if (d) return d;
     }
   }
-  // sometimes the whole item is a JSON-string in 'raw' or 'rawobj' fields
-  if (typeof it === "string") {
-    try {
-      const parsed = JSON.parse(it);
-      return extractTimestampFromItem(parsed);
-    } catch { /* ignore */ }
-  }
+
   return null;
 }
 
-// ===== build last-bought map =====
+// --- Firestore init with clear message if no creds ---
+function initAdmin(credPath?: string) {
+  const resolved = credPath ? path.resolve(credPath) : (process.env.GOOGLE_APPLICATION_CREDENTIALS || "");
+  if (resolved && fs.existsSync(resolved)) {
+    const sa = JSON.parse(fs.readFileSync(resolved, "utf8"));
+    admin.initializeApp({ credential: admin.credential.cert(sa), projectId: sa.project_id });
+    process.env.GOOGLE_CLOUD_PROJECT = process.env.GCLOUD_PROJECT = sa.project_id;
+    return admin.firestore();
+  }
+  // If env var set but file missing, error
+  if (process.env.GOOGLE_APPLICATION_CREDENTIALS && !fs.existsSync(process.env.GOOGLE_APPLICATION_CREDENTIALS)) {
+    throw new Error(`GOOGLE_APPLICATION_CREDENTIALS is set but file not found: ${process.env.GOOGLE_APPLICATION_CREDENTIALS}`);
+  }
+  // If nothing, fail early with helpful message
+  throw new Error("No credentials provided. Set --cred <sa.json> or export GOOGLE_APPLICATION_CREDENTIALS pointing at a service account JSON.");
+}
+
+// --- build last-bought map (collection or single doc) ---
 async function buildLastBoughtMap(db: admin.firestore.Firestore, histPath: string, debug = false, explain=false) {
   const map = new Map<string, Date>();
   const segs = histPath.split("/").filter(Boolean);
@@ -158,7 +141,7 @@ async function buildLastBoughtMap(db: admin.firestore.Firestore, histPath: strin
   let docs: admin.firestore.QueryDocumentSnapshot[] = [];
 
   if (segs.length % 2 === 1) {
-    // collection
+    // collection path
     const col = db.collection(histPath);
     let snap: admin.firestore.QuerySnapshot;
     try {
@@ -167,44 +150,36 @@ async function buildLastBoughtMap(db: admin.firestore.Firestore, histPath: strin
       snap = await col.get();
     }
     docs = snap.docs;
-    if (debug) console.log("[DEBUG] history docs =", docs.length);
+    if (debug) console.log("[DEBUG] history docs =", docs.length, "at", histPath);
   } else {
+    // single document path
     const doc = await db.doc(histPath).get();
     if (!doc.exists) {
       if (debug) console.log("[DEBUG] history doc NOT FOUND:", histPath);
       return map;
     }
     docs = [doc as admin.firestore.QueryDocumentSnapshot];
-    if (debug) console.log("[DEBUG] history doc found:", histPath);
+    if (debug) console.log("[DEBUG] history doc loaded:", histPath);
   }
 
   for (const d of docs) {
     const data = d.data() || {};
-    // doc-level time
     const docTs = toDateAny((data as any).createdAt) || toDateAny((data as any).created_at) || toDateAny((data as any).timeStamp) || (d.createTime ? d.createTime.toDate() : null);
 
-    // items may be in data.items, or this doc may represent an item itself
-    const itemsArr = Array.isArray((data as any).items) ? (data as any).items : [];
-    // if doc itself looks like a single item (no items array), try to treat doc.data() itself as item
-    if (!itemsArr.length) {
-      // maybe doc.data() is a single item or contains keys that look like an item
-      // push a synthetic item that is the doc data (so we still check for timeStamp inside)
-      itemsArr.push(data);
-    }
+    const items: any[] = Array.isArray((data as any).items) ? (data as any).items : [];
+    // if no items array, treat doc.data() itself as item to try to find timestamp
+    if (!items.length) items.push(data);
 
-    for (const itRaw of itemsArr) {
-      const it: any = itRaw || {};
-      // try to extract timestamp
+    for (const it of items) {
       const itemTs = extractTimestampFromItem(it);
       const usedTs = itemTs || docTs;
       if (!usedTs) continue;
-
-      const key = stableKeyFrom(it);
       if (explain) {
         const nm = it.name || it.url || it.id || "(no-name)";
         const via = itemTs ? "item.ts" : docTs ? "doc.ts" : "unknown";
         console.log(`[EXPLAIN] hist item "${nm}" -> ${usedTs.toISOString().slice(0,10)} via=${via}`);
       }
+      const key = stableKeyFrom(it);
       const prev = map.get(key);
       if (!prev || prev < usedTs) map.set(key, usedTs);
     }
@@ -214,12 +189,12 @@ async function buildLastBoughtMap(db: admin.firestore.Firestore, histPath: strin
   return map;
 }
 
-// ===== collect due items from subscriptions =====
+// --- collect due items from subscriptions ---
 async function collectDueItems(db: admin.firestore.Firestore, subsPath: string, lastMap: Map<string, Date>, defaultDays: number, debug=false, explain=false) {
   const dueByDoc: Array<{ subId: string; items: SubItem[]; dueInfo: Array<{ key: string; last: Date; daysSince: number; threshold: number }> }> = [];
 
   const snap = await db.collection(subsPath).get();
-  if (debug) console.log("[DEBUG] subscriptions docs:", snap.size);
+  if (debug) console.log("[DEBUG] subscriptions docs:", snap.size, "at", subsPath);
 
   for (const doc of snap.docs) {
     const data = doc.data() || {};
@@ -232,28 +207,18 @@ async function collectDueItems(db: admin.firestore.Firestore, subsPath: string, 
       const key = stableKeyFrom(it);
       const last = lastMap.get(key);
       if (!last) {
-        if (explain) {
-          const nm = it.name || it.url || it.id || "(no-name)";
-          console.log(`[EXPLAIN] ${doc.id} :: ${nm} -> last=N/A => skip (まだ買っていない)`);
-        }
+        if (explain) console.log(`[EXPLAIN] ${doc.id} :: ${(it.name||it.url||it.id||"(no-name)")} -> last=N/A => skip`);
         continue;
       }
       const itemFreq = Number((it as any).frequency) || 0;
       const threshold = itemFreq > 0 ? itemFreq : (subLevelFreq > 0 ? subLevelFreq : defaultDays);
-
       const daysSince = daysBetween(new Date(), last);
-      const nm = it.name || it.url || it.id || "(no-name)";
-
       if (daysSince >= threshold) {
-        if (explain) console.log(`[EXPLAIN] ${doc.id} :: ${nm} -> last=${last.toISOString().slice(0,10)} days=${daysSince} thr=${threshold} => DUE`);
-        const add: SubItem = {
-          ...it,
-          quantity: intQty((it as any).quantity ?? (it as any).qty ?? 1, 1),
-        };
-        dueItems.push(add);
+        if (explain) console.log(`[EXPLAIN] ${doc.id} DUE: ${(it.name||it.url||it.id)} last=${last.toISOString().slice(0,10)} daysSince=${daysSince} thr=${threshold}`);
+        dueItems.push({ ...it, quantity: intQty((it as any).quantity ?? (it as any).qty ?? 1, 1) });
         info.push({ key, last, daysSince, threshold });
       } else if (explain) {
-        console.log(`[EXPLAIN] ${doc.id} :: ${nm} -> last=${last.toISOString().slice(0,10)} days=${daysSince} thr=${threshold} => not yet`);
+        console.log(`[EXPLAIN] ${doc.id} not yet: ${(it.name||it.url||it.id)} daysSince=${daysSince} thr=${threshold}`);
       }
     }
 
@@ -263,25 +228,13 @@ async function collectDueItems(db: admin.firestore.Firestore, subsPath: string, 
   return dueByDoc;
 }
 
-// ===== write into users/{uid}/cart/{itemId} (no extra file) =====
-async function writeCartEntries(
-  db: admin.firestore.Firestore,
-  uid: string,
-  bundles: Array<{ subId: string; items: SubItem[]; dueInfo: any[] }>,
-  dry: boolean,
-  debug=false
-) {
+// --- write cart entries to users/{uid}/cart/{itemId} ---
+async function writeCartEntries(db: admin.firestore.Firestore, uid: string, bundles: Array<{ subId: string; items: SubItem[]; dueInfo: any[] }>, dry: boolean, debug=false) {
   if (!bundles.length) return 0;
   let wrote = 0;
-
   for (const b of bundles) {
     for (const it of b.items) {
-      // target doc id prefer normalized id; fallback to generated stable key (remove prefix)
-      const itemId = normalizeId(it.id, it.url) || (() => {
-        // generate safe id from stableKey
-        return stableKeyFrom(it).replace(/[:]/g, "-").slice(0, 36);
-      })();
-
+      const itemId = normalizeId(it.id, it.url) || stableKeyFrom(it).replace(/[:]/g, "-").slice(0, 36);
       const docPath = `users/${uid}/cart/${itemId}`;
       const body: any = {
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -294,38 +247,36 @@ async function writeCartEntries(
         priceTax: typeof (it as any).priceTax === "number" ? (it as any).priceTax : null,
         source: "auto-subscription",
       };
-
       if (dry) {
-        if (debug) console.log("[DRY] would create", docPath, JSON.stringify(body, null, 2));
+        if (debug) console.log("[DRY] would create", docPath, body);
         wrote++;
         continue;
       }
-
       await db.doc(docPath).set(body, { merge: true });
       wrote++;
-      if (debug) console.log(`[DEBUG] wrote cart doc ${docPath}`);
+      if (debug) console.log(`[DEBUG] wrote ${docPath}`);
     }
   }
   return wrote;
 }
 
-// ===== helper to list user ids with subscriptions =====
+// --- list user ids with subscriptions ---
 async function getUserIdsWithSubscriptions(db: admin.firestore.Firestore, limit?: number, debug=false) {
   const ids: string[] = [];
-  const usersSnap = await db.collection("users").get();
-  for (const u of usersSnap.docs) {
-    const uid = u.id;
+  const snap = await db.collection("users").get();
+  for (const doc of snap.docs) {
+    const uid = doc.id;
     const subsSnap = await db.collection(`users/${uid}/subscriptions`).limit(1).get();
     if (!subsSnap.empty) {
       ids.push(uid);
-      if (debug) console.log(`[DEBUG] will process user=${uid}`);
+      if (debug) console.log("[DEBUG] will process user=", uid);
       if (limit && ids.length >= limit) break;
     }
   }
   return ids;
 }
 
-// ===== CLI parse =====
+// --- CLI parse ---
 function parseArgs(): Args {
   const argv = process.argv.slice(2);
   const get = (k: string, d = "") => {
@@ -342,15 +293,21 @@ function parseArgs(): Args {
     limit: Number(get("--limit", "0")) || undefined,
     delayMs: Number(get("--delay-ms", "200")) || 200,
     uid: get("--uid", "") || undefined,
+    histPath: get("--hist-path", ""),
   };
 }
 
 async function main() {
   const args = parseArgs();
-  const db = initAdmin(args.cred);
+  if (!args.cred && !process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+    console.error("ERROR: No credentials provided. Use --cred <sa.json> or set GOOGLE_APPLICATION_CREDENTIALS.");
+    process.exit(1);
+  }
+
+  const db = initAdmin(args.cred || process.env.GOOGLE_APPLICATION_CREDENTIALS);
 
   console.log("[INFO] starting autocart-runner ***");
-  console.log({ dry: args.dry, days: args.days, limit: args.limit, delayMs: args.delayMs, uid: args.uid });
+  console.log({ dry: args.dry, days: args.days, limit: args.limit, delayMs: args.delayMs, uid: args.uid, histPath: args.histPath });
 
   const uids = args.uid ? [args.uid] : await getUserIdsWithSubscriptions(db, args.limit, args.debug);
   console.log("[INFO] users to process:", uids.length);
@@ -360,12 +317,12 @@ async function main() {
     totalProcessed++;
     console.log(`\n--- Processing uid=${uid} (${totalProcessed}/${uids.length}) ---`);
     try {
-      // try typical places: users/{uid}/history (collection) by default
-      const histPath = `users/${uid}/history`;
+      const histPath = args.histPath ? args.histPath : `users/${uid}/history`;
+      if (args.debug) console.log("[DEBUG] using histPath:", histPath);
+
       const lastMap = await buildLastBoughtMap(db, histPath, args.debug, args.explain);
-      if (args.debug) {
-        console.log("[DEBUG] lastBought map size (final):", lastMap.size);
-      }
+      if (args.debug) console.log("[DEBUG] lastBought map size (final):", lastMap.size);
+
       const bundles = await collectDueItems(db, `users/${uid}/subscriptions`, lastMap, args.days, args.debug, args.explain);
 
       if (!bundles.length) {
