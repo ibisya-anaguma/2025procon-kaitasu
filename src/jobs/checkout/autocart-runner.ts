@@ -1,4 +1,4 @@
-// あらとも
+//あらとも
 
 import * as admin from "firebase-admin";
 import * as fs from "fs";
@@ -16,7 +16,7 @@ type SubItem = {
   quantity?: number;
   qty?: number;
   genre?: number | string;
-  frequency?: number;
+  frequency?: number; // アイテム単位の頻度（優先）
 };
 
 type HistItem = {
@@ -44,7 +44,7 @@ type Args = {
   forceAdd?: boolean;
 };
 
-const DAY_MS = 86400000;
+const DAY_MS = 24 * 3600 * 1000;
 
 function toDateAny(v: any): Date | null {
   if (!v) return null;
@@ -52,32 +52,24 @@ function toDateAny(v: any): Date | null {
   const d = new Date(v);
   return isNaN(d.getTime()) ? null : d;
 }
+
 function intQty(v: any, def = 1) {
   const n = Number(v);
   return Number.isFinite(n) && n > 0 ? Math.floor(n) : def;
 }
 
-// --- より柔軟な ID 正規化 ---
-// ・URL中の id（/123456.html, ?id=123456）を優先
-// ・次に item 値の中の連続英数字（4文字以上）を候補として取る（数字のみでもOK）
-// ・返すのは「識別に使える文字列（短くトリム済み）」
-// NOTE: あまり短い文字列を許すと誤検出の危険があるため minLen=4 とする
+// ----- ID 正規化 / 候補キー作成 -----
 function idFromUrl(url?: string): string {
   if (!url) return "";
   const s = String(url);
   const m = s.match(/\/([A-Za-z0-9\-_.]{4,})\.html(?:[?#].*)?$|[?&]id=([A-Za-z0-9\-_.]{4,})/);
   if (m && (m[1] || m[2])) return (m[1] || m[2]).trim();
-  // fallback: 最長の連続英数字列（>=4）
   const any = s.match(/[A-Za-z0-9]{4,}/g);
-  if (any && any.length) {
-    // choose the longest candidate
-    return any.sort((a,b)=>b.length-a.length)[0];
-  }
+  if (any && any.length) return any.sort((a, b) => b.length - a.length)[0];
   return "";
 }
 
 function normalizeId(val: any, url?: string): string {
-  // url 優先
   if (url) {
     const u = idFromUrl(url);
     if (u) return u;
@@ -88,74 +80,56 @@ function normalizeId(val: any, url?: string): string {
   }
   const s = String(val).trim();
   if (!s) return "";
-  // 完全一致で >=4 文字の英数字
   if (/^[A-Za-z0-9\-_.]{4,}$/.test(s)) return s;
-  // 含まれる最長の英数字列 >=4
   const any = s.match(/[A-Za-z0-9]{4,}/g);
-  if (any && any.length) return any.sort((a,b)=>b.length-a.length)[0];
-  // 数字列が >=4 ならそれを返す
+  if (any && any.length) return any.sort((a, b) => b.length - a.length)[0];
   const num = s.match(/\d{4,}/g);
-  if (num && num.length) return num.sort((a,b)=>b.length-a.length)[0];
+  if (num && num.length) return num.sort((a, b) => b.length - a.length)[0];
   return "";
 }
 
-// --- あるアイテムから作れる全ての「候補キー」リストを返す ---
-// (history 側でいずれかのキーが使われていればマッチする仕組み)
 function candidateKeysForItem(item: any): string[] {
   const keys = new Set<string>();
-
-  const tryAdd = (k?: string) => {
-    if (!k) return;
-    const t = String(k).trim();
-    if (!t) return;
-    // normalized id style
-    const n = normalizeId(t, item?.url);
+  function addCandidate(v: any) {
+    if (v == null) return;
+    const s = String(v).trim();
+    if (!s) return;
+    const n = normalizeId(s, item?.url);
     if (n) keys.add(`id:${n}`);
-    // raw name key
     const name = String(item?.name || item?.title || "").trim().toLowerCase();
     if (name) keys.add(`name:${name.replace(/\s+/g, " ")}`);
-    // raw original
-    keys.add(`raw:${t}`);
-  };
+    keys.add(`raw:${s}`);
+  }
 
-  // common fields, case-insensitive
-  const fields = ["itemId","item_id","productId","product_id","id","sku","skuId","shop_item_id","product_id_jp"];
+  const fields = ["itemId", "item_id", "productId", "product_id", "id", "sku", "skuId", "shop_item_id", "product_id_jp"];
   for (const f of fields) {
-    // check original and case-insensitive variants
-    if (item && Object.prototype.hasOwnProperty.call(item, f)) tryAdd(item[f]);
-    // case variants
+    if (Object.prototype.hasOwnProperty.call(item || {}, f)) addCandidate((item as any)[f]);
+    // case-insensitive variants
     for (const k of Object.keys(item || {})) {
-      if (k.toLowerCase() === f.toLowerCase() && k !== f) tryAdd(item[k]);
+      if (k.toLowerCase() === f.toLowerCase() && k !== f) addCandidate((item as any)[k]);
     }
   }
 
-  // url-derived id
   if (item && item.url) {
     const u = idFromUrl(item.url);
     if (u) keys.add(`id:${u}`);
   }
 
-  // name fallback
   if (item && item.name) {
-    const name = String(item.name).trim().toLowerCase().replace(/\s+/g," ");
-    if (name) keys.add(`name:${name}`);
+    const nm = String(item.name).trim().toLowerCase().replace(/\s+/g, " ");
+    if (nm) keys.add(`name:${nm}`);
   }
 
-  // if nothing else, add raw id field if exists
-  if (item && item.id) tryAdd(item.id);
-  // a final fallback: stringify whole item (not ideal but helpful in debugging)
-  try {
-    keys.add(`rawobj:${JSON.stringify(item)}`);
-  } catch {}
+  if (item && item.id) addCandidate(item.id);
+
+  try { keys.add(`rawobj:${JSON.stringify(item)}`); } catch {}
 
   return Array.from(keys);
 }
 
-function daysBetween(a: Date, b: Date) {
-  return Math.floor((a.getTime() - b.getTime()) / DAY_MS);
-}
+function daysBetween(a: Date, b: Date) { return Math.floor((a.getTime() - b.getTime()) / DAY_MS); }
 
-// --- Firebase init: env secret / .firebase / ADC を順に使う ---
+// ----- Firebase init (env / .firebase / secret 対応) -----
 function initAdmin(credPath?: string) {
   try {
     const wsa = path.resolve(".firebase/firebase-key.json");
@@ -169,7 +143,10 @@ function initAdmin(credPath?: string) {
       fs.writeFileSync(tmp, process.env.FIREBASE_SERVICE_ACCOUNT, { encoding: "utf8", mode: 0o600 });
       process.env.GOOGLE_APPLICATION_CREDENTIALS = tmp;
     }
-  } catch (e) {}
+  } catch (e) {
+    // ignore
+  }
+
   const credFile = process.env.GOOGLE_APPLICATION_CREDENTIALS || "";
   if (credFile && fs.existsSync(credFile)) {
     const sa = JSON.parse(fs.readFileSync(credFile, "utf8"));
@@ -182,7 +159,7 @@ function initAdmin(credPath?: string) {
   }
 }
 
-// --- 履歴を読み、候補キーごとに最終購入日時を map に保存する ---
+// ----- buildLastBoughtMap: history から candidateKeys -> lastDate map をつくる -----
 async function buildLastBoughtMap(db: admin.firestore.Firestore, histPath: string, debug = false, explain = false) {
   const map = new Map<string, Date>();
   const pathSegs = histPath.split("/").filter(Boolean);
@@ -190,8 +167,8 @@ async function buildLastBoughtMap(db: admin.firestore.Firestore, histPath: strin
   async function collectFromDoc(docSnap: admin.firestore.DocumentSnapshot) {
     const data = (docSnap.data && docSnap.data()) || {};
     const docTs = toDateAny((data as any).createdAt) || toDateAny((data as any).created_at) || (docSnap.createTime ? docSnap.createTime.toDate() : null);
-    // arrays
     const arr: HistItem[] = Array.isArray((data as any).items) ? (data as any).items : (Array.isArray((data as any).history) ? (data as any).history : []);
+
     for (const it of arr) {
       const itemTs = toDateAny((it as any).timeStamp) || toDateAny((it as any).timestamp) || toDateAny((it as any).createdAt) || null;
       const usedTs = itemTs || docTs;
@@ -203,7 +180,8 @@ async function buildLastBoughtMap(db: admin.firestore.Firestore, histPath: strin
         if (!prev || prev < usedTs) map.set(k, usedTs);
       }
     }
-    // also check subcollections under this history doc (items as documents)
+
+    // subcollections (もしあれば安全に掘る)
     try {
       if ((docSnap as any).ref && typeof (docSnap as any).ref.listCollections === "function") {
         const subcols = await (docSnap as any).ref.listCollections();
@@ -222,17 +200,16 @@ async function buildLastBoughtMap(db: admin.firestore.Firestore, histPath: strin
               }
             }
           } catch (e) {
-            if (debug) console.warn("subcol read failed:", sc.path, e && e.message);
+            if (debug) console.warn("subcol read failed:", sc.path, e && (e as any).message);
           }
         }
       }
     } catch (e) {
-      if (debug) console.warn("listCollections failed:", e && e.message);
+      if (debug) console.warn("listCollections failed:", (e as any).message || e);
     }
   }
 
   if (pathSegs.length % 2 === 1) {
-    // collection
     let snap: admin.firestore.QuerySnapshot;
     try { snap = await db.collection(histPath).orderBy("createdAt", "asc").get(); } catch { snap = await db.collection(histPath).get(); }
     for (const d of snap.docs) await collectFromDoc(d);
@@ -243,16 +220,13 @@ async function buildLastBoughtMap(db: admin.firestore.Firestore, histPath: strin
 
   if (debug) {
     console.log("[DEBUG] lastBought map size:", map.size);
-    if (map.size <= 200) {
-      console.log("[DEBUG] lastBought keys (sample):", Array.from(map.entries()).map(([k,v])=>`${k} -> ${v.toISOString().slice(0,10)}`));
-    } else {
-      console.log("[DEBUG] lastBought keys sample:", Array.from(map.keys()).slice(0,50));
-    }
+    if (map.size <= 200) console.log("[DEBUG] lastBought keys (sample):", Array.from(map.entries()).map(([k, v]) => `${k} -> ${v.toISOString().slice(0, 10)}`));
+    else console.log("[DEBUG] lastBought keys sample:", Array.from(map.keys()).slice(0, 50));
   }
   return map;
 }
 
-// --- subscriptions を読み、candidateKeys を使って last を探して due 判定する ---
+// ----- collectDueItems: subscriptions を読み、lastMap を使って due を判定 -----
 async function collectDueItems(
   db: admin.firestore.Firestore,
   subsPath: string,
@@ -275,19 +249,22 @@ async function collectDueItems(
 
     for (const it of items) {
       const keys = candidateKeysForItem(it);
-      // find first matching last in lastMap among keys
+      // exact match check
       let last: Date | null = null;
       let matchedKey: string | null = null;
       for (const k of keys) {
-        const found = lastMap.get(k);
-        if (found) { last = found; matchedKey = k; break; }
+        const f = lastMap.get(k);
+        if (f) { last = f; matchedKey = k; break; }
       }
+
+      // if not found and includeNever true, treat as due
+      const itemFreq = Number((it as any).frequency) || 0;
+      const threshold = itemFreq > 0 ? itemFreq : (subLevelFreq > 0 ? subLevelFreq : defaultDays);
 
       if (!last) {
         if (includeNever) {
-          const itemFreq = Number((it as any).frequency) || 0;
-          const threshold = itemFreq > 0 ? itemFreq : (subLevelFreq > 0 ? subLevelFreq : defaultDays);
-          dueItems.push({ ...(it as any), quantity: intQty((it as any).quantity ?? (it as any).qty ?? 1, 1) });
+          const addItem: SubItem = { ...(it as any), quantity: intQty((it as any).quantity ?? (it as any).qty ?? 1, 1) };
+          dueItems.push(addItem);
           info.push({ key: keys[0] || "(no-key)", last: null, daysSince: Number.MAX_SAFE_INTEGER, threshold });
           if (explain) console.log(`[EXPLAIN] ${doc.id} :: ${(it as any).name || it.url || it.id} -> last=N/A but includeNever => DUE thr=${threshold} keys=${keys}`);
         } else {
@@ -295,15 +272,13 @@ async function collectDueItems(
           continue;
         }
       } else {
-        const itemFreq = Number((it as any).frequency) || 0;
-        const threshold = itemFreq > 0 ? itemFreq : (subLevelFreq > 0 ? subLevelFreq : defaultDays);
         const daysSince = daysBetween(new Date(), last);
         if (daysSince >= threshold) {
           dueItems.push({ ...(it as any), quantity: intQty((it as any).quantity ?? (it as any).qty ?? 1, 1) });
           info.push({ key: matchedKey || keys[0] || "(no-key)", last, daysSince, threshold });
-          if (explain) console.log(`[EXPLAIN] ${doc.id} :: ${(it as any).name || it.url || it.id} -> last=${last.toISOString().slice(0,10)} daysSince=${daysSince} threshold=${threshold} matchedKey=${matchedKey} keys=${keys}`);
+          if (explain) console.log(`[EXPLAIN] ${doc.id} :: ${(it as any).name || it.url || it.id} -> last=${last.toISOString().slice(0,10)} daysSince=${daysSince} threshold=${threshold} matchedKey=${matchedKey}`);
         } else {
-          if (explain) console.log(`[EXPLAIN] ${doc.id} :: ${(it as any).name || it.url || it.id} -> last=${last.toISOString().slice(0,10)} daysSince=${daysSince} threshold=${threshold} => not yet (matchedKey=${matchedKey})`);
+          if (explain) console.log(`[EXPLAIN] ${doc.id} :: ${(it as any).name || it.url || it.id} -> last=${last.toISOString().slice(0,10)} daysSince=${daysSince} threshold=${threshold} => not yet`);
         }
       }
     }
@@ -317,7 +292,7 @@ async function collectDueItems(
   return dueByDoc;
 }
 
-// --- cart に書き込む: ItemId を docId として使う。存在すれば quantity を加算 ---
+// ----- writePurchase: cart に ItemId を docId として作成/更新（存在すれば quantity を加算） -----
 async function writePurchase(
   db: admin.firestore.Firestore,
   uid: string,
@@ -333,7 +308,7 @@ async function writePurchase(
 
   for (const b of bundles) {
     for (const it of b.items) {
-      // docId candidate: prioritize explicit itemId fields, then productId/id/url
+      // docId 優先: itemId -> productId -> id -> URL正規化
       const docIdCandidate = normalizeId((it as any).itemId ?? (it as any).item_id ?? (it as any).productId ?? (it as any).product_id ?? (it as any).id, it.url);
       const qty = intQty((it as any).quantity ?? (it as any).qty ?? 1, 1);
 
@@ -408,7 +383,7 @@ async function writePurchase(
   return wrote;
 }
 
-// --- args ---
+// ----- CLI args -----
 function parseArgs(): Args {
   const argv = process.argv.slice(2);
   const get = (k: string, d = "") => {
@@ -460,7 +435,7 @@ async function getUserIdsWithSubscriptions(db: admin.firestore.Firestore, limit?
   return ids;
 }
 
-// --- main ---
+// ----- main -----
 (async () => {
   const args = parseArgs();
   const db = initAdmin(args.cred);
