@@ -1,6 +1,6 @@
-"use client";
+﻿"use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -10,11 +10,20 @@ import { FILTER_BUTTON_INACTIVE_STYLE, FILTER_BUTTON_TEXT_STYLE } from "@/compon
 import { useAppContext } from "@/contexts/AppContext";
 
 const CATALOG_FILTER_BUTTONS = [
-  { label: "お気に入り", buttonDataOid: "jm:hia2", textDataOid: "btn-text-favorite" }
+  { label: "縺頑ｰ励↓蜈･繧・, buttonDataOid: "jm:hia2", textDataOid: "btn-text-favorite" }
 ];
 
 export default function CatalogPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  // Ensure users visit landing first unless explicitly coming from it
+  if (typeof window !== "undefined") {
+    const fromLanding = searchParams.get("fromLanding");
+    if (fromLanding !== "1") {
+      router.replace("/catalog-landing");
+      return null;
+    }
+  }
   const { products, catalogQuantitySum, catalogPriceSum, onUpdateProductQuantity, catalogScrollRef } = useAppContext();
 
   return (
@@ -25,8 +34,11 @@ export default function CatalogPage() {
         <div className="relative mb-6" data-oid="gfk0oa_">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#fda900]" size={18} data-oid="wum_nxs" />
           <Input
-            placeholder="商品名で検索"
+            id="catalog-search"
+            name="q"
+            placeholder="蝠・刀蜷阪〒讀懃ｴ｢"
             className="pl-12 h-12 border-2 border-[#fda900] text-sm rounded-lg bg-white shadow-sm focus:border-[#209fde] focus:ring-2 focus:ring-[#209fde]/20"
+            autoComplete="off"
             data-oid="fsk2zzr"
           />
         </div>
@@ -49,7 +61,7 @@ export default function CatalogPage() {
                 />
               </svg>
             </span>
-            <span style={FILTER_BUTTON_TEXT_STYLE}>戻る</span>
+            <span style={FILTER_BUTTON_TEXT_STYLE}>謌ｻ繧・/span>
           </Button>
           {CATALOG_FILTER_BUTTONS.map(({ label, buttonDataOid, textDataOid }) => (
             <Button
@@ -88,7 +100,7 @@ export default function CatalogPage() {
                   letterSpacing: "1.664px"
                 }}
                 data-oid="catalog-page-label">
-                ページ
+                繝壹・繧ｸ
               </span>
               {[1, 2, 3, 4, 5].map((num) => {
                 const isActive = num === 1;
@@ -213,7 +225,7 @@ export default function CatalogPage() {
                         marginTop: "12px"
                       }}
                       data-oid="eq4gt6a">
-                      ¥{product.price}
+                      ﾂ･{product.price}
                     </span>
                     <div className="mt-[12px] flex w-full items-center justify-center gap-2" data-oid="4z4g4a-">
                       <Button
@@ -224,7 +236,7 @@ export default function CatalogPage() {
                         data-oid="les5kg0">
                         <Image
                           src="/images/mainasu.png"
-                          alt="数量を減らす"
+                          alt="謨ｰ驥上ｒ貂帙ｉ縺・
                           width={28}
                           height={28}
                           className="h-full w-full object-contain"
@@ -252,7 +264,7 @@ export default function CatalogPage() {
                         data-oid=":--ycbg">
                         <Image
                           src="/images/plus.png"
-                          alt="数量を増やす"
+                          alt="謨ｰ驥上ｒ蠅励ｄ縺・
                           width={28}
                           height={28}
                           className="h-full w-full object-contain"
@@ -272,16 +284,18 @@ export default function CatalogPage() {
           className="flex justify-between items-center bg-[#fda900] text-white p-4 rounded-xl border-2 border-[#fda900] shadow-md"
           data-oid="t2ub1nx">
           <span className="text-base font-bold" data-oid="5rigjnl">
-            {catalogQuantitySum}点 ¥{catalogPriceSum}
+            {catalogQuantitySum}轤ｹ ﾂ･{catalogPriceSum}
           </span>
           <Button
             className="bg-white text-[#fda900] text-base font-bold px-8 h-11 border-2 border-white rounded-lg hover:bg-gray-50 shadow-sm"
             onClick={() => router.push("/cart")}
             data-oid="b9c3xju">
-            購入
+            雉ｼ蜈･
           </Button>
         </div>
       </div>
     </div>
   );
 }
+
+

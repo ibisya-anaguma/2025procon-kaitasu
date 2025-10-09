@@ -83,6 +83,8 @@ export default function ProfilePage() {
                           ¥
                         </span>
                         <Input
+                          id="monthly-budget"
+                          name="monthlyBudget"
                           type="number"
                           value={monthlyBudget}
                           onChange={(e) => onMonthlyBudgetChange(Number(e.target.value))}
@@ -155,6 +157,7 @@ export default function ProfilePage() {
                       variant="ghost"
                       className="border border-transparent p-0"
                       style={FILTER_BUTTON_INACTIVE_STYLE}
+                      onClick={() => router.push("/favorites")}
                       data-oid="profile-page-two-favorite-button">
                       <span style={FILTER_BUTTON_TEXT_STYLE}>お気に入り一覧へ</span>
                     </Button>

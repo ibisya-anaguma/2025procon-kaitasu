@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -9,8 +9,8 @@ import { FILTER_BUTTON_INACTIVE_STYLE, FILTER_BUTTON_TEXT_STYLE } from "@/compon
 import { useAppContext } from "@/contexts/AppContext";
 
 const LANDING_FILTER_BUTTONS = [
-  { label: "健康重視", buttonDataOid: ".zvc9j.", textDataOid: "btn-text-health" },
-  { label: "お気に入り", buttonDataOid: "jm:hia2", textDataOid: "btn-text-favorite" }
+  { label: "蛛･蠎ｷ驥崎ｦ・, buttonDataOid: ".zvc9j.", textDataOid: "btn-text-health" },
+  { label: "縺頑ｰ励↓蜈･繧・, buttonDataOid: "jm:hia2", textDataOid: "btn-text-favorite" }
 ];
 
 export default function CatalogLandingPage() {
@@ -32,8 +32,11 @@ export default function CatalogLandingPage() {
             data-oid="catalog-landing-search-icon"
           />
           <Input
-            placeholder="商品名で検索"
+            id="catalog-landing-search"
+            name="q"
+            placeholder="蝠・刀蜷阪〒讀懃ｴ｢"
             className="pl-12 h-12 border-2 border-[#fda900] text-sm rounded-lg bg-white shadow-sm focus:border-[#209fde] focus:ring-2 focus:ring-[#209fde]/20"
+            autoComplete="off"
             data-oid="catalog-landing-search-input"
           />
         </div>
@@ -74,7 +77,7 @@ export default function CatalogLandingPage() {
                   letterSpacing: "1.664px"
                 }}
                 data-oid="catalog-landing-page-label">
-                ページ
+                繝壹・繧ｸ
               </span>
               {Array.from({ length: totalLandingPages }, (_, i) => i + 1).map((num) => {
                 const isActive = num === landingPage;
@@ -189,7 +192,7 @@ export default function CatalogLandingPage() {
                               lineHeight: "normal",
                               letterSpacing: "1.248px"
                             }}>
-                            選択中
+                            驕ｸ謚樔ｸｭ
                           </span>
                         </div>
                       </div>
@@ -246,7 +249,7 @@ export default function CatalogLandingPage() {
             height: "60px",
             flexShrink: 0
           }}
-          onClick={() => router.push("/catalog")}
+          onClick={() => router.push("/catalog?fromLanding=1")}
           data-oid="catalog-landing-next-button">
           <span
             style={{
@@ -258,10 +261,12 @@ export default function CatalogLandingPage() {
               lineHeight: "normal",
               letterSpacing: "1.664px"
             }}>
-            次へ
+            谺｡縺ｸ
           </span>
         </Button>
       </div>
     </div>
   );
 }
+
+
