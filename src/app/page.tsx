@@ -13,7 +13,7 @@ import { SubscriptionAdd } from "@/components/screens/SubscriptionAdd";
 import { SubscriptionList } from "@/components/screens/SubscriptionList";
 import { useJapaneseFoodApp } from "@/hooks/useJapaneseFoodApp";
 
-export default function JapaneseFoodApp() {
+export const JapaneseFoodApp = () => {
   const {
     cartItems,
     catalogPriceSum,
