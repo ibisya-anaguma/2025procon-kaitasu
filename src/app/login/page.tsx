@@ -9,8 +9,6 @@ import { onAuthStateChanged, signInWithEmailAndPassword } from "firebase/auth";
 
 import { auth } from "@/lib/firebase";
 
-import styles from "./login.module.css";
-
 const AUTH_ERROR_MESSAGES: Record<string, string> = {
   "auth/invalid-credential": "メールアドレスまたはパスワードが正しくありません。",
   "auth/user-disabled": "このアカウントは無効化されています。管理者にお問い合わせください。",
@@ -85,42 +83,58 @@ export default function Login() {
 
   if (isCheckingAuth) {
     return (
-      <div className={styles.container}>
-        <div className={styles.loading}>認証状態を確認しています…</div>
+      <div
+        className="flex min-h-screen items-center justify-center px-4 py-8"
+        style={{
+          background: "radial-gradient(circle at top left, #fde9bb 0%, #fdf7e9 45%, #ffffff 100%)"
+        }}>
+        <div className="text-center text-[#555555] text-sm">認証状態を確認しています…</div>
       </div>
     );
   }
 
   return (
-    <div className={styles.container}>
-      <div className={styles.card}>
-        <div className={styles.brand}>
+    <div
+      className="flex min-h-screen items-center justify-center px-4 py-8"
+      style={{
+        background: "radial-gradient(circle at top left, #fde9bb 0%, #fdf7e9 45%, #ffffff 100%)"
+      }}>
+      <div className="w-full max-w-[420px] bg-white rounded-[20px] px-8 pt-9 pb-10 shadow-2xl border border-black/[0.06]">
+        <div className="flex items-center justify-center gap-2.5 mb-6">
           <Image
             src="/images/logo_kaitasu.png"
             alt="かいたすのロゴ"
             width={56}
             height={56}
-            className={styles.brandImage}
+            className="w-14 h-14 object-contain"
             priority
           />
-          <h1>かいたすにログイン</h1>
+          <h1
+            className="text-[26px] font-bold tracking-[0.06em] text-[#101010]"
+            style={{ fontFamily: "'BIZ UDPGothic', 'Noto Sans JP', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
+            かいたすにログイン
+          </h1>
         </div>
 
-        <p className={styles.description}>
+        <p className="text-center text-[#4f4f4f] text-[15px] leading-relaxed mb-7">
           ご登録いただいたメールアドレスとパスワードを入力してログインしてください。
         </p>
 
-        {errorMessage && <div className={styles.error}>{errorMessage}</div>}
+        {errorMessage && (
+          <div className="p-3 rounded-xl bg-red-600/15 text-red-700 text-[13px] leading-relaxed">
+            {errorMessage}
+          </div>
+        )}
 
-        <form className={styles.form} onSubmit={handleSubmit} noValidate>
-          <div className={styles.field}>
-            <label className={styles.label} htmlFor="email">
+        <form className="flex flex-col gap-[22px]" onSubmit={handleSubmit} noValidate>
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-semibold text-[#303030] tracking-wider" htmlFor="email">
               メールアドレス
             </label>
-            <div className={styles.inputBox}>
+            <div className="relative">
               <input
                 id="email"
-                className={styles.input}
+                className="w-full px-4 py-3 rounded-xl border border-black/[0.12] bg-[#fafafa] text-[15px] text-[#202020] transition-all duration-200 focus:outline-none focus:border-[#209fde] focus:shadow-[0_0_0_3px_rgba(32,159,222,0.18)] focus:bg-white"
                 type="email"
                 inputMode="email"
                 autoComplete="email"
@@ -133,14 +147,14 @@ export default function Login() {
             </div>
           </div>
 
-          <div className={styles.field}>
-            <label className={styles.label} htmlFor="password">
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-semibold text-[#303030] tracking-wider" htmlFor="password">
               パスワード
             </label>
-            <div className={styles.inputBox}>
+            <div className="relative">
               <input
                 id="password"
-                className={styles.input}
+                className="w-full px-4 py-3 rounded-xl border border-black/[0.12] bg-[#fafafa] text-[15px] text-[#202020] transition-all duration-200 focus:outline-none focus:border-[#209fde] focus:shadow-[0_0_0_3px_rgba(32,159,222,0.18)] focus:bg-white"
                 type={isPasswordVisible ? "text" : "password"}
                 autoComplete="current-password"
                 placeholder="••••••••"
@@ -151,7 +165,7 @@ export default function Login() {
               />
               <button
                 type="button"
-                className={styles.toggleButton}
+                className="absolute top-1/2 right-3 -translate-y-1/2 bg-transparent border-none text-[#209fde] text-xs font-semibold cursor-pointer px-2 py-1.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[rgba(32,159,222,0.6)] focus-visible:rounded-lg"
                 onClick={() => setIsPasswordVisible((prev) => !prev)}
                 aria-label={isPasswordVisible ? "パスワードを隠す" : "パスワードを表示する"}
               >
@@ -160,14 +174,20 @@ export default function Login() {
             </div>
           </div>
 
-          <button className={styles.submitButton} type="submit" disabled={isSubmitting}>
+          <button
+            className="w-full px-4 py-3.5 text-base font-bold text-white border-none rounded-[14px] cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_24px_rgba(32,159,222,0.2)] active:translate-y-0 active:shadow-[0_6px_12px_rgba(32,159,222,0.18)] disabled:opacity-60 disabled:cursor-not-allowed disabled:shadow-none"
+            style={{
+              background: "linear-gradient(135deg, #209fde 0%, #2185bf 100%)"
+            }}
+            type="submit"
+            disabled={isSubmitting}>
             {isSubmitting ? "ログイン中..." : "ログイン"}
           </button>
         </form>
 
-        <p className={styles.supporting}>
+        <p className="mt-[18px] text-[13px] text-[#636363] text-center leading-relaxed">
           パスワードをお忘れの場合は、管理者までお問い合わせください。<br />
-          <Link href="/" className={styles.link}>
+          <Link href="/" className="text-[#209fde] font-semibold no-underline hover:underline">
             トップページに戻る
           </Link>
         </p>
