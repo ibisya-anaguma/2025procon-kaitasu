@@ -1,72 +1,120 @@
-// apiで使う、共通処理をまとめとくよ
-// うめ
+// API で共通的に利用する Firestore 周りのユーティリティ
+// うめ + 整理
 
-import foodData from '@/data/foodData.json'
-import { adminDb as db } from "@/lib/firebaseAdmin";
+import foodData from "@/data/foodData.json";
+import { adminDb } from "@/lib/firebaseAdmin";
+import { FieldValue } from "firebase-admin/firestore";
 
-// users/{uid}/collectionの中の全てのドキュメント取得
-export async function getCollection (uid:string, collection: string) {
-	const snapshot = await db
-		.collection("users")
-		.doc(uid)
-		.collection(collection)
-		.get();
+export type FirestoreCollection = "cart" | "subscriptions" | string;
 
-	return snapshot.docs.map((doc) => ({
-		id: doc.id,
-		...doc.data()
-	}));
+export type PatchableData = {
+  quantity?: number;
+  frequency?: number;
+};
+
+// users/{uid}/{collection} 配下の全ドキュメントを取得
+export async function getCollection(uid: string, collection: FirestoreCollection) {
+  const snapshot = await adminDb
+    .collection("users")
+    .doc(uid)
+    .collection(collection)
+    .get();
+
+  return snapshot.docs.map((doc) => ({
+    id: doc.id,
+    ...doc.data()
+  }));
 }
 
-// name, price, imgUrlをfoodData.jsonから加える関数
+// foodData.json の name / price / imgUrl を付与
 export function addFoodDetails<T extends { id: string }>(items: T[]) {
-	// name, price, imgUrlをfoodData.jsonから加える
-	const mergedItems = items.map(item => {
-		const food = foodData.find(f => f.id === item.id);
-		return food
-			? { ...item, name: food.name, price: food.priceTax, imgUrl: food.url }
-			: { ...item, name: "no Name", price: 0, imgUrl: "" };
-	});
-	return mergedItems;
+  return items.map((item) => {
+    const food = foodData.find((f) => f.id === item.id);
+    if (!food) {
+      return { ...item, name: "no Name", price: 0, imgUrl: "" };
+    }
+
+    return {
+      ...item,
+      name: food.name,
+      price: food.priceTax,
+      imgUrl: food.url
+    };
+  });
 }
 
-// postKey
-export async function postCollection (
-	uid:string,
-	collection: string,
-	// 配列でもOKにする
-	items: { id: string; quantity?: number; frequency?: number } | Array<{ id: string; quantity?: number; frequency?: number }>
+export type PostCollectionItem = {
+  id: string;
+  quantity?: number;
+  frequency?: number;
+};
+
+export async function postCollection(
+  uid: string,
+  collection: FirestoreCollection,
+  items: PostCollectionItem | PostCollectionItem[]
 ) {
-	const arr = Array.isArray(items) ? items : [items];
-	const cartRef = db.collection("users").doc(uid).collection(collection);
+  const data = Array.isArray(items) ? items : [items];
+  if (data.length === 0) return;
 
-	const batch = db.batch();
+  const collectionRef = adminDb.collection("users").doc(uid).collection(collection);
+  const batch = adminDb.batch();
+  let hasWrites = false;
 
-	// idとquantityのみ追加
-	for (const item of arr) {
-		const docRef = cartRef.doc(item.id);
-		batch.set(
-			docRef,
-			{ quantity: FieldValue.increment(item.quantity) }
-		)
-	}
-	await batch.commit();
+  data.forEach(({ id, quantity, frequency }) => {
+    if (!id) return;
+    const docRef = collectionRef.doc(id);
+    const update: Record<string, unknown> = {};
+
+    if (typeof quantity === "number") {
+      update.quantity = FieldValue.increment(quantity);
+    }
+
+    if (typeof frequency === "number") {
+      update.frequency = frequency;
+    }
+
+    if (Object.keys(update).length === 0) {
+      // 何も更新内容がなければ空 set を送らない
+      return;
+    }
+
+    batch.set(docRef, update, { merge: true });
+    hasWrites = true;
+  });
+
+  if (!hasWrites) {
+    return;
+  }
+
+  await batch.commit();
 }
 
-// patch処理、quantity以外にも対応
 export async function patchCollection(
-	uid:string,
-	collection: string,
-	data: {
-		quantity?: number;
-		frequency?: number;
-	}
+  uid: string,
+  collection: FirestoreCollection,
+  itemId: string,
+  data: PatchableData
 ) {
-	const ref = db.collection("users").doc(uid).collection(collection).doc(itemId);
-	await ref.set(data, { merge: true });
+  const docRef = adminDb
+    .collection("users")
+    .doc(uid)
+    .collection(collection)
+    .doc(itemId);
+
+  await docRef.set(data, { merge: true });
 }
 
-export async function deleteCollection(uid: string, collection: string, itemId: string) {
-  const ref = db.collection("users").doc(uid).collection("cart").doc(itemId);
-  await ref.delete();
+export async function deleteCollection(
+  uid: string,
+  collection: FirestoreCollection,
+  itemId: string
+) {
+  const docRef = adminDb
+    .collection("users")
+    .doc(uid)
+    .collection(collection)
+    .doc(itemId);
+
+  await docRef.delete();
 }

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import * as admin from "firebase-admin";
 import * as fs from "fs";
 import * as path from "path";
@@ -271,6 +272,7 @@ async function collectDueItems(
 }
 
 // ===== purchaseDoc の既存 items をキー化（重複防止） =====
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function loadExistingCartKeys(
   db: admin.firestore.Firestore,
   purchaseDocPath: string,

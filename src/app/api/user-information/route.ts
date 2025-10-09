@@ -1,42 +1,33 @@
-// src/app/api/user-information/route.ts
-import { headers } from "next/headers";
-import { initializeApp, applicationDefault, getApps, getApp } from "firebase-admin/app";
-import { getAuth } from "firebase-admin/auth";
-import { getFirestore } from "firebase-admin/firestore";
+import { NextRequest, NextResponse } from "next/server";
 
-// Firebase Admin 初期化
-function getAdmin() {
-  const app = getApps().length
-    ? getApp()
-    : initializeApp({ credential: applicationDefault() });
-  return { auth: getAuth(app), db: getFirestore(app) };
-}
+import { adminDb } from "@/lib/firebaseAdmin";
+import { withAuth } from "@/lib/middleware";
 
-export const get GET = withAuth(async (_req: NextRequest, uid: string) => {
+type UserInformation = Record<string, unknown> & { id: string };
+
+export const GET = withAuth(async (_req: NextRequest, uid: string) => {
   try {
-    const { db } = getAdmin();
-
-    // 🔹 userInformation 以下の全ドキュメントを取得
-    const snap = await db
+    const snapshot = await adminDb
       .collection("users")
       .doc(uid)
       .collection("userInformation")
       .get();
 
-    if (snap.empty) {
-      console.warn("[user-information] no documents found for", uid);
-      return Response.json({ error: "not found" }, { status: 404 });
+    if (snapshot.empty) {
+      return NextResponse.json({ error: "not found" }, { status: 404 });
     }
 
-    // 複数ドキュメントを配列で返す
-    const userInfos = snap.docs.map((doc) => ({
+    const userInformation: UserInformation[] = snapshot.docs.map((doc) => ({
       id: doc.id,
-      ...doc.data(),
+      ...doc.data()
     }));
 
-    return Response.json({ uid, userInformation: userInfos });
-  } catch (err: any) {
-    console.error("[user-information] internal error:", err?.stack || err);
-    return Response.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ uid, userInformation });
+  } catch (error) {
+    console.error("[user-information][GET] failed", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
   }
 });

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // src/jobs/checkout/autocart-runner.ts
 // 最終完成版 — 全ユーザー向け auto-cart runner
 import * as admin from "firebase-admin";
@@ -80,7 +81,7 @@ function initAdmin(credPath?: string) {
       fs.writeFileSync(tmp, process.env.FIREBASE_SERVICE_ACCOUNT, { encoding: "utf8", mode: 0o600 });
       process.env.GOOGLE_APPLICATION_CREDENTIALS = tmp;
     }
-  } catch (e) {
+  } catch {
     // ignore, we'll try default init
   }
 

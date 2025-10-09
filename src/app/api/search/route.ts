@@ -11,12 +11,23 @@ const PRODUCTS_PATH =
   path.resolve(process.cwd(), "all_products.json"); // カレント直下 all_products.json を読む
 
 // ====== 型 ======
-type Product = {
-  id: string | number;
+type RawProduct = {
+  id?: string | number;
   name: string;
-  price?: number;
-  image?: string;   // all_products.jsonでは image / imgUrl いずれか
+  price?: number | string;
+  image?: string;
   imgUrl?: string;
+  genre?: number | string;
+  genres?: (number | string)[];
+  url?: string;
+};
+
+type Product = {
+  id: string;
+  name: string;
+  price: number;
+  image?: string;
+  imgUrl: string;
   genre?: number | string;
   genres?: (number | string)[];
   url?: string;
@@ -55,15 +66,20 @@ if (!fs.existsSync(PRODUCTS_PATH)) {
   console.error(`products が見つかりません: ${PRODUCTS_PATH}`);
   process.exit(1);
 }
-const products: Product[] = JSON.parse(
+const rawProducts: RawProduct[] = JSON.parse(
   fs.readFileSync(PRODUCTS_PATH, "utf8")
 );
 
-// フィールドゆらぎを吸収（imgUrl / image、数値ID→文字列など）
-for (const p of products) {
-  (p as any).id = String(p.id ?? "");
-  if (!p.imgUrl && (p as any).image) (p as any).imgUrl = (p as any).image;
-}
+const products: Product[] = rawProducts.map((item) => ({
+  id: String(item.id ?? ""),
+  name: item.name,
+  price: typeof item.price === "number" ? item.price : Number(item.price ?? 0),
+  image: item.image,
+  imgUrl: item.imgUrl ?? item.image ?? "",
+  genre: item.genre,
+  genres: item.genres,
+  url: item.url
+}));
 
 console.log(`search API will use products: ${PRODUCTS_PATH}`);
 console.log(`products loaded: ${products.length}`);
@@ -147,10 +163,10 @@ app.post("/api/search", async (req: Request, res: Response) => {
 
   // 3) 整形 + 上限
   const payload = result.slice(0, limit).map((p) => ({
-    id: String(p.id),
+    id: p.id,
     name: p.name,
-    price: Number((p as any).price ?? 0),
-    imgUrl: (p as any).imgUrl || "",
+    price: p.price,
+    imgUrl: p.imgUrl
   }));
 
   // リクエスト/レスポンスをログ（見やすさ重視）

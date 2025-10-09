@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 const fs = require("fs");
 const path = require("path");
 const admin = require("firebase-admin");
@@ -369,7 +370,7 @@ async function writeRecommendations(db, uid, recs) {
   const { byItem, catCount, tokenFreq } = await loadHistory(db, cfg.uid, cfg.debug);
 
   // カタログ
-  const { items: catalogItems, byGenre: byGenreCat } = loadCatalog(cfg.catalog, cfg.debug);
+  const { byGenre: byGenreCat } = loadCatalog(cfg.catalog, cfg.debug);
 
   // 1) 周期
   const periodic = buildPeriodicRecs(byItem, cfg);
