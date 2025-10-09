@@ -1,14 +1,9 @@
 name: autocart-daily
 
-# JST 01:00 -> UTC 16:00
 on:
   schedule:
-    - cron: "0 16 * * *"
+    - cron: "0 16 * * *" # JST 01:00
   workflow_dispatch: {}
-
-concurrency:
-  group: autocart-${{ github.ref }}
-  cancel-in-progress: false
 
 jobs:
   run-autocart:
@@ -16,42 +11,34 @@ jobs:
     timeout-minutes: 120
 
     steps:
-      - name: Checkout repo
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node.js 18
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: "18"
 
-      - name: Prepare Firebase credentials and run autocart (dry)
+      - name: Prepare credentials and run (dry)
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
         run: |
           set -euo pipefail
-
-          # secret チェック（ここで失敗させる・メッセージをわかりやすく）
           if [ -z "${FIREBASE_SERVICE_ACCOUNT:-}" ]; then
-            echo "::error::FIREBASE_SERVICE_ACCOUNT secret is not set. Add it at Settings → Secrets and variables → Actions"
+            echo "::error::FIREBASE_SERVICE_ACCOUNT is not set. Add it at Settings → Secrets and variables → Actions"
             exit 1
           fi
 
-          # 一時ファイルに書き出して GOOGLE_APPLICATION_CREDENTIALS を設定
           mkdir -p .firebase
           printf "%s" "$FIREBASE_SERVICE_ACCOUNT" > .firebase/firebase-key.json
           export GOOGLE_APPLICATION_CREDENTIALS=$(pwd)/.firebase/firebase-key.json
-          echo "Using GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS}"
+          echo "GOOGLE_APPLICATION_CREDENTIALS set to $GOOGLE_APPLICATION_CREDENTIALS"
 
-          # ディレクトリを確実に移動（repo root を想定）
-          cd "$(pwd)"
-
-          # ここはテスト段階なので --dry を付ける（本番化時は --dry を外す）
+          # run as dry-run for safety; remove --dry for production
           npx -y ts-node --transpile-only src/jobs/checkout/autocart-runner.ts --dry --limit 50 --debug --explain 2>&1 | tee autocart-runner.log
           EXIT_CODE=${PIPESTATUS[0]}
-          echo "autocart-runner exit code: $EXIT_CODE"
-          if [ "$EXIT_CODE" -ne 0 ]; then
-            exit "$EXIT_CODE"
-          fi
+          echo "exit code: $EXIT_CODE"
+          if [ "$EXIT_CODE" -ne 0 ]; then exit "$EXIT_CODE"; fi
 
       - name: Upload logs
         if: always()
@@ -60,6 +47,6 @@ jobs:
           name: autocart-logs
           path: autocart-runner.log
 
-      - name: Cleanup credential file
+      - name: Cleanup creds
         if: always()
         run: rm -f .firebase/firebase-key.json || true
