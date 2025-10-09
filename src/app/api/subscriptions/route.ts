@@ -1,3 +1,6 @@
+// うめ
+// src/app/api/subscriptions/route.ts
+
 import { NextRequest, NextResponse } from 'next/server';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore'
 import { withAuth } from '@/lib/middleware';
@@ -7,8 +10,8 @@ const db = getFirestore();
 const collection = "subscriptions";
 
 export const GET = withAuth(async (_req: NextRequest, uid: string) => {
-	items = getCollection(uid, collection);
-	mergedItems = addFoodDetails(items);
+	const items = await getCollection(uid, collection);
+	const mergedItems = addFoodDetails(items);
 	return NextResponse.json(mergedItems);
 });
 

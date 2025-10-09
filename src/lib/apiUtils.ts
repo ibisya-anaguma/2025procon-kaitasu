@@ -21,12 +21,13 @@ export async function getCollection (uid:string, collection: string) {
 // name, price, imgUrlをfoodData.jsonから加える関数
 export function addFoodDetails<T extends { id: string }>(items: T[]) {
 	// name, price, imgUrlをfoodData.jsonから加える
-	return mergedItems = items.map(item => {
+	const mergedItems = items.map(item => {
 		const food = foodData.find(f => f.id === item.id);
 		return food
 			? { ...item, name: food.name, price: food.priceTax, imgUrl: food.url }
 			: { ...item, name: "no Name", price: 0, imgUrl: "" };
 	});
+	return mergedItems;
 }
 
 // postKey

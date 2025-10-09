@@ -23,13 +23,24 @@ export type WithAuthHandler = (
 
 export function withAuth(handler: WithAuthHandler) {
 	return async (req: NextRequest, context?: any) => {
+		let uid: string;
 		try {
-			const uid = await getUidFromToken(req);
-			return await handler(req, uid, context);
+			uid = await getUidFromToken(req);
 		} catch (error) {
 			return NextResponse.json(
 				{ error: 'Unauthorized' },
 				{ status: 401 }
+			);
+		}
+		// handlerの実行は別でエラーを出す
+		try {
+			return await handler(req, uid, context);
+		} catch (error: any) {
+			return NextResponse.json(
+				// { error: "Internal Server Error" },
+				// debug用
+				{ error: "Internal Server Error", message: error?.message, code: error?.code },
+				{ status: 500 }
 			);
 		}
 	};
