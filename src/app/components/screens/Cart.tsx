@@ -1,21 +1,39 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import Image from "next/image";
+
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { useAppContext } from "@/contexts/AppContext";
+import type { Product, Screen } from "@/types/page";
 
-export default function CartPage() {
-  const router = useRouter();
-  const { cartItems, onUpdateProductQuantity, onAddFavoriteEntry } = useAppContext();
+type CartProps = {
+  cartItems: Product[];
+  onNavigate: (screen: Screen) => void;
+  onUpdateProductQuantity: (id: number, change: number) => void;
+  onAddFavoriteEntry: (product: Product) => void;
+};
 
-  const totalCartQuantity = cartItems.reduce((sum, item) => sum + item.quantity, 0);
-  const totalCartPrice = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+export function Cart({
+  cartItems,
+  onNavigate,
+  onUpdateProductQuantity,
+  onAddFavoriteEntry
+}: CartProps) {
+  const totalCartQuantity = cartItems.reduce(
+    (sum, item) => sum + item.quantity,
+    0,
+  );
+  const totalCartPrice = cartItems.reduce(
+    (sum, item) => sum + item.price * item.quantity,
+    0,
+  );
 
   return (
     <div className="flex-1 bg-white p-6 ml-[232px]" data-oid="qie1-gm">
-      <div className="mx-auto" style={{ width: "970px" }} data-oid="-j93.-d">
+      <div
+        className="mx-auto"
+        style={{ width: "970px" }}
+        data-oid="-j93.-d">
         <h2 className="text-base font-bold mb-4" data-oid="gdwztq6">
           買い物かご
         </h2>
@@ -25,7 +43,8 @@ export default function CartPage() {
             <Card
               key={item.id}
               className="bg-white border-2 border-gray-200 rounded-lg flex flex-row items-center gap-[20px] px-6 py-4 w-[970px] h-[111px]"
-              data-oid="5rgf5dd">
+              data-oid="5rgf5dd"
+            >
               <img
                 src={item.image || "/placeholder.svg"}
                 alt={item.name}
@@ -80,7 +99,10 @@ export default function CartPage() {
                       width: "25px",
                       height: "25px",
                       borderRadius: "6px",
-                      background: "#FFF"
+                      background: "#FFF",
+                      display: "flex",
+                      justifyContent: "center",
+                      alignItems: "center"
                     }}
                     data-oid="cart-favorite-icon">
                     <svg
@@ -118,10 +140,11 @@ export default function CartPage() {
                     <Button
                       size="icon"
                       variant="ghost"
-                      className="rounded bg-transparent"
+                      className="rounded bg-transparent hover:bg-transparent focus:bg-transparent focus-visible:bg-transparent active:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none"
                       style={{ width: "41px", height: "40px", flexShrink: 0 }}
                       onClick={() => onUpdateProductQuantity(item.id, -1)}
-                      data-oid="g4qqy_k">
+                      data-oid="g4qqy_k"
+                    >
                       <Image
                         src="/images/mainasu.png"
                         alt="数量を減らす"
@@ -151,10 +174,11 @@ export default function CartPage() {
                     <Button
                       size="icon"
                       variant="ghost"
-                      className="rounded bg-transparent"
+                      className="rounded bg-transparent hover:bg-transparent focus:bg-transparent focus-visible:bg-transparent active:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none"
                       style={{ width: "41px", height: "40px", flexShrink: 0 }}
                       onClick={() => onUpdateProductQuantity(item.id, 1)}
-                      data-oid="4kc4n3t">
+                      data-oid="4kc4n3t"
+                    >
                       <Image
                         src="/images/plus.png"
                         alt="数量を増やす"
@@ -186,8 +210,14 @@ export default function CartPage() {
           ))}
         </div>
 
-        <div className="border-t-2 border-gray-200 pt-4 mb-6" data-oid="lx.9fs:">
-          <div className="flex justify-between text-base font-bold" data-oid="e-466ve">
+        <div
+          className="border-t-2 border-gray-200 pt-4 mb-6"
+          data-oid="lx.9fs:"
+        >
+          <div
+            className="flex justify-between text-base font-bold"
+            data-oid="e-466ve"
+          >
             <span data-oid="qr0:wva">合計 {totalCartQuantity}点</span>
             <span data-oid="5tmrc4s">¥{totalCartPrice}</span>
           </div>
@@ -197,14 +227,16 @@ export default function CartPage() {
           <Button
             variant="outline"
             className="flex-1 text-sm border-2 border-[#fda900] text-[#fda900] rounded-md bg-transparent"
-            onClick={() => router.push("/order")}
-            data-oid="8i_h.o.">
+            onClick={() => onNavigate("order")}
+            data-oid="8i_h.o."
+          >
             注文確認
           </Button>
           <Button
             className="flex-1 bg-[#fda900] text-sm border-2 border-[#fda900] rounded-md hover:bg-[#fda900]/90"
-            onClick={() => router.push("/catalog")}
-            data-oid="mgchczd">
+            onClick={() => onNavigate("catalog")}
+            data-oid="mgchczd"
+          >
             買い物を続ける
           </Button>
         </div>

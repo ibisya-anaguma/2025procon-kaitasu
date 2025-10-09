@@ -8,7 +8,7 @@ export const FILTER_BUTTON_INACTIVE_STYLE = {
   padding: "0 24px",
   flexShrink: 0,
   borderRadius: "20px",
-  border: "3px solid #FDA900",
+  border: "2px solid #FDA900",
   background: "var(--, #FFF)",
   boxShadow: "4.5px 4.5px 0 0 #E4E2E2"
 } as const;

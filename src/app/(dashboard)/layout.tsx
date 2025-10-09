@@ -1,7 +1,7 @@
-"use client";
+﻿"use client";
 
 import { AppProvider } from "@/contexts/AppContext";
-import { Sidebar } from "@/components/screens/Sidebar";
+import { SidebarContainer } from "@/components/screens/SidebarContainer";
 
 export default function DashboardLayout({
   children,
@@ -11,7 +11,7 @@ export default function DashboardLayout({
   return (
     <AppProvider>
       <div className="flex">
-        <Sidebar />
+        <SidebarContainer />
         {children}
       </div>
     </AppProvider>

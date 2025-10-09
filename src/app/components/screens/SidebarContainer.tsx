@@ -1,7 +1,7 @@
 ﻿"use client";
 
 import { useRouter } from "next/navigation";
-import { CatalogLanding } from "@/components/screens/CatalogLanding";
+import { Sidebar } from "./Sidebar";
 import { useAppContext } from "@/contexts/AppContext";
 import type { Screen } from "@/types/page";
 
@@ -32,36 +32,22 @@ function screenToPath(screen: Screen): string | null {
   }
 }
 
-export default function CatalogLandingPage() {
+export function SidebarContainer() {
   const router = useRouter();
-  const {
-    landingPage,
-    totalLandingPages,
-    onLandingPageChange,
-    currentLandingCards,
-    onNavigate: setScreen
-  } = useAppContext();
+  const { currentScreen, hoveredNav, onHoverChange, onNavigate } = useAppContext();
 
   const handleNavigate = (screen: Screen) => {
-    setScreen(screen);
-
-    if (screen === "catalog") {
-      router.push("/catalog?fromLanding=1");
-      return;
-    }
-
+    onNavigate(screen);
     const path = screenToPath(screen);
     if (path) router.push(path);
   };
 
   return (
-    <CatalogLanding
-      landingPage={landingPage}
-      totalLandingPages={totalLandingPages}
-      onLandingPageChange={onLandingPageChange}
+    <Sidebar
+      currentScreen={currentScreen}
+      hoveredNav={hoveredNav}
+      onHoverChange={onHoverChange}
       onNavigate={handleNavigate}
-      currentLandingCards={currentLandingCards}
     />
   );
 }
-

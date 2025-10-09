@@ -74,6 +74,7 @@ const LandingIconFifth = () => (
 );
 
 const LandingIconSixth = () => (
+  <div className="flex h-[100px] w-[100px] items-center justify-center pt-[-10px]">
   <svg 
     xmlns="http://www.w3.org/2000/svg" 
     width="76" 
@@ -84,6 +85,7 @@ const LandingIconSixth = () => (
       d="M67.1667 10.0833C72.1667 12.1667 75.5 17.5833 75.5 23.4167C75.5 52.1667 52.1667 75.5 23.4167 75.5C17.5833 75.5 12.5833 72.1667 10.0833 67.1667L0.5 73.4167V48.4167L10.0833 54.6667C12.5833 49.6667 17.5833 46.3333 23.4167 46.3333C35.9167 46.3333 46.3333 35.9167 46.3333 23.4167C46.3333 17.5833 49.6667 12.5833 54.6667 10.0833L48.4167 0.5H73.4167L67.1667 10.0833Z" 
       fill="#101010"/>
   </svg>
+  </div>
 );
 
 const LandingIconSeventh = () => (
@@ -97,25 +99,91 @@ const LandingIconSeventh = () => (
   </div>
 );
 
+const LandingIconEighth = () => (
+  <div className="flex h-[100px] w-[100px] items-center justify-center">
+    <svg 
+    xmlns="http://www.w3.org/2000/svg" 
+    width="90" 
+    height="90" 
+    viewBox="0 0 90 90" 
+    fill="none">
+      <path d="M65.5045 37.8038C63.582 40.2357 60.849 41.895 57.8045 42.4788M65.5045 37.8038C70.9545 30.8455 66.5753 21.4788 59.9628 18.9663C61.7295 10.9997 52.7795 3.33301 39.8378 3.33301C43.3253 5.55801 44.5295 8.29551 44.4087 10.8497C43.7795 24.2163 18.642 16.7913 22.0837 38.008M65.5045 37.8038C73.5587 37.8038 82.9628 48.3247 75.7753 57.4997M14.167 57.4997C7.84615 49.433 14.6295 39.333 22.0837 38.008M22.0837 38.008C25.6087 37.383 29.4587 38.1372 32.5045 40.5205M59.967 18.9663C59.2837 22.0622 56.9837 25.1997 52.6753 27.9538" stroke="#101010" strokeWidth="6.25" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M7.49967 57.5L10.9497 68.9042C13.5372 77.4625 14.833 81.7375 18.1497 84.2042C21.4705 86.6667 25.9413 86.6667 34.8788 86.6667H55.1205C64.0622 86.6667 68.5288 86.6667 71.8497 84.2042C75.1705 81.7417 76.4622 77.4625 79.0497 68.9042L82.4997 57.5M3.33301 57.5H86.6663" stroke="#101010" strokeWidth="6.25" strokeLinecap="round"/>
+    </svg>
+  </div>
+);
+
+const LandingIconNinth = () => (
+  <div className="flex h-[100px] w-[100px] items-center justify-center">
+    <svg 
+      xmlns="http://www.w3.org/2000/svg" 
+      width="84" 
+      height="76" 
+      viewBox="0 0 84 76" 
+      fill="none">
+      <path d="M67 0.5C70.147 0.500489 73.2296 1.39198 75.8911 3.07132C78.5527 4.75067 80.6843 7.14924 82.0395 9.98955C83.3947 12.8299 83.9181 15.9958 83.549 19.1211C83.18 22.2465 81.9336 25.2035 79.9541 27.65L79.4958 28.175L79.5 63C79.5001 66.1884 78.2819 69.2563 76.0946 71.5761C73.9073 73.8959 70.9162 75.2921 67.7333 75.4792L67 75.5H17C13.6848 75.5 10.5053 74.183 8.16113 71.8388C5.81693 69.4946 4.49997 66.3152 4.49997 63V28.1833L4.01663 27.6167C2.33902 25.5331 1.18759 23.0763 0.659627 20.4538C0.131664 17.8314 0.242681 15.1205 0.9833 12.55L1.26247 11.675C3.47913 5.32083 9.30413 0.925 16.2666 0.520834L66.5958 0.525L67 0.5Z" 
+        fill="#101010"/>
+    </svg>
+  </div>
+);
+
+const LandingIconTenth = () => (
+  <div className="flex h-[100px] w-[100px] items-center justify-center">
+        <Image
+      src="/images/recomend.png"
+      alt="Recommends"
+      width={80}
+      height={80}
+    />
+  </div>
+);
+
+const LandingIconEleventh = () => (
+  <div className="flex h-[100x] w-[122px] items-center justify-center">
+    <Image
+      src="/images/Topvalu.png"
+      alt="Topvalu"
+      width={122}
+      height={64}
+    />
+  </div>
+);
+
+const LandingIconTwelfth = () => (
+  <div className="flex h-[100px] w-[100px] items-center justify-center">
+    <svg 
+    xmlns="http://www.w3.org/2000/svg" 
+    width="76" 
+    height="76" 
+    viewBox="0 0 76 76" 
+    fill="none">
+      <path 
+      fill-rule="evenodd" 
+      clip-rule="evenodd" 
+      d="M0.5 33.8325C0.50076 28.5277 1.76758 23.2998 4.19516 18.5831C6.62275 13.8664 10.141 9.79717 14.4575 6.71366C18.774 3.63014 23.7642 1.62136 29.0131 0.854266C34.2621 0.0871689 39.6184 0.58391 44.6368 2.3032C49.6552 4.0225 54.1908 6.91469 57.8667 10.7394C61.5425 14.5641 64.2525 19.2109 65.7713 24.2936C67.2901 29.3763 67.5738 34.7481 66.5991 39.9625C65.6243 45.1769 63.419 50.0834 60.1667 54.2741L74.2792 68.3866C75.0382 69.1725 75.4581 70.225 75.4486 71.3175C75.4392 72.41 75.001 73.455 74.2284 74.2276C73.4559 75.0001 72.4108 75.4383 71.3183 75.4478C70.2259 75.4573 69.1733 75.0373 68.3875 74.2783L54.275 60.1658C49.3477 63.9912 43.4459 66.3573 37.2407 66.9949C31.0354 67.6325 24.7758 66.5162 19.1735 63.7728C13.5713 61.0294 8.85121 56.769 5.5501 51.4762C2.249 46.1833 0.499307 40.0704 0.5 33.8325ZM38 21.3325C38 20.2274 37.561 19.1676 36.7796 18.3862C35.9982 17.6048 34.9384 17.1658 33.8333 17.1658C32.7283 17.1658 31.6685 17.6048 30.8871 18.3862C30.1057 19.1676 29.6667 20.2274 29.6667 21.3325V29.6658H21.3333C20.2283 29.6658 19.1685 30.1048 18.3871 30.8862C17.6057 31.6676 17.1667 32.7274 17.1667 33.8325C17.1667 34.9375 17.6057 35.9973 18.3871 36.7788C19.1685 37.5602 20.2283 37.9991 21.3333 37.9991H29.6667V46.3325C29.6667 47.4375 30.1057 48.4974 30.8871 49.2788C31.6685 50.0602 32.7283 50.4991 33.8333 50.4991C34.9384 50.4991 35.9982 50.0602 36.7796 49.2788C37.561 48.4974 38 47.4375 38 46.3325V37.9991H46.3333C47.4384 37.9991 48.4982 37.5602 49.2796 36.7788C50.061 35.9973 50.5 34.9375 50.5 33.8325C50.5 32.7274 50.061 31.6676 49.2796 30.8862C48.4982 30.1048 47.4384 29.6658 46.3333 29.6658H38V21.3325Z" 
+      fill="#101010"/>
+    </svg>
+  </div>
+);
 /**
  * Update genre card titles/icons by editing LANDING_CARD_CONTENT_PAGES.
  * Use null for icon to keep the dashed placeholder.
  */
 export const LANDING_CARD_CONTENT_PAGES: LandingCardContent[][] = [
 [
-  { title: "ジャンル 1", renderIcon: () => <LandingIconDefault /> },
-  { title: "ジャンル 2", renderIcon: () => <LandingIconSecond /> },
-  { title: "ジャンル 3", renderIcon: () => <LandingIconThird /> },
-  { title: "ジャンル 4", renderIcon: () => <LandingIconFourth /> },
-  { title: "ジャンル 5", renderIcon: () => <LandingIconFifth /> },
-  { title: "ジャンル 6", renderIcon: () => <LandingIconSixth /> },
-  { title: "ジャンル 7", renderIcon: () => <LandingIconSeventh /> },
-  { title: "ジャンル 8" }
+  { title: "野菜", renderIcon: () => <LandingIconDefault /> },
+  { title: "くだもの", renderIcon: () => <LandingIconSecond /> },
+  { title: "お魚", renderIcon: () => <LandingIconThird /> },
+  { title: "お肉", renderIcon: () => <LandingIconFourth /> },
+  { title: "弁当・惣菜", renderIcon: () => <LandingIconFifth /> },
+  { title: "ハム\nソーセージ", renderIcon: () => <LandingIconSixth /> },
+  { title: "卵・牛乳\n乳製品", renderIcon: () => <LandingIconSeventh /> },
+  { title: "ヨーグルト類", renderIcon: () => <LandingIconEighth />  }
 ],
 [
-  { title: "ジャンル 9" },
-  { title: "ジャンル 10" },
-  { title: "ジャンル 11" },
-  { title: "ジャンル 12" }
+  { title: "パン・\nシリアル", renderIcon: () => <LandingIconNinth />  },
+  { title: "おすすめ・\n特集", renderIcon: () => <LandingIconTenth />  },
+  { title: "トップバリュ", renderIcon: () => <LandingIconEleventh />  },
+  { title: "その他", renderIcon: () => <LandingIconTwelfth />  }
 ]
 ];

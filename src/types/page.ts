@@ -26,3 +26,11 @@ export type SubscriptionEntry = {
   quantity: number;
   frequencyDays: number;
 };
+
+export type FavoriteEntry = {
+  productId: number;
+  name: string;
+  price: number;
+  image: string;
+  quantity: number;
+};
