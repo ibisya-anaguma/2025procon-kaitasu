@@ -1,71 +1,154 @@
-name: autocart-daily
+# .github/workflows/scrape-daily.yml
+name: daily-scrape
 
+# 毎日 01:00 JST -> UTC 前日 16:00
 on:
-  workflow_dispatch:
   schedule:
-    - cron: "0 16 * * *" # 01:00 JST
+    - cron: "0 16 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
 
 concurrency:
-  group: autocart-${{ github.ref }}
+  group: daily-scrape-${{ github.ref }}
   cancel-in-progress: false
 
+env:
+  SRC_PATH: src/jobs/scraper/all_products.json
+  LOG_DIR: src/jobs/scraper/logs
+  TARGET_BRANCH: data-latest
+  DEST_PATH: data/all_products.json
+
 jobs:
-  run-autocart:
+  scrape:
     runs-on: ubuntu-latest
-    timeout-minutes: 180
+    timeout-minutes: 360
 
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
-
-      - name: Use Node.js 18
-        uses: actions/setup-node@v4
         with:
-          node-version: "18"
+          fetch-depth: 0   # ブランチ操作のために全履歴を取得
 
-      - name: Install dependencies (autocart)
-        run: |
-          if [ -f src/jobs/checkout/package.json ]; then
-            npm ci --prefix src/jobs/checkout
-          else
-            npm ci
-          fi
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
 
-      - name: Ensure Firebase service account file exists (from secret)
-        env:
-          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+      - name: Install apt dependencies & Google Chrome
         run: |
           set -euo pipefail
-          mkdir -p "$GITHUB_WORKSPACE/.firebase"
-          if [ -n "${FIREBASE_SERVICE_ACCOUNT:-}" ]; then
-            # secret の内容をファイルに書き出す（中身はログに出さない）
-            printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$GITHUB_WORKSPACE/.firebase/firebase-key.json"
-            echo "WROTE $GITHUB_WORKSPACE/.firebase/firebase-key.json"
-          else
-            echo "No FIREBASE_SERVICE_ACCOUNT secret provided; skipping file write"
-          fi
+          sudo apt-get update -y
+          # chrome install (runner によっては既にあるが確実にする)
+          sudo apt-get install -y wget gnupg ca-certificates unzip
+          wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
+          echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" | sudo tee /etc/apt/sources.list.d/google-chrome.list
+          sudo apt-get update -y
+          sudo apt-get install -y google-chrome-stable || true
+          # utilities
+          sudo apt-get install -y xvfb
 
-      - name: Build TypeScript and run runner (dry, limit 20)
-        env:
-          GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/.firebase/firebase-key.json
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('src/jobs/scraper/requirements.txt') }}
+
+      - name: Install Python deps (scraper)
         run: |
           set -euo pipefail
-          echo "=== Building checkout TypeScript ==="
-          npm run build --prefix src/jobs/checkout 2>&1 | tee build.log
-          echo "=== Running autocart-runner (dry, limit 20) ==="
-          mkdir -p logs
-          OUT="logs/autocart-runner-$(date -u +%Y%m%dT%H%M%SZ).log"
-          node src/jobs/checkout/dist/autocart-runner.js --dry --limit 20 --delay-ms 200 --days 30 2>&1 | tee "$OUT"
+          if [ -f src/jobs/scraper/requirements.txt ]; then
+            python -m pip install --upgrade pip
+            python -m pip install -r src/jobs/scraper/requirements.txt
+          fi
+
+      - name: Ensure log dir
+        run: mkdir -p "${{ env.LOG_DIR }}"
+
+      - name: Run scraper (headless) and save logs
+        env:
+          # 必要ならここにシークレット等を追加
+          # e.g. SOME_API_KEY: ${{ secrets.SOME_API_KEY }}
+        run: |
+          set -euo pipefail
+          TIMESTAMP=$(date -u +%Y%m%dT%H%M%SZ)
+          LOG="${{ env.LOG_DIR }}/scrape-${TIMESTAMP}.log"
+          echo "Starting scraper, logging to ${LOG}"
+          # 実行コマンド：プロジェクトのスクレイパー起動方法に合わせて書き換えてください
+          # 例: python src/jobs/scraper/scraper.py --headless
+          # 標準出力をログに保存して exit code を正しく伝搬
+          python -u src/jobs/scraper/scraper.py --headless 2>&1 | tee "$LOG"
           EXIT=${PIPESTATUS[0]}
-          echo "runner exited with $EXIT"
-          exit "$EXIT"
+          echo "Scraper exited with $EXIT"
+          if [ "$EXIT" -ne 0 ]; then
+            exit "$EXIT"
+          fi
 
-      - name: Upload logs/artifact
+      - name: Upload scrape artifact (all_products & logs)
         uses: actions/upload-artifact@v4
         with:
-          name: autocart-logs
-          path: logs/*.log
+          name: scrape-results
+          path: |
+            ${{ env.SRC_PATH }}
+            ${{ env.LOG_DIR }}/*.log
 
-      - name: Post-run
+      - name: Commit all_products.json to data-latest branch
+        env:
+          GIT_AUTHOR_NAME: "github-actions[bot]"
+          GIT_AUTHOR_EMAIL: "actions@github.com"
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SRC_PATH: ${{ env.SRC_PATH }}
+          TARGET_BRANCH: ${{ env.TARGET_BRANCH }}
+          DEST_PATH: ${{ env.DEST_PATH }}
+          REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          echo "Preparing to push ${SRC_PATH} -> ${TARGET_BRANCH}:${DEST_PATH}"
+
+          if [ ! -f "$SRC_PATH" ]; then
+            echo "No scrape output found at $SRC_PATH - skipping push"
+            exit 0
+          fi
+
+          git config user.name "$GIT_AUTHOR_NAME"
+          git config user.email "$GIT_AUTHOR_EMAIL"
+
+          # fetch target branch if it exists
+          git fetch origin "$TARGET_BRANCH" || true
+
+          # If target branch exists on remote, check it out and reset to origin
+          if git ls-remote --exit-code --heads origin "$TARGET_BRANCH" >/dev/null 2>&1; then
+            echo "Switching to existing branch $TARGET_BRANCH"
+            git checkout "$TARGET_BRANCH"
+            git reset --hard "origin/$TARGET_BRANCH" || true
+          else
+            echo "Creating orphan branch $TARGET_BRANCH"
+            git checkout --orphan "$TARGET_BRANCH"
+            git rm -rf .
+            git clean -fdx || true
+            git commit --allow-empty -m "init $TARGET_BRANCH"
+            # push initial empty commit to create remote branch
+            git push https://x-access-token:${GITHUB_TOKEN}@github.com/${REPO} HEAD:"$TARGET_BRANCH"
+          fi
+
+          mkdir -p "$(dirname "$DEST_PATH")"
+          cp "$SRC_PATH" "$DEST_PATH"
+
+          git add "$DEST_PATH"
+
+          # commit only if changed
+          if git diff --cached --quiet; then
+            echo "No changes to $DEST_PATH; nothing to commit"
+          else
+            git commit -m "ci: update all_products.json (run $GITHUB_RUN_ID)"
+            # push using token-authenticated URL
+            git push https://x-access-token:${GITHUB_TOKEN}@github.com/${REPO} HEAD:"$TARGET_BRANCH" --force
+            echo "Pushed updated $DEST_PATH to $TARGET_BRANCH"
+          fi
+
+      - name: Post-run cleanup (always)
         if: always()
-        run: echo "job finished"
+        run: echo "scrape job finished"
