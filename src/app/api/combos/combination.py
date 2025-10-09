@@ -23,8 +23,6 @@ def compute_p10_p90(data, key):
     p90 = float(np.percentile(values, 90))
     return p10, p90
 
-
-
 def normalize_health(data, prefs: dict):
     """
     data: 製品配列（foodData.json）
@@ -195,7 +193,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="かいたす: 組み合わせ最適化スクリプト")
     parser.add_argument("--prefs-json", type=str, default="", help="Firebaseから渡す up/down の辞書(JSON文字列)")
     parser.add_argument("--input", type=str, default="", help="入力JSONファイルパス")
-
     parser.add_argument("--budget", type=int, default=2500, help="予算（円）")
     parser.add_argument("--health", type=str, default="true", help="健康重視モード true/false")
     args = parser.parse_args()
