@@ -45,12 +45,13 @@ export async function postCollection (
 
 	// idとquantity, frequencyのみ追加
 	for (const item of arr) {
-	        const docRef = cartRef.doc(item.id);
-			if (item.frequency !== undefined) {
-				data.frequency = item.frequency;
-			}
+		const docRef = cartRef.doc(item.id);
+		const data: { quantity?: number; frequency?: number; createdAt: FieldValue } = {};
 
-			batch.set(docRef, data, { merge: true });
+		if (item.quantity !== undefined) data.quantity = item.quantity;
+		if (item.frequency !== undefined) data.frequency = item.frequency;
+
+		batch.set(docRef, data, { merge: true });
 
 	}
 	await batch.commit();
