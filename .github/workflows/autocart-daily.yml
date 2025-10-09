@@ -55,7 +55,7 @@ jobs:
           echo "=== Running autocart-runner (dry, limit 20) ==="
           mkdir -p logs
           OUT="logs/autocart-runner-$(date -u +%Y%m%dT%H%M%SZ).log"
-          node src/jobs/checkout/dist/autocart-runner.js --dry --limit 20 --delay-ms 200 --days 30 2>&1 | tee "$OUT"
+          node src/jobs/checkout/dist/autocart-runner.ts --dry --limit 20 --delay-ms 200 --days 30 2>&1 | tee "$OUT"
           EXIT=${PIPESTATUS[0]}
           echo "runner exited with $EXIT"
           exit "$EXIT"
