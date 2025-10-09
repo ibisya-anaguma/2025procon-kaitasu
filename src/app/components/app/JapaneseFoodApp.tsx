@@ -24,10 +24,8 @@ export const JapaneseFoodApp = () => {
     currentScreen,
     hoveredNav,
     landingPage,
-    monthlyBudget,
     onHoverChange,
     onLandingPageChange,
-    onMonthlyBudgetChange,
     onNavigate,
     onPageChange,
     onUpdateProductQuantity,
@@ -49,7 +47,7 @@ export const JapaneseFoodApp = () => {
   const renderScreen = () => {
     switch (currentScreen) {
       case "dashboard":
-        return <Dashboard monthlyBudget={monthlyBudget} onNavigate={onNavigate} />;
+        return <Dashboard onNavigate={onNavigate} />;
       case "catalog":
         return (
           <Catalog
@@ -80,8 +78,6 @@ export const JapaneseFoodApp = () => {
             profilePage={profilePage}
             totalProfilePages={totalProfilePages}
             onPageChange={onPageChange}
-            monthlyBudget={monthlyBudget}
-            onMonthlyBudgetChange={onMonthlyBudgetChange}
             onNavigate={onNavigate}
           />
         );

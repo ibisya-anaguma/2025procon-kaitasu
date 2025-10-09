@@ -34,7 +34,7 @@ function screenToPath(screen: Screen): string | null {
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { monthlyBudget, onNavigate: setScreen } = useAppContext();
+  const { onNavigate: setScreen } = useAppContext();
 
   const handleNavigate = (screen: Screen) => {
     setScreen(screen);
@@ -42,5 +42,5 @@ export default function DashboardPage() {
     if (path) router.push(path);
   };
 
-  return <DashboardScreen monthlyBudget={monthlyBudget} onNavigate={handleNavigate} />;
+  return <DashboardScreen onNavigate={handleNavigate} />;
 }

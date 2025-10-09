@@ -3,6 +3,7 @@
 import { SidebarCatalogIcon, SidebarHistoryIcon, SidebarProfileIcon, SidebarSubscriptionIcon } from "@/components/icons/sidebar-icons";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { useUserInformation } from "@/app/hooks/useUserInformation";
 import type { Screen } from "@/types/page";
 import type { CSSProperties, ReactNode } from "react";
 
@@ -20,11 +21,21 @@ const STRINGS = {
 const YEN = "\u00a5";
 
 type DashboardProps = {
-  monthlyBudget: number;
   onNavigate: (screen: Screen) => void;
 };
 
-export function Dashboard({ monthlyBudget, onNavigate }: DashboardProps) {
+export function Dashboard({ onNavigate }: DashboardProps) {
+  const { userInfo, isLoading } = useUserInformation();
+  
+  if (isLoading) {
+    return (
+      <div className="flex-1 bg-white p-6 ml-[232px] min-h-screen flex items-center justify-center">
+        <div>読み込み中...</div>
+      </div>
+    );
+  }
+
+  const monthlyBudget = userInfo?.monthlyBudget || 0;
   return (
     <div className="flex-1 bg-white p-6 ml-[232px] min-h-screen" data-oid="ysuosjy">
       <div className="mx-auto w-[903px] space-y-4" data-oid=":xr07ip">

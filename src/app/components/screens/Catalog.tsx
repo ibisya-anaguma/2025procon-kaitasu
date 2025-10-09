@@ -2,12 +2,11 @@
 
 import Image from "next/image";
 import type { MutableRefObject } from "react";
-import { Search } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { FILTER_BUTTON_INACTIVE_STYLE, FILTER_BUTTON_TEXT_STYLE } from "@/components/screens/filterStyles";
+import { useProductSearch } from "@/app/hooks/useProductSearch";
 import type { Product, Screen } from "@/types/page";
 
 const CATALOG_FILTER_BUTTONS = [
@@ -24,13 +23,24 @@ type CatalogProps = {
 };
 
 export function Catalog({
-  products,
+  products: staticProducts,
   catalogQuantitySum,
   catalogPriceSum,
   onNavigate,
   onUpdateProductQuantity,
   catalogScrollRef
 }: CatalogProps) {
+  const { products: searchResults } = useProductSearch();
+
+  // 検索結果がある場合は検索結果を、ない場合は静的な商品データを使用
+  const displayProducts = searchResults.length > 0 ? searchResults.map(p => ({
+    id: Number(p.id),
+    name: p.name,
+    price: p.price,
+    image: p.imgUrl,
+    quantity: 0,
+    description: ''
+  })) : staticProducts;
   return (
     <div
       className="flex-1 bg-white p-6 ml-[232px] relative min-h-screen"
@@ -42,19 +52,12 @@ export function Catalog({
       </div>
 
       <div className="mx-auto w-[1000px]" data-oid="psedc55">
-        <div className="relative mb-6" data-oid="gfk0oa_">
-          <Search
-            className="absolute left-4 top-1/2 -translate-y-1/2 text-[#fda900]"
-            size={18}
-            data-oid="wum_nxs"
-          />
-
-          <Input
-            placeholder="商品名で検索"
-            className="pl-12 h-12 border-2 border-[#fda900] text-sm rounded-lg bg-white shadow-sm focus:border-[#209fde] focus:ring-2 focus:ring-[#209fde]/20"
-            data-oid="fsk2zzr"
-          />
-        </div>
+        {/* 検索結果情報 */}
+        {searchResults.length > 0 && (
+          <div className="mb-4 text-sm text-gray-600">
+            {searchResults.length}件の商品が見つかりました
+          </div>
+        )}
 
         <div className="flex gap-[25px] mb-6" data-oid="br-d9o3">
           <Button
@@ -205,7 +208,7 @@ export function Catalog({
               justifyItems: "start"
             }}
             data-oid="h7qwqv1">
-            {products.map((product) => (
+            {displayProducts.map((product) => (
               <Card
                 key={product.id}
                 className="px-4 pt-1 pb-0 bg-white border-2 border-[#e0e0e0] rounded-xl shadow-sm hover:shadow-md transition-shadow flex flex-col"

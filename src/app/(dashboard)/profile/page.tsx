@@ -6,10 +6,60 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { FILTER_BUTTON_INACTIVE_STYLE, FILTER_BUTTON_TEXT_STYLE } from "@/components/screens/filterStyles";
 import { useAppContext } from "@/contexts/AppContext";
+import { useUserInformation } from "@/app/hooks/useUserInformation";
+import { useState, useEffect } from "react";
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { profilePage, totalProfilePages, onPageChange, monthlyBudget, onMonthlyBudgetChange } = useAppContext();
+  const { profilePage, totalProfilePages, onPageChange } = useAppContext();
+  const { userInfo, isLoading, updateUserInformation } = useUserInformation();
+  const [localBudget, setLocalBudget] = useState(0);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [localName, setLocalName] = useState('');
+  const [selectedResetDay, setSelectedResetDay] = useState(1);
+
+  // ユーザー情報が読み込まれたらローカル状態を更新
+  useEffect(() => {
+    if (userInfo) {
+      setLocalBudget(userInfo.monthlyBudget);
+      setLocalName(userInfo.name);
+      setSelectedResetDay(userInfo.resetDay);
+    }
+  }, [userInfo]);
+
+  // 予算を保存
+  const handleBudgetSave = async () => {
+    const success = await updateUserInformation({ monthlyBudget: localBudget });
+    if (success) {
+      console.log('予算を更新しました');
+    }
+  };
+
+  // 名前を保存
+  const handleNameSave = async () => {
+    const success = await updateUserInformation({ name: localName });
+    if (success) {
+      setIsEditingName(false);
+      console.log('名前を更新しました');
+    }
+  };
+
+  // リセット日を保存
+  const handleResetDaySave = async (day: number) => {
+    setSelectedResetDay(day);
+    const success = await updateUserInformation({ resetDay: day });
+    if (success) {
+      console.log('リセット日を更新しました');
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex-1 bg-white p-6 ml-[232px] flex items-center justify-center">
+        <div>読み込み中...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 bg-white p-6 ml-[232px]" data-oid="3pchgx4">
@@ -30,37 +80,70 @@ export default function ProfilePage() {
               <>
                 <div className="w-12 h-12 bg-[#adadad] rounded-full" data-oid="v96ohmr"></div>
                 <div data-oid="w32:5lp" className="flex items-center gap-4">
-                  <div className="flex items-baseline gap-1" data-oid="2y3hjo1">
-                    <span
-                      style={{
-                        color: "var(--, #101010)",
-                        fontFamily: "BIZ UDPGothic",
-                        fontSize: "36px",
-                        fontStyle: "normal",
-                        fontWeight: 700,
-                        lineHeight: "normal"
-                      }}>
-                      水口 和佳
-                    </span>
-                    <span
-                      style={{
-                        color: "var(--, #101010)",
-                        fontFamily: "BIZ UDPGothic",
-                        fontSize: "24px",
-                        fontStyle: "normal",
-                        fontWeight: 700,
-                        lineHeight: "normal"
-                      }}>
-                      さん
-                    </span>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    className="border border-transparent p-0"
-                    style={FILTER_BUTTON_INACTIVE_STYLE}
-                    data-oid="541gvwr">
-                    <span style={FILTER_BUTTON_TEXT_STYLE}>名前を変更</span>
-                  </Button>
+                  {isEditingName ? (
+                    <div className="flex items-center gap-2">
+                      <Input
+                        value={localName}
+                        onChange={(e) => setLocalName(e.target.value)}
+                        className="text-lg font-bold"
+                        placeholder="名前を入力"
+                      />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleNameSave}
+                        className="border border-transparent p-1"
+                        style={FILTER_BUTTON_INACTIVE_STYLE}>
+                        <span style={FILTER_BUTTON_TEXT_STYLE}>保存</span>
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setIsEditingName(false);
+                          setLocalName(userInfo?.name || '');
+                        }}
+                        className="border border-transparent p-1"
+                        style={FILTER_BUTTON_INACTIVE_STYLE}>
+                        <span style={FILTER_BUTTON_TEXT_STYLE}>キャンセル</span>
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex items-baseline gap-1" data-oid="2y3hjo1">
+                      <span
+                        style={{
+                          color: "var(--, #101010)",
+                          fontFamily: "BIZ UDPGothic",
+                          fontSize: "36px",
+                          fontStyle: "normal",
+                          fontWeight: 700,
+                          lineHeight: "normal"
+                        }}>
+                        {userInfo?.name || 'ユーザー'}
+                      </span>
+                      <span
+                        style={{
+                          color: "var(--, #101010)",
+                          fontFamily: "BIZ UDPGothic",
+                          fontSize: "24px",
+                          fontStyle: "normal",
+                          fontWeight: 700,
+                          lineHeight: "normal"
+                        }}>
+                        さん
+                      </span>
+                    </div>
+                  )}
+                  {!isEditingName && (
+                    <Button
+                      variant="ghost"
+                      className="border border-transparent p-0"
+                      style={FILTER_BUTTON_INACTIVE_STYLE}
+                      onClick={() => setIsEditingName(true)}
+                      data-oid="541gvwr">
+                      <span style={FILTER_BUTTON_TEXT_STYLE}>名前を変更</span>
+                    </Button>
+                  )}
                 </div>
               </>
             ) : null}
@@ -86,11 +169,19 @@ export default function ProfilePage() {
                           id="monthly-budget"
                           name="monthlyBudget"
                           type="number"
-                          value={monthlyBudget}
-                          onChange={(e) => onMonthlyBudgetChange(Number(e.target.value))}
+                          value={localBudget}
+                          onChange={(e) => setLocalBudget(Number(e.target.value))}
                           className="flex-1 text-sm border-2 border-gray-300 rounded-md"
                           data-oid="_x89egx"
                         />
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={handleBudgetSave}
+                          className="border border-transparent p-1"
+                          style={FILTER_BUTTON_INACTIVE_STYLE}>
+                          <span style={FILTER_BUTTON_TEXT_STYLE}>保存</span>
+                        </Button>
                       </div>
                     </div>
                   </div>
@@ -100,16 +191,26 @@ export default function ProfilePage() {
                     計算期間
                   </h3>
                   <div className="flex flex-wrap" style={{ gap: "37px" }} data-oid="calc-period-buttons">
-                    {[1, 5, 10, 15, 20, 25].map((num) => (
-                      <Button
-                        key={`calc-period-${num}`}
-                        variant="ghost"
-                        className="border border-transparent p-0"
-                        style={FILTER_BUTTON_INACTIVE_STYLE}
-                        data-oid={`calc-period-${num}`}>
-                        <span style={FILTER_BUTTON_TEXT_STYLE}>{num}日</span>
-                      </Button>
-                    ))}
+                    {[1, 5, 10, 15, 20, 25].map((num) => {
+                      const isSelected = selectedResetDay === num;
+                      return (
+                        <Button
+                          key={`calc-period-${num}`}
+                          variant="ghost"
+                          className="border border-transparent p-0"
+                          style={{
+                            ...FILTER_BUTTON_INACTIVE_STYLE,
+                            backgroundColor: isSelected ? "#FDA900" : "#FFF",
+                            boxShadow: isSelected ?
+                              "0 4px 4px 0 rgba(0, 0, 0, 0.25) inset" :
+                              "0 4px 4px 0 rgba(0, 0, 0, 0.25)"
+                          }}
+                          onClick={() => handleResetDaySave(num)}
+                          data-oid={`calc-period-${num}`}>
+                          <span style={FILTER_BUTTON_TEXT_STYLE}>毎月{num}日</span>
+                        </Button>
+                      );
+                    })}
                   </div>
                 </div>
               </div>

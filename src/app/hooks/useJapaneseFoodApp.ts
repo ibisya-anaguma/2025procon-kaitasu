@@ -15,7 +15,6 @@ type NavigateHandler = (screen: Screen) => void;
 
 type HoverChangeHandler = (nav: SidebarNavKey | null) => void;
 
-type MonthlyBudgetChangeHandler = (budget: number) => void;
 
 type UpdateProductQuantityHandler = (id: number, change: number) => void;
 
@@ -35,10 +34,8 @@ type JapaneseFoodAppState = {
   currentScreen: Screen;
   hoveredNav: SidebarNavKey | null;
   landingPage: number;
-  monthlyBudget: number;
   onHoverChange: HoverChangeHandler;
   onLandingPageChange: LandingPageChangeHandler;
-  onMonthlyBudgetChange: MonthlyBudgetChangeHandler;
   onNavigate: NavigateHandler;
   onPageChange: PageChangeHandler;
   onUpdateProductQuantity: UpdateProductQuantityHandler;
@@ -60,7 +57,6 @@ type JapaneseFoodAppState = {
 export const useJapaneseFoodApp = (): JapaneseFoodAppState => {
   const [currentScreen, setCurrentScreen] = useState<Screen>("dashboard");
   const [hoveredNav, setHoveredNav] = useState<SidebarNavKey | null>(null);
-  const [monthlyBudget, setMonthlyBudget] = useState(7500);
   const [products, setProducts] = useState<Product[]>(() =>
     SAMPLE_PRODUCTS.map((product) => ({ ...product }))
   );
@@ -130,9 +126,6 @@ export const useJapaneseFoodApp = (): JapaneseFoodAppState => {
     setHoveredNav(nav);
   };
 
-  const onMonthlyBudgetChange: MonthlyBudgetChangeHandler = (budget) => {
-    setMonthlyBudget(budget);
-  };
 
   const onPageChange: PageChangeHandler = (page) => {
     setProfilePage(page);
@@ -203,10 +196,8 @@ export const useJapaneseFoodApp = (): JapaneseFoodAppState => {
     currentScreen,
     hoveredNav,
     landingPage,
-    monthlyBudget,
     onHoverChange,
     onLandingPageChange,
-    onMonthlyBudgetChange,
     onNavigate,
     onPageChange,
     onUpdateProductQuantity,

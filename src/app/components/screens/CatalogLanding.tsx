@@ -6,6 +6,7 @@ import { Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FILTER_BUTTON_INACTIVE_STYLE, FILTER_BUTTON_TEXT_STYLE } from "@/components/screens/filterStyles";
+import { useProductSearch } from "@/app/hooks/useProductSearch";
 import type { LandingCardContent, Screen } from "@/types/page";
 import { cn } from "@/lib/utils";
 
@@ -29,12 +30,38 @@ export function CatalogLanding({
   onNavigate,
   currentLandingCards
 }: CatalogLandingProps) {
+  const { searchProducts, isLoading } = useProductSearch();
   const [selectedCards, setSelectedCards] = useState<number[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const handleCardToggle = (index: number) => {
     setSelectedCards((prev) =>
       prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index]
     );
+  };
+
+  const handleSearch = async () => {
+    // ジャンル番号の計算（ページ数とカード位置から）
+    const selectedGenres = selectedCards.map(cardIndex => {
+      // 各ページは12個のカードを持つ
+      const genreNumber = (landingPage - 1) * 12 + cardIndex + 1;
+      return genreNumber;
+    });
+
+    // 検索を実行してからcatalogページに遷移
+    await searchProducts({
+      q: searchQuery.trim() || null,
+      genre: selectedGenres.length > 0 ? selectedGenres[0] : null, // 複数ジャンルの場合は最初のものを使用
+      limit: 50
+    });
+
+    onNavigate("catalog");
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
   };
 
   return (
@@ -52,6 +79,9 @@ export function CatalogLanding({
 
           <Input
             placeholder="商品名で検索"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyPress={handleKeyPress}
             className="pl-12 h-12 border-2 border-[#fda900] text-sm rounded-lg bg-white shadow-sm focus:border-[#209fde] focus:ring-2 focus:ring-[#209fde]/20"
             data-oid="catalog-landing-search-input"
           />
@@ -273,7 +303,8 @@ export function CatalogLanding({
             height: "60px",
             flexShrink: 0
           }}
-          onClick={() => onNavigate("catalog")}
+          onClick={handleSearch}
+          disabled={isLoading}
           data-oid="catalog-landing-next-button">
           <span
             style={{
@@ -285,7 +316,7 @@ export function CatalogLanding({
               lineHeight: "normal",
               letterSpacing: "1.664px"
             }}>
-            次へ
+            {isLoading ? '検索中...' : '次へ'}
           </span>
         </Button>
       </div>
