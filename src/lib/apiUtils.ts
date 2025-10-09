@@ -2,11 +2,10 @@
 // うめ
 
 import foodData from '@/data/foodData.json'
-import { getFirestore, FieldValue } from 'firebase-admin/firestore'
-const db = getFirestore();
+import { adminDb as db } from "@/lib/firebaseAdmin";
 
 // users/{uid}/collectionの中の全てのドキュメント取得
-export function getCollection (uid:string, collection: string) {
+export async function getCollection (uid:string, collection: string) {
 	const snapshot = await db
 		.collection("users")
 		.doc(uid)
@@ -31,7 +30,7 @@ export function addFoodDetails<T extends { id: string }>(items: T[]) {
 }
 
 // postKey
-export function postCollection (
+export async function postCollection (
 	uid:string,
 	collection: string,
 	items: Array<{ id:string; quantity: number }>
@@ -52,7 +51,7 @@ export function postCollection (
 }
 
 // patch処理、quantity以外にも対応
-export function patchCollection(
+export async function patchCollection(
 	uid:string,
 	collection: string,
 	data: {
@@ -64,7 +63,7 @@ export function patchCollection(
 	await ref.set(data, { merge: true });
 }
 
-export async function deleteCollection(uid: string, itemId: string) {
+export async function deleteCollection(uid: string, collection: string, itemId: string) {
   const ref = db.collection("users").doc(uid).collection("cart").doc(itemId);
   await ref.delete();
 }

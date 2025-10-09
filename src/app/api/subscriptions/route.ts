@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore'
 import { withAuth } from '@/lib/middleware';
-import { getCollection, addFoodDetails, postCollection } from '@lib/apiUtils'
+import { getCollection, addFoodDetails, postCollection } from '@/lib/apiUtils'
 
 const db = getFirestore();
 const collection = "subscriptions";

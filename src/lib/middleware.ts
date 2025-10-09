@@ -2,25 +2,10 @@
 // middleware的な処理
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuth } from 'firebase-admin/auth';
-import { initializeApp, getApps, cert } from 'firebase-admin/app';
-
-// Admin初期化
-// appのインスタンスのリストが0のとき
-if (getApps().length === 0) {
-  initializeApp({
-    credential: cert({
-      projectId: process.env.FIREBASE_PROJECT_ID,
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-    }),
-  });
-}
-
-const adminAuth = getAuth();
+import { adminAuth } from '@/lib/firebaseAdmin'
 
 async function getUidFromToken(request: NextRequest): Promise<string> {
-  const authHeader = request.headers.get('Authorization');
+  const authHeader = request.headers.get('authorization');
   if (!authHeader?.startsWith('Bearer ')) {
     throw new Error('No token');
   }
@@ -30,14 +15,17 @@ async function getUidFromToken(request: NextRequest): Promise<string> {
   return decodedToken.uid;
 }
 
-export function withAuth(
-	handler: (req: NextRequest, uid: string) => Promise<NextResponse>
-	handler: (req: NextRequest, context: any) => { ... handler(req, context, uid) }
-) {
-	return async (req: NextRequest) => {
+export type WithAuthHandler = (
+	req: NextRequest,
+	uid: string,
+	context?: any
+) => Promise<NextResponse> | NextResponse;
+
+export function withAuth(handler: WithAuthHandler) {
+	return async (req: NextRequest, context?: any) => {
 		try {
 			const uid = await getUidFromToken(req);
-			return await handler(req, uid);
+			return await handler(req, uid, context);
 		} catch (error) {
 			return NextResponse.json(
 				{ error: 'Unauthorized' },
