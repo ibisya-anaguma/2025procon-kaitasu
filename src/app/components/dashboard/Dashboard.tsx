@@ -5,7 +5,7 @@ import {
   SidebarHistoryIcon,
   SidebarProfileIcon,
   SidebarSubscriptionIcon
-} from "@/components/icons/sidebar-icons";
+} from "@/components/layout/Sidebar";
 import type { Screen } from "@/types/navigation";
 
 type DashboardProps = {
