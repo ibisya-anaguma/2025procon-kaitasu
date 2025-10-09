@@ -3,20 +3,12 @@ import React from 'react';
 import { BIZ_UDPGothic } from "next/font/google";
 import "./globals.css";
 
-const geistSans = BIZ_UDPGothic({
+const bizUDPGothic = BIZ_UDPGothic({
   weight: ["400", "700"],
   subsets: ["latin"],
-  variable: "--font-geist-sans",
+  variable: "--font-biz-udpgothic",
   display: "swap",
 });
-
-const geistMono = BIZ_UDPGothic({
-  weight: ["400", "700"],
-  subsets: ["latin"],
-  variable: "--font-geist-mono",
-  display: "swap",
-});
-
 
 export const metadata: Metadata = {
   title: "かいたす",
@@ -29,8 +21,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} font-sans`}>
+    <html lang="ja" className="light">
+      <body className={bizUDPGothic.className}>
         {children}
       </body>
     </html>
