@@ -3,27 +3,12 @@ import * as admin from "firebase-admin";
 import * as fs from "fs";
 import * as path from "path";
 
-// ===== Types =====
 type SubItem = {
-  id?: any;
-  url?: string;
-  name?: string;
-  image?: string;
-  price?: number;
-  priceTax?: number;
-  quantity?: number;
-  genre?: number | string;
-  frequency?: number;
+  id?: any; url?: string; name?: string; image?: string;
+  price?: number; priceTax?: number; quantity?: number;
+  genre?: number | string; frequency?: number;
 };
-type HistItem = {
-  id?: any;
-  url?: string;
-  name?: string;
-  quantity?: number;
-  timeStamp?: any;
-  timestamp?: any;
-  createdAt?: any;
-};
+type HistItem = { id?: any; url?: string; name?: string; quantity?: number; timeStamp?: any; timestamp?: any; createdAt?: any; };
 
 type Args = {
   cred?: string;
@@ -33,9 +18,11 @@ type Args = {
   explain: boolean;
   limit?: number;
   delayMs?: number;
+  uid?: string;
+  includeNever?: boolean;
+  forceAdd?: boolean;
 };
 
-// ===== utils =====
 const DAY_MS = 86400000;
 
 function toDateAny(v: any): Date | null {
@@ -44,18 +31,15 @@ function toDateAny(v: any): Date | null {
   const d = new Date(v);
   return isNaN(d.getTime()) ? null : d;
 }
-
 function intQty(v: any, def = 1) {
   const n = Number(v);
   return Number.isFinite(n) && n > 0 ? Math.floor(n) : def;
 }
-
 function idFromUrl(url?: string): string {
   if (!url) return "";
   const m = String(url).match(/\/(\d{6,})\.html(?:[?#].*)?$/);
   return m ? m[1] : "";
 }
-
 function normalizeId(val: any, url?: string): string {
   if (url) {
     const u = idFromUrl(url);
@@ -68,7 +52,6 @@ function normalizeId(val: any, url?: string): string {
   }
   return "";
 }
-
 function stableKeyFrom(item: { id?: any; url?: string; name?: string }): string {
   const id = normalizeId(item.id, item.url);
   if (id) return `id:${id}`;
@@ -77,32 +60,22 @@ function stableKeyFrom(item: { id?: any; url?: string; name?: string }): string 
   if (item.name) return `name:${String(item.name).trim().toLowerCase()}`;
   return `row:${Math.random()}`;
 }
-
 function daysBetween(a: Date, b: Date) {
   return Math.floor((a.getTime() - b.getTime()) / DAY_MS);
 }
 
-// ===== Firestore init (robust) =====
+// init admin: write secret to .firebase/firebase-key.json beforehand OR set GOOGLE_APPLICATION_CREDENTIALS
 function initAdmin(credPath?: string) {
-  const envJson = process.env.FIREBASE_SERVICE_ACCOUNT || process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
   const workspaceSaPath = path.join(process.cwd(), ".firebase", "firebase-key.json");
-
   try {
-    if (envJson) {
-      fs.mkdirSync(path.dirname(workspaceSaPath), { recursive: true });
-      fs.writeFileSync(workspaceSaPath, envJson, { encoding: "utf8" });
-      console.log("WROTE service account to", workspaceSaPath);
-      process.env.GOOGLE_APPLICATION_CREDENTIALS = workspaceSaPath;
-    } else if (credPath) {
+    if (credPath) {
       const resolved = path.resolve(credPath);
-      if (fs.existsSync(resolved)) {
-        process.env.GOOGLE_APPLICATION_CREDENTIALS = resolved;
-      }
+      if (fs.existsSync(resolved)) process.env.GOOGLE_APPLICATION_CREDENTIALS = resolved;
     } else if (fs.existsSync(workspaceSaPath)) {
       process.env.GOOGLE_APPLICATION_CREDENTIALS = workspaceSaPath;
     }
   } catch (e) {
-    console.warn("Warning writing service account JSON:", e);
+    // ignore
   }
 
   const credFile = process.env.GOOGLE_APPLICATION_CREDENTIALS || "";
@@ -113,41 +86,28 @@ function initAdmin(credPath?: string) {
       projectId: sa.project_id,
     });
     process.env.GOOGLE_CLOUD_PROJECT = process.env.GCLOUD_PROJECT = sa.project_id;
+    return admin.firestore();
   } else {
+    // fallback: try default
     admin.initializeApp();
+    return admin.firestore();
   }
-
-  return admin.firestore();
 }
 
-// ===== history 読み（collection または single doc。doc内サブコレクションも探す） =====
+// buildLastBoughtMap: collection OR doc with items array OR doc with subcollections of item docs
 async function buildLastBoughtMap(db: admin.firestore.Firestore, histPath: string, debug = false, explain = false) {
-  const map = new Map<string, Date>(); // key -> lastDate
-
+  const map = new Map<string, Date>();
   const pathSegs = histPath.split("/").filter(Boolean);
-  // Helper to extract items from a document (either items array or its subcollections)
+
   async function extractItemsFromDoc(doc: admin.firestore.QueryDocumentSnapshot | admin.firestore.DocumentSnapshot) {
     const out: HistItem[] = [];
     const data = (doc.data && doc.data()) || {};
-    // 1) common case: doc contains items array
-    if (Array.isArray((data as any).items)) {
-      out.push(...((data as any).items));
-      return out;
-    }
-    if (Array.isArray((data as any).history)) {
-      out.push(...((data as any).history));
-      return out;
-    }
-    // 2) try to detect item fields directly on doc (e.g. single-item doc)
-    // If doc itself looks like an item (has id/name/timeStamp), include it
-    const maybeKeys = ["id", "url", "name", "timeStamp", "timestamp", "createdAt"];
-    const looksLikeItem = maybeKeys.some((k) => Object.prototype.hasOwnProperty.call(data, k));
-    if (looksLikeItem) {
-      out.push(data as HistItem);
-      return out;
-    }
+    if (Array.isArray((data as any).items)) { out.push(...((data as any).items)); return out; }
+    if (Array.isArray((data as any).history)) { out.push(...((data as any).history)); return out; }
+    const maybeKeys = ["id","url","name","timeStamp","timestamp","createdAt"];
+    const looksLikeItem = maybeKeys.some((k)=>Object.prototype.hasOwnProperty.call(data,k));
+    if (looksLikeItem) { out.push(data as HistItem); return out; }
 
-    // 3) fallback: look into subcollections under this doc (e.g. users/{uid}/history/{historyId}/{ItemId})
     try {
       if ((doc as any).ref && typeof (doc as any).ref.listCollections === "function") {
         const subcols = await (doc as any).ref.listCollections();
@@ -156,88 +116,49 @@ async function buildLastBoughtMap(db: admin.firestore.Firestore, histPath: strin
             const snap = await sc.get();
             for (const sd of snap.docs) {
               const sdata = sd.data() || {};
-              // include doc id as possible id
               if (!sdata.id) sdata.id = sd.id;
               out.push(sdata as HistItem);
             }
-          } catch (e) {
-            if (debug) console.warn("subcollection read failed", sc.path, e);
-          }
+          } catch (e) { if (debug) console.warn("subcol read failed", sc.path, e); }
         }
       }
-    } catch (e) {
-      if (debug) console.warn("listCollections failed for doc", e);
-    }
+    } catch (e) { if (debug) console.warn("listCollections failed", e); }
 
     return out;
   }
 
-  // If path refers to a collection (odd number of segments), iterate docs
   if (pathSegs.length % 2 === 1) {
-    const col = db.collection(histPath);
     let snap: admin.firestore.QuerySnapshot;
-    try {
-      snap = await col.orderBy("createdAt", "asc").get();
-    } catch {
-      snap = await col.get();
-    }
-    const docs = snap.docs;
-    if (debug) console.log("[DEBUG] history collection docs:", docs.length);
-
-    for (const d of docs) {
+    try { snap = await db.collection(histPath).orderBy("createdAt","asc").get(); } catch { snap = await db.collection(histPath).get(); }
+    if (debug) console.log(`[DEBUG] history collection docs: ${snap.size}`);
+    for (const d of snap.docs) {
       const data = d.data() || {};
-      // candidate doc timestamp (fallback)
-      const docTs =
-        toDateAny((data as any).createdAt) ||
-        toDateAny((data as any).created_at) ||
-        toDateAny((data as any).timeStamp) ||
-        (d.createTime ? d.createTime.toDate() : null);
-
-      const items: HistItem[] = await extractItemsFromDoc(d);
+      const docTs = toDateAny((data as any).createdAt) || toDateAny((data as any).created_at) || toDateAny((data as any).timeStamp) || (d.createTime ? d.createTime.toDate() : null);
+      const items = await extractItemsFromDoc(d);
       for (const it of items) {
-        // determine item timestamp candidate
-        const itemTs =
-          toDateAny((it as any).timeStamp) ||
-          toDateAny((it as any).timestamp) ||
-          toDateAny((it as any).createdAt) ||
-          null;
-
+        const itemTs = toDateAny((it as any).timeStamp) || toDateAny((it as any).timestamp) || toDateAny((it as any).createdAt) || null;
         const usedTs = itemTs || docTs;
         if (!usedTs) continue;
-
         if (explain) {
-          const nm = (it as any).name || (it as any).url || (it as any).id || "(no-name)";
+          const nm = it.name || it.url || it.id || "(no-name)";
           const via = itemTs ? "item.timeStamp" : docTs ? "doc.createdAt" : "doc.createTime";
-          console.log(`[EXPLAIN] hist item "${nm}" -> ${usedTs.toISOString().slice(0, 10)} via=${via}`);
+          console.log(`[EXPLAIN] hist item "${nm}" -> ${usedTs.toISOString().slice(0,10)} via=${via}`);
         }
-
         const key = stableKeyFrom(it);
         const prev = map.get(key);
         if (!prev || prev < usedTs) map.set(key, usedTs);
       }
     }
-
     if (debug) console.log("[DEBUG] lastBought keys:", map.size);
     return map;
   } else {
-    // Path refers to a single document
     const doc = await db.doc(histPath).get();
-    if (!doc.exists) {
-      if (debug) console.log("[DEBUG] history doc NOT FOUND:", histPath);
-      return map;
-    }
+    if (!doc.exists) { if (debug) console.log("[DEBUG] history doc NOT FOUND:", histPath); return map; }
     const data = doc.data() || {};
-    const docTs =
-      toDateAny((data as any).createdAt) ||
-      toDateAny((data as any).created_at) ||
-      toDateAny((data as any).timeStamp) ||
-      (doc.createTime ? doc.createTime.toDate() : null);
-
-    // If doc has items array, use that; otherwise check subcollections
-    const items: HistItem[] = await (async () => {
+    const docTs = toDateAny((data as any).createdAt) || toDateAny((data as any).created_at) || toDateAny((data as any).timeStamp) || (doc.createTime ? doc.createTime.toDate() : null);
+    const items = await (async () => {
       if (Array.isArray((data as any).items)) return (data as any).items as HistItem[];
       if (Array.isArray((data as any).history)) return (data as any).history as HistItem[];
-      // try look into subcollections
       const out: HistItem[] = [];
       try {
         const subcols = await doc.ref.listCollections();
@@ -249,52 +170,38 @@ async function buildLastBoughtMap(db: admin.firestore.Firestore, histPath: strin
             out.push(sdata as HistItem);
           }
         }
-      } catch (e) {
-        if (debug) console.warn("failed to read subcollections for history doc", e);
-      }
+      } catch (e) { if (debug) console.warn("failed to read subcols for history doc", e); }
       return out;
     })();
 
     for (const it of items) {
-      const itemTs =
-        toDateAny((it as any).timeStamp) ||
-        toDateAny((it as any).timestamp) ||
-        toDateAny((it as any).createdAt) ||
-        null;
+      const itemTs = toDateAny((it as any).timeStamp) || toDateAny((it as any).timestamp) || toDateAny((it as any).createdAt) || null;
       const usedTs = itemTs || docTs;
       if (!usedTs) continue;
-
       if (explain) {
-        const nm = (it as any).name || (it as any).url || (it as any).id || "(no-name)";
+        const nm = it.name || it.url || it.id || "(no-name)";
         const via = itemTs ? "item.timeStamp" : docTs ? "doc.createdAt" : "doc.createTime";
-        console.log(`[EXPLAIN] hist item "${nm}" -> ${usedTs.toISOString().slice(0, 10)} via=${via}`);
+        console.log(`[EXPLAIN] hist item "${nm}" -> ${usedTs.toISOString().slice(0,10)} via=${via}`);
       }
-
       const key = stableKeyFrom(it);
       const prev = map.get(key);
       if (!prev || prev < usedTs) map.set(key, usedTs);
     }
-
     if (debug) console.log("[DEBUG] lastBought keys:", map.size);
     return map;
   }
 }
 
-// ===== subscriptions 読み & 期日判定（同じ） =====
 async function collectDueItems(
   db: admin.firestore.Firestore,
   subsPath: string,
   lastMap: Map<string, Date>,
   defaultDays: number,
   debug = false,
-  explain = false
+  explain = false,
+  includeNever = false
 ) {
-  const dueByDoc: Array<{
-    subId: string;
-    items: SubItem[];
-    dueInfo: Array<{ key: string; last: Date; daysSince: number; threshold: number }>;
-  }> = [];
-
+  const dueByDoc: Array<{ subId: string; items: SubItem[]; dueInfo: Array<{ key: string; last: Date; daysSince: number; threshold: number }> }> = [];
   const subsSnap = await db.collection(subsPath).get();
   if (debug) console.log("[DEBUG] subscriptions docs:", subsSnap.size);
 
@@ -309,31 +216,35 @@ async function collectDueItems(
       const key = stableKeyFrom(it);
       const last = lastMap.get(key);
       if (!last) {
-        if (explain) {
-          const nm = it.name || it.url || it.id || "(no-name)";
-          console.log(`[EXPLAIN] ${doc.id} :: ${nm} -> last=N/A => skip (まだ買っていない)`);
+        if (includeNever) {
+          // mark as due (first-time add)
+          const threshold = Number((it as any).frequency) || (subLevelFreq > 0 ? subLevelFreq : defaultDays);
+          const daysSince = Number.MAX_SAFE_INTEGER; // huge
+          if (explain) {
+            const nm = it.name || it.url || it.id || "(no-name)";
+            console.log(`[EXPLAIN] ${doc.id} :: ${nm} -> last=N/A but includeNever => DUE (threshold=${threshold})`);
+          }
+          dueItems.push({...it, quantity: intQty((it as any).quantity ?? (it as any).qty ?? 1,1)});
+          info.push({ key, last: new Date(0), daysSince, threshold });
+        } else {
+          if (explain) {
+            const nm = it.name || it.url || it.id || "(no-name)";
+            console.log(`[EXPLAIN] ${doc.id} :: ${nm} -> last=N/A => skip (まだ買っていない)`);
+          }
+          continue;
         }
-        continue; // skip if never bought
-      }
-
-      const itemFreq = Number((it as any).frequency) || 0;
-      const threshold = itemFreq > 0 ? itemFreq : (subLevelFreq > 0 ? subLevelFreq : defaultDays);
-
-      const daysSince = daysBetween(new Date(), last);
-      const nm = it.name || it.url || it.id || "(no-name)";
-
-      if (daysSince >= threshold) {
-        if (explain) {
-          console.log(`[EXPLAIN] ${doc.id} :: ${nm} -> last=${last.toISOString().slice(0, 10)} daysSince=${daysSince} threshold=${threshold} => DUE`);
+      } else {
+        const itemFreq = Number((it as any).frequency) || 0;
+        const threshold = itemFreq > 0 ? itemFreq : (subLevelFreq > 0 ? subLevelFreq : defaultDays);
+        const daysSince = daysBetween(new Date(), last);
+        const nm = it.name || it.url || it.id || "(no-name)";
+        if (daysSince >= threshold) {
+          if (explain) console.log(`[EXPLAIN] ${doc.id} :: ${nm} -> last=${last.toISOString().slice(0,10)} daysSince=${daysSince} threshold=${threshold} => DUE`);
+          dueItems.push({...it, quantity: intQty((it as any).quantity ?? (it as any).qty ?? 1,1)});
+          info.push({ key, last, daysSince, threshold });
+        } else if (explain) {
+          console.log(`[EXPLAIN] ${doc.id} :: ${nm} -> last=${last.toISOString().slice(0,10)} daysSince=${daysSince} threshold=${threshold} => not yet`);
         }
-        const add: SubItem = {
-          ...it,
-          quantity: intQty((it as any).quantity ?? (it as any).qty ?? 1, 1),
-        };
-        dueItems.push(add);
-        info.push({ key, last, daysSince, threshold });
-      } else if (explain) {
-        console.log(`[EXPLAIN] ${doc.id} :: ${nm} -> last=${last.toISOString().slice(0, 10)} daysSince=${daysSince} threshold=${threshold} => not yet`);
       }
     }
 
@@ -346,7 +257,18 @@ async function collectDueItems(
   return dueByDoc;
 }
 
-// ===== writePurchase （cart 対応 + 既存互換） =====
+async function loadExistingCartKeys(db: admin.firestore.Firestore, purchaseDocPath: string, debug = false) {
+  const ref = db.doc(purchaseDocPath);
+  const snap = await ref.get();
+  if (!snap.exists) return new Set<string>();
+  const data = snap.data() || {};
+  const items: any[] = Array.isArray((data as any).items) ? (data as any).items : [];
+  const set = new Set<string>();
+  for (const it of items) set.add(stableKeyFrom(it));
+  if (debug) console.log("[DEBUG] existing purchase doc keys:", set.size);
+  return set;
+}
+
 async function writePurchase(
   db: admin.firestore.Firestore,
   uid: string,
@@ -354,10 +276,10 @@ async function writePurchase(
   purchaseDoc: string | undefined,
   bundles: Array<{ subId: string; items: SubItem[]; dueInfo: Array<{ key: string; last: Date; daysSince: number; threshold: number }> }>,
   dry: boolean,
-  debug = false
+  debug = false,
+  forceAdd = false
 ) {
   if (!bundles.length) return 0;
-
   const isCartCollection = purchasePath.split("/").filter(Boolean).slice(-1)[0] === "cart";
 
   if (isCartCollection) {
@@ -375,7 +297,7 @@ async function writePurchase(
           if (snap.exists) {
             const data = snap.data() || {};
             const existingQty = Number((data as any).quantify ?? (data as any).quantity ?? 0) || 0;
-            const newQty = existingQty + qty;
+            const newQty = forceAdd ? existingQty + qty : existingQty + qty;
             const updateBody: any = {
               quantify: newQty,
               updatedAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -384,12 +306,9 @@ async function writePurchase(
               image: it.image || data.image || "",
               price: typeof (it as any).price === "number" ? (it as any).price : (data.price ?? null),
               priceTax: typeof (it as any).priceTax === "number" ? (it as any).priceTax : (data.priceTax ?? null),
-              genre: (it as any).genre ?? (data.genre ?? null),
-              frequency: typeof (it as any).frequency === "number" ? (it as any).frequency : (data.frequency ?? null),
             };
-
             if (dry) {
-              if (debug) console.log("[DRY RUN] would update cart doc:", ref.path, JSON.stringify(updateBody));
+              console.log("[DRY RUN] would update cart doc:", ref.path, JSON.stringify(updateBody));
             } else {
               await ref.set(updateBody, { merge: true });
               if (debug) console.log(`[DEBUG] updated cart doc=${ref.path} quantify=${newQty}`);
@@ -404,13 +323,10 @@ async function writePurchase(
               image: it.image || "",
               price: typeof (it as any).price === "number" ? (it as any).price : null,
               priceTax: typeof (it as any).priceTax === "number" ? (it as any).priceTax : null,
-              genre: (it as any).genre ?? null,
-              frequency: typeof (it as any).frequency === "number" ? (it as any).frequency : null,
               source: "auto-subscription",
             };
-
             if (dry) {
-              if (debug) console.log("[DRY RUN] would create cart doc:", col.doc(docId).path, JSON.stringify(body));
+              console.log("[DRY RUN] would create cart doc:", col.doc(docId).path, JSON.stringify(body));
             } else {
               await col.doc(docId).set(body, { merge: true });
               if (debug) console.log(`[DEBUG] created cart doc=${col.doc(docId).path}`);
@@ -426,13 +342,10 @@ async function writePurchase(
             image: it.image || "",
             price: typeof (it as any).price === "number" ? (it as any).price : null,
             priceTax: typeof (it as any).priceTax === "number" ? (it as any).priceTax : null,
-            genre: (it as any).genre ?? null,
-            frequency: typeof (it as any).frequency === "number" ? (it as any).frequency : null,
             source: "auto-subscription",
           };
-
           if (dry) {
-            if (debug) console.log("[DRY RUN] would add cart doc (auto-id):", JSON.stringify(body));
+            console.log("[DRY RUN] would add cart doc (auto-id):", JSON.stringify(body));
           } else {
             await col.add(body);
             if (debug) console.log("[DEBUG] added cart doc (auto-id)");
@@ -444,6 +357,7 @@ async function writePurchase(
     return wrote;
   }
 
+  // fallback: purchase doc or collection - unchanged from earlier behaviour
   if (purchaseDoc) {
     const docPath = purchasePath;
     const ref = db.doc(docPath);
@@ -456,7 +370,7 @@ async function writePurchase(
     for (const b of bundles) {
       for (const it of b.items) {
         const key = stableKeyFrom(it);
-        if (existing.has(key)) {
+        if (!forceAdd && existing.has(key)) {
           if (debug) console.log("[DEBUG] SKIP already-in-purchase-doc:", it.name || it.url || it.id);
           continue;
         }
@@ -495,7 +409,6 @@ async function writePurchase(
   } else {
     const col = db.collection(purchasePath);
     let wrote = 0;
-
     for (const b of bundles) {
       const outItems = b.items.map((it) => ({
         id: normalizeId(it.id, it.url),
@@ -534,7 +447,6 @@ async function writePurchase(
   }
 }
 
-// ===== runner (main) =====
 function parseArgs(): Args {
   const argv = process.argv.slice(2);
   const get = (k: string, d = "") => {
@@ -542,6 +454,7 @@ function parseArgs(): Args {
     return i >= 0 ? String(argv[i + 1]) : d;
   };
   const has = (k: string) => argv.includes(k);
+
   return {
     cred: get("--cred", process.env.GOOGLE_APPLICATION_CREDENTIALS || ""),
     days: Number(get("--days", "30")) || 30,
@@ -550,19 +463,37 @@ function parseArgs(): Args {
     explain: has("--explain"),
     limit: Number(get("--limit", "0")) || undefined,
     delayMs: Number(get("--delay-ms", "200")) || 200,
+    uid: get("--uid", "") || undefined,
+    includeNever: has("--include-never"),
+    forceAdd: has("--force-add"),
   };
 }
 
-async function getUserIdsWithSubscriptions(db: admin.firestore.Firestore, limit?: number, debug = false) {
+async function getUserIdsWithSubscriptions(db: admin.firestore.Firestore, limit?: number, debug = false, uid?: string) {
+  if (uid) {
+    // process single user (if exists)
+    const doc = await db.collection("users").doc(uid).get();
+    if (!doc.exists) {
+      if (debug) console.log(`[DEBUG] user ${uid} does not exist`);
+      return [];
+    }
+    const subsSnap = await db.collection(`users/${uid}/subscriptions`).limit(1).get();
+    if (subsSnap.empty) {
+      if (debug) console.log(`[DEBUG] user ${uid} has no subscriptions`);
+      return [];
+    }
+    return [uid];
+  }
+
   const ids: string[] = [];
   const coll = db.collection("users");
   const snap = await coll.get();
   for (const doc of snap.docs) {
-    const uid = doc.id;
-    const subsSnap = await db.collection(`users/${uid}/subscriptions`).limit(1).get();
+    const uidDoc = doc.id;
+    const subsSnap = await db.collection(`users/${uidDoc}/subscriptions`).limit(1).get();
     if (!subsSnap.empty) {
-      ids.push(uid);
-      if (debug) console.log(`[DEBUG] will process user=${uid}`);
+      ids.push(uidDoc);
+      if (debug) console.log(`[DEBUG] will process user=${uidDoc}`);
       if (limit && ids.length >= limit) break;
     }
   }
@@ -573,9 +504,9 @@ async function main() {
   const args = parseArgs();
   const db = initAdmin(args.cred);
 
-  console.log("[INFO] starting autocart-runner", { dry: args.dry, days: args.days, limit: args.limit, delayMs: args.delayMs });
+  console.log("[INFO] starting autocart-runner", { dry: args.dry, days: args.days, limit: args.limit, delayMs: args.delayMs, uid: args.uid, includeNever: args.includeNever, forceAdd: args.forceAdd });
 
-  const uids = await getUserIdsWithSubscriptions(db, args.limit, args.debug);
+  const uids = await getUserIdsWithSubscriptions(db, args.limit, args.debug, args.uid);
   console.log(`[INFO] users to process: ${uids.length}`);
 
   let totalAdded = 0;
@@ -584,12 +515,29 @@ async function main() {
     totalProcessed++;
     console.log(`\n--- Processing uid=${uid} (${totalProcessed}/${uids.length}) ---`);
     try {
+      // debug: show which subscription docs we will read
+      if (args.debug) {
+        const ss = await db.collection(`users/${uid}/subscriptions`).get();
+        console.log(`[DEBUG] subs for ${uid}: ${ss.size}`);
+        for (const s of ss.docs) {
+          console.log("  - sub:", s.id, JSON.stringify(s.data()).slice(0,400));
+        }
+      }
+
       const lastMap = await buildLastBoughtMap(db, `users/${uid}/history`, args.debug, args.explain);
-      const bundles = await collectDueItems(db, `users/${uid}/subscriptions`, lastMap, args.days, args.debug, args.explain);
+      if (args.debug) {
+        console.log("[DEBUG] lastMap sample keys:", Array.from(lastMap.keys()).slice(0,20));
+      }
+      const bundles = await collectDueItems(db, `users/${uid}/subscriptions`, lastMap, args.days, args.debug, args.explain, !!args.includeNever);
+
       if (bundles.length === 0) {
         console.log("[INFO] no due items for user:", uid);
       } else {
-        const wrote = await writePurchase(db, uid, `users/${uid}/cart`, undefined, bundles, args.dry, args.debug);
+        if (args.debug) {
+          console.log("[DEBUG] bundles to write:", JSON.stringify(bundles, null, 2));
+        }
+        // write to cart collection users/{uid}/cart by default
+        const wrote = await writePurchase(db, uid, `users/${uid}/cart`, undefined, bundles, args.dry, args.debug, !!args.forceAdd);
         console.log(`[INFO] user=${uid} wrote=${wrote}`);
         totalAdded += wrote;
       }
