@@ -10,8 +10,10 @@ export default function DashboardLayout({
 }) {
   return (
     <AppProvider>
-      <Sidebar />
-      {children}
+      <div className="flex">
+        <Sidebar />
+        {children}
+      </div>
     </AppProvider>
   );
 }
