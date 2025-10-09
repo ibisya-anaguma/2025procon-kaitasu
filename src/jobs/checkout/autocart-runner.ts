@@ -1,8 +1,11 @@
 //あらとも
 
+// src/jobs/checkout/autocart-runner.ts
+// Final complete autocart runner - robustly finds history items (including nested arrays and subcollections)
+// No extra files required. Use FIREBASE_SERVICE_ACCOUNT (JSON string) or GOOGLE_APPLICATION_CREDENTIALS (file).
+
 import * as admin from "firebase-admin";
 import * as fs from "fs";
-import * as path from "path";
 
 type SubItem = {
   id?: any;
@@ -55,7 +58,6 @@ function toDateAny(v: any): Date | null {
   if (!s) return null;
   const d = new Date(s);
   if (!isNaN(d.getTime())) return d;
-  // try Japanese style like "2025年8月1日 19:09:15 UTC+9"
   try {
     const m = s.match(/^(\d{4})年\s*(\d{1,2})月\s*(\d{1,2})日\s+(\d{1,2}):(\d{2}):(\d{2})(?:\s*UTC\+?([0-9:+-]+))?/);
     if (m) {
@@ -88,7 +90,6 @@ function extractLongestDigitRun(s: string) {
 function idFromUrl(url?: string): string {
   if (!url) return "";
   const s = String(url);
-  // try common pattern /.../12345678.html
   const m = s.match(/\/([A-Za-z0-9\-_]{4,})\.html(?:[?#].*)?$|[?&]id=([A-Za-z0-9\-_]{4,})/);
   if (m && (m[1] || m[2])) return (m[1] || m[2]).trim();
   const any = s.match(/[A-Za-z0-9]{4,}/g);
@@ -236,13 +237,11 @@ async function buildLastBoughtMap(db: admin.firestore.Firestore, histPath: strin
     const data = (docSnap.data && docSnap.data()) || {};
     const docTs = toDateAny((data as any).createdAt) || toDateAny((data as any).created_at) || toDateAny((data as any).timeStamp) || (docSnap.createTime ? docSnap.createTime.toDate() : null);
 
-    // common top-level fields we try
     let rawItems: any = (data as any).items ?? (data as any).history ?? (data as any).purchases ?? null;
     let arr: any[] = [];
     if (Array.isArray(rawItems)) arr = rawItems;
     else if (rawItems && typeof rawItems === "object") arr = Object.values(rawItems);
 
-    // if none found, use recursive finder
     if (!arr.length) {
       const found = findItemArrays(data, 0, 6);
       if (found && found.length) {
@@ -275,7 +274,6 @@ async function buildLastBoughtMap(db: admin.firestore.Firestore, histPath: strin
       }
     }
 
-    // check subcollections under this doc (recursively)
     try {
       const subcols = await docSnap.ref.listCollections();
       for (const sc of subcols) {
@@ -291,12 +289,10 @@ async function buildLastBoughtMap(db: admin.firestore.Firestore, histPath: strin
   }
 
   if (pathSegs.length % 2 === 1) {
-    // collection path
     let snap: admin.firestore.QuerySnapshot;
     try { snap = await db.collection(histPath).orderBy("createdAt","asc").get(); } catch { snap = await db.collection(histPath).get(); }
     for (const d of snap.docs) await collectFromDoc(d, 0);
   } else {
-    // doc path
     const doc = await db.doc(histPath).get();
     if (doc.exists) await collectFromDoc(doc, 0);
   }
@@ -342,13 +338,11 @@ async function collectDueItems(
       let last: Date | null = null;
       let matchedKey: string | null = null;
 
-      // try direct key matches
       for (const k of keys) {
         const f = lastMap.get(k);
         if (f) { last = f; matchedKey = k; break; }
       }
 
-      // numeric fuzzy match
       if (!last) {
         const numericCandidates = new Set<string>();
         for (const k of keys) {
@@ -367,7 +361,6 @@ async function collectDueItems(
         }
       }
 
-      // fuzzy name match
       if (!last) {
         const keyNameTokens: string[] = [];
         for (const k of keys) if (k.startsWith("name:")) keyNameTokens.push(...String(k.slice(5)).toLowerCase().split(/\s+/).filter(Boolean));
