@@ -19,7 +19,7 @@
 import dotenv from 'dotenv'
 
 import { createRequire } from 'node:module'
-import { readFileSync, existsSync } from 'node:fs'
+import { readFileSync, existsSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 
 // Defer requiring firebase-admin to avoid type issues if run with plain node
@@ -134,6 +134,14 @@ async function main() {
   }
 
   const data = (await resp.json()) as { idToken: string; refreshToken?: string; expiresIn?: string; localId?: string }
+
+  // Persist token to token.txt at repository root
+  try {
+    const outPath = path.resolve(process.cwd(), 'token.txt')
+    writeFileSync(outPath, `${data.idToken}\n`, 'utf8')
+  } catch (e) {
+    console.error('[gen-idtoken] Failed to write token.txt:', e)
+  }
 
   if (args.json) {
     console.log(JSON.stringify({

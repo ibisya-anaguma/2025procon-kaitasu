@@ -34,14 +34,16 @@ export function addFoodDetails<T extends { id: string }>(items: T[]) {
 export async function postCollection (
 	uid:string,
 	collection: string,
-	items: Array<{ id:string; quantity: number }>
+	// 配列でもOKにする
+	items: { id: string; quantity?: number; frequency?: number } | Array<{ id: string; quantity?: number; frequency?: number }>
 ) {
-	postKey(uid, cart);
+	const arr = Array.isArray(items) ? items : [items];
+	const cartRef = db.collection("users").doc(uid).collection(collection);
+
 	const batch = db.batch();
-	const cartRef = db.collection("users").doc(uid).collection("cart");
 
 	// idとquantityのみ追加
-	for (const item of items) {
+	for (const item of arr) {
 		const docRef = cartRef.doc(item.id);
 		batch.set(
 			docRef,
