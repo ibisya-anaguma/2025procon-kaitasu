@@ -1,4 +1,5 @@
 // src/jobs/checkout/autocart-runner.ts
+// 最終完成版 — 全ユーザー向け auto-cart runner
 import * as admin from "firebase-admin";
 import * as fs from "fs";
 import * as path from "path";
@@ -64,18 +65,23 @@ function daysBetween(a: Date, b: Date) {
   return Math.floor((a.getTime() - b.getTime()) / DAY_MS);
 }
 
-// init admin: write secret to .firebase/firebase-key.json beforehand OR set GOOGLE_APPLICATION_CREDENTIALS
+// init admin: accept FIREBASE_SERVICE_ACCOUNT secret, .firebase/firebase-key.json, or default ADC
 function initAdmin(credPath?: string) {
-  const workspaceSaPath = path.join(process.cwd(), ".firebase", "firebase-key.json");
   try {
+    const workspaceSaPath = path.resolve(".firebase/firebase-key.json");
     if (credPath) {
       const resolved = path.resolve(credPath);
       if (fs.existsSync(resolved)) process.env.GOOGLE_APPLICATION_CREDENTIALS = resolved;
     } else if (fs.existsSync(workspaceSaPath)) {
       process.env.GOOGLE_APPLICATION_CREDENTIALS = workspaceSaPath;
+    } else if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+      // write secret to temp file to use it
+      const tmp = "/tmp/firebase-action-key.json";
+      fs.writeFileSync(tmp, process.env.FIREBASE_SERVICE_ACCOUNT, { encoding: "utf8", mode: 0o600 });
+      process.env.GOOGLE_APPLICATION_CREDENTIALS = tmp;
     }
   } catch (e) {
-    // ignore
+    // ignore, we'll try default init
   }
 
   const credFile = process.env.GOOGLE_APPLICATION_CREDENTIALS || "";
@@ -88,26 +94,31 @@ function initAdmin(credPath?: string) {
     process.env.GOOGLE_CLOUD_PROJECT = process.env.GCLOUD_PROJECT = sa.project_id;
     return admin.firestore();
   } else {
-    // fallback: try default
-    admin.initializeApp();
-    return admin.firestore();
+    try {
+      admin.initializeApp();
+      return admin.firestore();
+    } catch (e) {
+      throw new Error("Firebase admin initialization failed: " + (e && e.message ? e.message : String(e)));
+    }
   }
 }
 
-// buildLastBoughtMap: collection OR doc with items array OR doc with subcollections of item docs
+// buildLastBoughtMap: robust against different history shapes
 async function buildLastBoughtMap(db: admin.firestore.Firestore, histPath: string, debug = false, explain = false) {
   const map = new Map<string, Date>();
   const pathSegs = histPath.split("/").filter(Boolean);
 
-  async function extractItemsFromDoc(doc: admin.firestore.QueryDocumentSnapshot | admin.firestore.DocumentSnapshot) {
+  async function itemsFromDoc(doc: admin.firestore.QueryDocumentSnapshot | admin.firestore.DocumentSnapshot) {
     const out: HistItem[] = [];
     const data = (doc.data && doc.data()) || {};
-    if (Array.isArray((data as any).items)) { out.push(...((data as any).items)); return out; }
-    if (Array.isArray((data as any).history)) { out.push(...((data as any).history)); return out; }
-    const maybeKeys = ["id","url","name","timeStamp","timestamp","createdAt"];
-    const looksLikeItem = maybeKeys.some((k)=>Object.prototype.hasOwnProperty.call(data,k));
-    if (looksLikeItem) { out.push(data as HistItem); return out; }
+    if (Array.isArray((data as any).items)) return (data as any).items as HistItem[];
+    if (Array.isArray((data as any).history)) return (data as any).history as HistItem[];
 
+    // If doc itself looks like an item
+    const maybeKeys = ["id","url","name","timeStamp","timestamp","createdAt"];
+    if (maybeKeys.some(k => Object.prototype.hasOwnProperty.call(data, k))) return [data as HistItem];
+
+    // fallback: list subcollections and collect docs
     try {
       if ((doc as any).ref && typeof (doc as any).ref.listCollections === "function") {
         const subcols = await (doc as any).ref.listCollections();
@@ -123,18 +134,17 @@ async function buildLastBoughtMap(db: admin.firestore.Firestore, histPath: strin
         }
       }
     } catch (e) { if (debug) console.warn("listCollections failed", e); }
-
     return out;
   }
 
   if (pathSegs.length % 2 === 1) {
+    // histPath is a collection
     let snap: admin.firestore.QuerySnapshot;
     try { snap = await db.collection(histPath).orderBy("createdAt","asc").get(); } catch { snap = await db.collection(histPath).get(); }
-    if (debug) console.log(`[DEBUG] history collection docs: ${snap.size}`);
     for (const d of snap.docs) {
       const data = d.data() || {};
       const docTs = toDateAny((data as any).createdAt) || toDateAny((data as any).created_at) || toDateAny((data as any).timeStamp) || (d.createTime ? d.createTime.toDate() : null);
-      const items = await extractItemsFromDoc(d);
+      const items = await itemsFromDoc(d);
       for (const it of items) {
         const itemTs = toDateAny((it as any).timeStamp) || toDateAny((it as any).timestamp) || toDateAny((it as any).createdAt) || null;
         const usedTs = itemTs || docTs;
@@ -152,13 +162,18 @@ async function buildLastBoughtMap(db: admin.firestore.Firestore, histPath: strin
     if (debug) console.log("[DEBUG] lastBought keys:", map.size);
     return map;
   } else {
+    // histPath is a doc
     const doc = await db.doc(histPath).get();
-    if (!doc.exists) { if (debug) console.log("[DEBUG] history doc NOT FOUND:", histPath); return map; }
+    if (!doc.exists) {
+      if (debug) console.log("[DEBUG] history doc NOT FOUND:", histPath);
+      return map;
+    }
     const data = doc.data() || {};
     const docTs = toDateAny((data as any).createdAt) || toDateAny((data as any).created_at) || toDateAny((data as any).timeStamp) || (doc.createTime ? doc.createTime.toDate() : null);
     const items = await (async () => {
       if (Array.isArray((data as any).items)) return (data as any).items as HistItem[];
       if (Array.isArray((data as any).history)) return (data as any).history as HistItem[];
+      // try subcollections
       const out: HistItem[] = [];
       try {
         const subcols = await doc.ref.listCollections();
@@ -201,7 +216,7 @@ async function collectDueItems(
   explain = false,
   includeNever = false
 ) {
-  const dueByDoc: Array<{ subId: string; items: SubItem[]; dueInfo: Array<{ key: string; last: Date; daysSince: number; threshold: number }> }> = [];
+  const dueByDoc: Array<{ subId: string; items: SubItem[]; dueInfo: Array<{ key: string; last: Date | null; daysSince: number; threshold: number }> }> = [];
   const subsSnap = await db.collection(subsPath).get();
   if (debug) console.log("[DEBUG] subscriptions docs:", subsSnap.size);
 
@@ -210,22 +225,20 @@ async function collectDueItems(
     const subLevelFreq = Number((data as any).frequency) || 0;
     const items: SubItem[] = Array.isArray((data as any).items) ? (data as any).items : [];
     const dueItems: SubItem[] = [];
-    const info: Array<{ key: string; last: Date; daysSince: number; threshold: number }> = [];
+    const info: Array<{ key: string; last: Date | null; daysSince: number; threshold: number }> = [];
 
     for (const it of items) {
       const key = stableKeyFrom(it);
-      const last = lastMap.get(key);
+      const last = lastMap.get(key) || null;
       if (!last) {
         if (includeNever) {
-          // mark as due (first-time add)
           const threshold = Number((it as any).frequency) || (subLevelFreq > 0 ? subLevelFreq : defaultDays);
-          const daysSince = Number.MAX_SAFE_INTEGER; // huge
           if (explain) {
             const nm = it.name || it.url || it.id || "(no-name)";
             console.log(`[EXPLAIN] ${doc.id} :: ${nm} -> last=N/A but includeNever => DUE (threshold=${threshold})`);
           }
           dueItems.push({...it, quantity: intQty((it as any).quantity ?? (it as any).qty ?? 1,1)});
-          info.push({ key, last: new Date(0), daysSince, threshold });
+          info.push({ key, last: null, daysSince: Number.MAX_SAFE_INTEGER, threshold });
         } else {
           if (explain) {
             const nm = it.name || it.url || it.id || "(no-name)";
@@ -257,30 +270,21 @@ async function collectDueItems(
   return dueByDoc;
 }
 
-async function loadExistingCartKeys(db: admin.firestore.Firestore, purchaseDocPath: string, debug = false) {
-  const ref = db.doc(purchaseDocPath);
-  const snap = await ref.get();
-  if (!snap.exists) return new Set<string>();
-  const data = snap.data() || {};
-  const items: any[] = Array.isArray((data as any).items) ? (data as any).items : [];
-  const set = new Set<string>();
-  for (const it of items) set.add(stableKeyFrom(it));
-  if (debug) console.log("[DEBUG] existing purchase doc keys:", set.size);
-  return set;
-}
-
+// writePurchase: if purchasePath ends with '/cart' treat as collection of cart docs
 async function writePurchase(
   db: admin.firestore.Firestore,
   uid: string,
   purchasePath: string,
   purchaseDoc: string | undefined,
-  bundles: Array<{ subId: string; items: SubItem[]; dueInfo: Array<{ key: string; last: Date; daysSince: number; threshold: number }> }>,
+  bundles: Array<{ subId: string; items: SubItem[]; dueInfo: Array<{ key: string; last: Date | null; daysSince: number; threshold: number }> }>,
   dry: boolean,
   debug = false,
   forceAdd = false
 ) {
   if (!bundles.length) return 0;
-  const isCartCollection = purchasePath.split("/").filter(Boolean).slice(-1)[0] === "cart";
+  const pathSegs = purchasePath.split("/").filter(Boolean);
+  const lastSeg = pathSegs[pathSegs.length - 1] || "";
+  const isCartCollection = lastSeg === "cart";
 
   if (isCartCollection) {
     const col = db.collection(purchasePath);
@@ -289,35 +293,38 @@ async function writePurchase(
     for (const b of bundles) {
       for (const it of b.items) {
         const docId = normalizeId((it as any).id, it.url) || null;
-        const qty = intQty((it as any).quantity ?? (it as any).qty ?? (it as any).quantify ?? 1, 1);
+        const qty = intQty((it as any).quantity ?? (it as any).qty ?? 1, 1);
 
         if (docId) {
           const ref = col.doc(docId);
           const snap = await ref.get();
           if (snap.exists) {
             const data = snap.data() || {};
-            const existingQty = Number((data as any).quantify ?? (data as any).quantity ?? 0) || 0;
-            const newQty = forceAdd ? existingQty + qty : existingQty + qty;
+            const existingQty = Number((data as any).quantity ?? (data as any).quantify ?? 0) || 0;
+            const newQty = existingQty + qty;
             const updateBody: any = {
               quantify: newQty,
+              quantity: newQty, // write both for compatibility
               updatedAt: admin.firestore.FieldValue.serverTimestamp(),
               url: it.url || data.url || "",
               name: it.name || data.name || "",
               image: it.image || data.image || "",
               price: typeof (it as any).price === "number" ? (it as any).price : (data.price ?? null),
               priceTax: typeof (it as any).priceTax === "number" ? (it as any).priceTax : (data.priceTax ?? null),
+              source: "auto-subscription",
             };
             if (dry) {
               console.log("[DRY RUN] would update cart doc:", ref.path, JSON.stringify(updateBody));
             } else {
               await ref.set(updateBody, { merge: true });
-              if (debug) console.log(`[DEBUG] updated cart doc=${ref.path} quantify=${newQty}`);
+              if (debug) console.log(`[DEBUG] updated cart doc=${ref.path} quantity=${newQty}`);
             }
             wrote++;
           } else {
             const body: any = {
               createdAt: admin.firestore.FieldValue.serverTimestamp(),
               quantify: qty,
+              quantity: qty,
               url: it.url || "",
               name: it.name || "",
               image: it.image || "",
@@ -337,6 +344,7 @@ async function writePurchase(
           const body: any = {
             createdAt: admin.firestore.FieldValue.serverTimestamp(),
             quantify: qty,
+            quantity: qty,
             url: it.url || "",
             name: it.name || "",
             image: it.image || "",
@@ -357,7 +365,7 @@ async function writePurchase(
     return wrote;
   }
 
-  // fallback: purchase doc or collection - unchanged from earlier behaviour
+  // fallback: previous behaviour for purchase doc/collection
   if (purchaseDoc) {
     const docPath = purchasePath;
     const ref = db.doc(docPath);
@@ -428,7 +436,7 @@ async function writePurchase(
         items: outItems,
         meta: b.dueInfo.map((x) => ({
           key: x.key,
-          lastPurchasedAt: admin.firestore.Timestamp.fromDate(x.last),
+          lastPurchasedAt: x.last ? admin.firestore.Timestamp.fromDate(x.last) : null,
           daysSince: x.daysSince,
           threshold: x.threshold,
         })),
@@ -471,7 +479,6 @@ function parseArgs(): Args {
 
 async function getUserIdsWithSubscriptions(db: admin.firestore.Firestore, limit?: number, debug = false, uid?: string) {
   if (uid) {
-    // process single user (if exists)
     const doc = await db.collection("users").doc(uid).get();
     if (!doc.exists) {
       if (debug) console.log(`[DEBUG] user ${uid} does not exist`);
@@ -515,28 +522,20 @@ async function main() {
     totalProcessed++;
     console.log(`\n--- Processing uid=${uid} (${totalProcessed}/${uids.length}) ---`);
     try {
-      // debug: show which subscription docs we will read
       if (args.debug) {
         const ss = await db.collection(`users/${uid}/subscriptions`).get();
         console.log(`[DEBUG] subs for ${uid}: ${ss.size}`);
-        for (const s of ss.docs) {
-          console.log("  - sub:", s.id, JSON.stringify(s.data()).slice(0,400));
-        }
+        for (const s of ss.docs) console.log("  - sub:", s.id, JSON.stringify(s.data()).slice(0,400));
       }
 
       const lastMap = await buildLastBoughtMap(db, `users/${uid}/history`, args.debug, args.explain);
-      if (args.debug) {
-        console.log("[DEBUG] lastMap sample keys:", Array.from(lastMap.keys()).slice(0,20));
-      }
+      if (args.debug) console.log("[DEBUG] lastMap sample keys:", Array.from(lastMap.keys()).slice(0,50));
       const bundles = await collectDueItems(db, `users/${uid}/subscriptions`, lastMap, args.days, args.debug, args.explain, !!args.includeNever);
 
       if (bundles.length === 0) {
         console.log("[INFO] no due items for user:", uid);
       } else {
-        if (args.debug) {
-          console.log("[DEBUG] bundles to write:", JSON.stringify(bundles, null, 2));
-        }
-        // write to cart collection users/{uid}/cart by default
+        if (args.debug) console.log("[DEBUG] bundles to write:", JSON.stringify(bundles, null, 2));
         const wrote = await writePurchase(db, uid, `users/${uid}/cart`, undefined, bundles, args.dry, args.debug, !!args.forceAdd);
         console.log(`[INFO] user=${uid} wrote=${wrote}`);
         totalAdded += wrote;
