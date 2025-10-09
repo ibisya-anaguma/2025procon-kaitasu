@@ -1,37 +1,14 @@
 //あらとも
 
-// src/jobs/checkout/autocart-runner.ts
-// 改良版 — ItemId（doc id）を確実に users/{uid}/cart に追加する
 import * as admin from "firebase-admin";
 import * as fs from "fs";
 import * as path from "path";
 
 type SubItem = {
-  id?: any;
-  itemId?: any;
-  productId?: any;
-  url?: string;
-  name?: string;
-  image?: string;
-  price?: number;
-  priceTax?: number;
-  quantity?: number;
-  qty?: number;
-  genre?: number | string;
-  frequency?: number;
+  id?: any; itemId?: any; productId?: any; url?: string; name?: string; image?: string;
+  price?: number; priceTax?: number; quantity?: number; qty?: number; genre?: number | string; frequency?: number;
 };
-
-type HistItem = {
-  id?: any;
-  itemId?: any;
-  productId?: any;
-  url?: string;
-  name?: string;
-  quantity?: number;
-  timeStamp?: any;
-  timestamp?: any;
-  createdAt?: any;
-};
+type HistItem = { id?: any; itemId?: any; productId?: any; url?: string; name?: string; quantity?: number; timeStamp?: any; timestamp?: any; createdAt?: any; };
 
 type Args = {
   cred?: string;
@@ -50,37 +27,61 @@ const DAY_MS = 24 * 3600 * 1000;
 
 function toDateAny(v: any): Date | null {
   if (!v) return null;
-  if (typeof v === "object" && typeof v.toDate === "function") return v.toDate();
-  const d = new Date(v);
-  return isNaN(d.getTime()) ? null : d;
+  // Firestore Timestamp-like
+  if (typeof v === "object" && v && typeof v.toDate === "function") return v.toDate();
+  // ISO / standard parsable strings
+  const d1 = new Date(v);
+  if (!isNaN(d1.getTime())) return d1;
+  // try common numeric timestamp (seconds/millis)
+  if (typeof v === "number") {
+    // treat as seconds if small, else ms
+    if (v < 1e12) return new Date(v * 1000);
+    return new Date(v);
+  }
+  // try to parse some localized formats (e.g. "2025年8月1日 19:09:15 UTC+9")
+  try {
+    const s = String(v).trim();
+    // match: YYYY年M月D HH:MM:SS UTC+9  or variants
+    const jp = s.match(/^(\d{4})年\s*(\d{1,2})月\s*(\d{1,2})日\s+(\d{1,2}):(\d{2}):(\d{2})\s*UTC\+?([0-9:+-]+)?/);
+    if (jp) {
+      const [, Y, M, D, hh, mm, ss, tz] = jp;
+      let tzpart = "+09:00";
+      if (tz) {
+        // tz might be "9" or "09" or "9:00" etc.
+        if (/^\d+$/.test(tz)) tzpart = (tz.length === 1 ? `+0${tz}:00` : `+${tz}:00`);
+        else if (/^[\+\-]\d{1,2}$/.test(tz)) tzpart = (tz.length === 2 ? `+0${tz}:00` : tz);
+        else if (/^\d{1,2}:\d{2}$/.test(tz)) tzpart = `+${tz}`;
+      }
+      const iso = `${Y}-${String(Number(M)).padStart(2,"0")}-${String(Number(D)).padStart(2,"0")}T${String(Number(hh)).padStart(2,"0")}:${mm}:${ss}${tzpart}`;
+      const dd = new Date(iso);
+      if (!isNaN(dd.getTime())) return dd;
+    }
+    // fallback: try replace japanese separators
+    const alt = s.replace(/[年]/g,'-').replace(/[月]/g,'-').replace(/[日]/g,' ').replace(/UTC\+? ?/i,'+');
+    const d2 = new Date(alt);
+    if (!isNaN(d2.getTime())) return d2;
+  } catch {}
+  return null;
 }
+
 function intQty(v: any, def = 1) {
   const n = Number(v);
   return Number.isFinite(n) && n > 0 ? Math.floor(n) : def;
 }
 
-// ---- helpers for numeric normalization ----
-function extractLongestDigitRun(s: string): string {
+function extractLongestDigitRun(s: string) {
   const m = s.match(/\d+/g);
   if (!m) return "";
-  return m.sort((a, b) => b.length - a.length)[0];
-}
-function normalizeNumericString(s: string): string {
-  // remove non-digit, collect longest digit run as canonical numeric id
-  const digits = extractLongestDigitRun(s);
-  return digits;
+  return m.sort((a,b)=>b.length-a.length)[0];
 }
 
-// ----- ID 正規化 & 候補キー -----
-// returns normalized id-like string (not prefixed)
 function idFromUrl(url?: string): string {
   if (!url) return "";
   const s = String(url);
   const m = s.match(/\/([A-Za-z0-9\-_.]{4,})\.html(?:[?#].*)?$|[?&]id=([A-Za-z0-9\-_.]{4,})/);
   if (m && (m[1] || m[2])) return (m[1] || m[2]).trim();
   const any = s.match(/[A-Za-z0-9]{4,}/g);
-  if (any && any.length) return any.sort((a, b) => b.length - a.length)[0];
-  // fallback to digits
+  if (any && any.length) return any.sort((a,b)=>b.length-a.length)[0];
   return extractLongestDigitRun(s);
 }
 
@@ -91,7 +92,6 @@ function normalizeId(val: any, url?: string): string {
   }
   if (val == null) return "";
   if (typeof val === "number") {
-    // to string (may be scientific), but also provide digits-run
     const s = String(val);
     const digits = extractLongestDigitRun(s);
     return digits || s;
@@ -103,33 +103,30 @@ function normalizeId(val: any, url?: string): string {
   if (!s) return "";
   if (/^[A-Za-z0-9\-_.]{4,}$/.test(s)) return s;
   const any = s.match(/[A-Za-z0-9]{4,}/g);
-  if (any && any.length) return any.sort((a, b) => b.length - a.length)[0];
+  if (any && any.length) return any.sort((a,b)=>b.length-a.length)[0];
   const num = s.match(/\d{4,}/g);
-  if (num && num.length) return num.sort((a, b) => b.length - a.length)[0];
+  if (num && num.length) return num.sort((a,b)=>b.length-a.length)[0];
   return "";
 }
 
-// return array of candidate keys, prefixed: 'id:...', 'name:...', 'raw:...', 'num:...'
 function candidateKeysForItem(item: any): string[] {
   const keys = new Set<string>();
-  const add = (v: any) => {
+  const addCandidate = (v: any) => {
     if (v == null) return;
     const s = String(v).trim();
     if (!s) return;
     const n = normalizeId(s, item?.url);
     if (n) keys.add(`id:${n}`);
-    // numeric canonical
-    const digits = normalizeNumericString(s);
+    const digits = extractLongestDigitRun(s);
     if (digits) keys.add(`num:${digits}`);
     keys.add(`raw:${s}`);
   };
 
-  const fields = ["itemId", "item_id", "productId", "product_id", "id", "sku", "skuId", "shop_item_id", "product_id_jp"];
+  const fields = ["itemId","item_id","productId","product_id","id","sku","skuId","shop_item_id","product_id_jp"];
   for (const f of fields) {
-    if (item && Object.prototype.hasOwnProperty.call(item, f)) add((item as any)[f]);
-    // case-insensitive variants
+    if (item && Object.prototype.hasOwnProperty.call(item,f)) addCandidate(item[f]);
     for (const k of Object.keys(item || {})) {
-      if (k.toLowerCase() === f.toLowerCase() && k !== f) add((item as any)[k]);
+      if (k.toLowerCase() === f.toLowerCase() && k !== f) addCandidate(item[k]);
     }
   }
 
@@ -142,21 +139,18 @@ function candidateKeysForItem(item: any): string[] {
   }
 
   if (item && item.name) {
-    const nm = String(item.name).trim().toLowerCase().replace(/\s+/g, " ");
+    const nm = String(item.name).trim().toLowerCase().replace(/\s+/g,' ');
     if (nm) keys.add(`name:${nm}`);
   }
 
-  if (item && item.id) add(item.id);
+  if (item && item.id) addCandidate(item.id);
   try { keys.add(`rawobj:${JSON.stringify(item)}`); } catch {}
 
   return Array.from(keys);
 }
 
-function daysBetween(a: Date, b: Date) {
-  return Math.floor((a.getTime() - b.getTime()) / DAY_MS);
-}
+function daysBetween(a: Date, b: Date) { return Math.floor((a.getTime() - b.getTime()) / DAY_MS); }
 
-// ---- Firebase init (env / .firebase / FIREBASE_SERVICE_ACCOUNT secret) ----
 function initAdmin(credPath?: string) {
   try {
     const wsa = path.resolve(".firebase/firebase-key.json");
@@ -173,7 +167,7 @@ function initAdmin(credPath?: string) {
   } catch (e) {}
   const credFile = process.env.GOOGLE_APPLICATION_CREDENTIALS || "";
   if (credFile && fs.existsSync(credFile)) {
-    const sa = JSON.parse(fs.readFileSync(credFile, "utf8"));
+    const sa = JSON.parse(fs.readFileSync(credFile,"utf8"));
     admin.initializeApp({ credential: admin.credential.cert(sa), projectId: sa.project_id });
     process.env.GOOGLE_CLOUD_PROJECT = process.env.GCLOUD_PROJECT = sa.project_id;
     return admin.firestore();
@@ -183,34 +177,57 @@ function initAdmin(credPath?: string) {
   }
 }
 
-// ---- buildLastBoughtMap: for each history item, register candidate keys AND numeric 'num:' keys ----
-async function buildLastBoughtMap(db: admin.firestore.Firestore, histPath: string, debug = false, explain = false) {
+async function buildLastBoughtMap(db: admin.firestore.Firestore, histPath: string, debug = false, explain=false) {
   const map = new Map<string, Date>();
   const pathSegs = histPath.split("/").filter(Boolean);
 
   async function collectFromDoc(docSnap: admin.firestore.DocumentSnapshot) {
     const data = (docSnap.data && docSnap.data()) || {};
-    const docTs = toDateAny((data as any).createdAt) || toDateAny((data as any).created_at) || (docSnap.createTime ? docSnap.createTime.toDate() : null);
-    const arr: HistItem[] = Array.isArray((data as any).items) ? (data as any).items : (Array.isArray((data as any).history) ? (data as any).history : []);
+    const docTs = toDateAny((data as any).createdAt) || toDateAny((data as any).created_at) || toDateAny((data as any).timeStamp) || (docSnap.createTime ? docSnap.createTime.toDate() : null);
+
+    // items may be array OR object (map with numeric keys) -> support both
+    let rawItems: any = (data as any).items ?? (data as any).history ?? [];
+    let arr: any[] = [];
+    if (Array.isArray(rawItems)) arr = rawItems;
+    else if (rawItems && typeof rawItems === 'object') arr = Object.values(rawItems);
+    else arr = [];
+
+    if (debug) console.log("[DEBUG] history doc", docSnap.id, "items count:", arr.length);
+
     for (const it of arr) {
       const itemTs = toDateAny((it as any).timeStamp) || toDateAny((it as any).timestamp) || toDateAny((it as any).createdAt) || null;
-      const usedTs = itemTs || docTs;
+      // if itemTs still null, try parsing string with tolerant parser
+      let usedTs = itemTs || docTs;
+      if (!usedTs) {
+        // try parsing common fields that may be string in Japanese format
+        usedTs = toDateAny((it as any).timeStamp) || toDateAny((it as any).timestamp) || null;
+      }
+      if (!usedTs) {
+        // last resort: try to parse numeric-ish strings inside the item
+        try {
+          const s = JSON.stringify(it);
+          const digits = extractLongestDigitRun(s);
+          if (digits && digits.length >= 8) {
+            // no time, but still set to doc createTime if exists
+            if (docSnap.createTime) usedTs = docSnap.createTime.toDate();
+          }
+        } catch {}
+      }
       if (!usedTs) continue;
+
       const keys = candidateKeysForItem(it);
       if (explain) console.log(`[EXPLAIN] history doc ${docSnap.id} item keys:`, keys);
       for (const k of keys) {
         const prev = map.get(k);
         if (!prev || prev < usedTs) map.set(k, usedTs);
-        // if id:... then also set num:... normalized digits key
         if (k.startsWith("id:")) {
-          const digits = normalizeNumericString(k.slice(3));
+          const digits = extractLongestDigitRun(k.slice(3));
           if (digits) {
             const nk = `num:${digits}`;
             const p2 = map.get(nk);
             if (!p2 || p2 < usedTs) map.set(nk, usedTs);
           }
         }
-        // raw: may also contain digits -> set num:
         if (k.startsWith("raw:") || k.startsWith("rawobj:")) {
           const digits = extractLongestDigitRun(k);
           if (digits) {
@@ -221,54 +238,11 @@ async function buildLastBoughtMap(db: admin.firestore.Firestore, histPath: strin
         }
       }
     }
-
-    // subcollections
-    try {
-      if ((docSnap as any).ref && typeof (docSnap as any).ref.listCollections === "function") {
-        const subcols = await (docSnap as any).ref.listCollections();
-        for (const sc of subcols) {
-          try {
-            const sSnap = await sc.get();
-            for (const sd of sSnap.docs) {
-              const sdata = sd.data() || {};
-              const ts = toDateAny((sdata as any).timeStamp) || toDateAny((sdata as any).createdAt) || docTs;
-              if (!ts) continue;
-              const keys = candidateKeysForItem(sdata);
-              if (explain) console.log(`[EXPLAIN] history subdoc ${sd.ref.path} keys:`, keys);
-              for (const k of keys) {
-                const prev = map.get(k);
-                if (!prev || prev < ts) map.set(k, ts);
-                if (k.startsWith("id:")) {
-                  const digits = normalizeNumericString(k.slice(3));
-                  if (digits) {
-                    const nk = `num:${digits}`;
-                    const p2 = map.get(nk);
-                    if (!p2 || p2 < ts) map.set(nk, ts);
-                  }
-                }
-                if (k.startsWith("raw:") || k.startsWith("rawobj:")) {
-                  const digits = extractLongestDigitRun(k);
-                  if (digits) {
-                    const nk = `num:${digits}`;
-                    const p2 = map.get(nk);
-                    if (!p2 || p2 < ts) map.set(nk, ts);
-                  }
-                }
-              }
-            }
-          } catch (e) {
-            if (debug) console.warn("subcol read failed:", sc.path, e && (e as any).message);
-          }
-        }
-      }
-    } catch (e) {
-      if (debug) console.warn("listCollections failed:", e && (e as any).message);
-    }
   }
 
   if (pathSegs.length % 2 === 1) {
     let snap: admin.firestore.QuerySnapshot;
-    try { snap = await db.collection(histPath).orderBy("createdAt", "asc").get(); } catch { snap = await db.collection(histPath).get(); }
+    try { snap = await db.collection(histPath).orderBy("createdAt","asc").get(); } catch { snap = await db.collection(histPath).get(); }
     for (const d of snap.docs) await collectFromDoc(d);
   } else {
     const doc = await db.doc(histPath).get();
@@ -277,66 +251,12 @@ async function buildLastBoughtMap(db: admin.firestore.Firestore, histPath: strin
 
   if (debug) {
     console.log("[DEBUG] lastBought map size:", map.size);
-    if (map.size <= 200) console.log("[DEBUG] lastBought keys (sample):", Array.from(map.entries()).map(([k, v]) => `${k} -> ${v.toISOString().slice(0, 10)}`));
-    else console.log("[DEBUG] lastBought keys sample:", Array.from(map.keys()).slice(0, 50));
+    if (map.size <= 200) console.log("[DEBUG] lastBought keys (sample):", Array.from(map.entries()).map(([k,v])=>`${k} -> ${v.toISOString().slice(0,10)}`));
+    else console.log("[DEBUG] lastBought keys sample:", Array.from(map.keys()).slice(0,50));
   }
   return map;
 }
 
-// ---- findLast helper: tries exact keys, then num: keys, then name tokens ----
-function findLastForKeys(keys: string[], lastMap: Map<string, Date>, explain = false) {
-  // 1) exact
-  for (const k of keys) {
-    const f = lastMap.get(k);
-    if (f) return { found: f, matchedKey: k, reason: "exact" };
-  }
-  // 2) numeric 'num:' candidate (if any key has digits)
-  const numericCandidates = new Set<string>();
-  for (const k of keys) {
-    if (k.startsWith("num:")) numericCandidates.add(k.slice(4));
-    else {
-      const m = k.match(/\d{4,}/g);
-      if (m && m.length) numericCandidates.add(m.sort((a,b)=>b.length-a.length)[0]);
-    }
-  }
-  if (numericCandidates.size) {
-    for (const [lk, ld] of lastMap.entries()) {
-      if (!lk.startsWith("num:") && !lk.startsWith("id:") && !lk.startsWith("raw:") && !lk.startsWith("rawobj:")) continue;
-      const lkDigits = extractLongestDigitRun(lk);
-      for (const nc of Array.from(numericCandidates)) {
-        if (!nc) continue;
-        if (!lkDigits) continue;
-        if (lkDigits === nc || lkDigits.endsWith(nc) || nc.endsWith(lkDigits) || lkDigits.includes(nc) || nc.includes(lkDigits)) {
-          return { found: ld, matchedKey: lk, reason: `numeric-fuzzy nc=${nc}` };
-        }
-      }
-    }
-  }
-  // 3) name token overlap
-  const nameTokensFor = (s: string) => String(s).toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, " ").split(/\s+/).filter(Boolean);
-  const keyNameTokens: string[] = [];
-  for (const k of keys) if (k.startsWith("name:")) keyNameTokens.push(...nameTokensFor(k.slice(5)));
-  if (keyNameTokens.length) {
-    for (const [lk, ld] of lastMap.entries()) {
-      if (!lk.startsWith("name:")) continue;
-      const lkTokens = nameTokensFor(lk.slice(5));
-      if (!lkTokens.length) continue;
-      const matched = lkTokens.filter(t => keyNameTokens.includes(t));
-      const ratio = matched.length / Math.max(1, Math.min(lkTokens.length, keyNameTokens.length));
-      if (ratio >= 0.5) return { found: ld, matchedKey: lk, reason: `name-fuzzy ratio=${ratio.toFixed(2)}` };
-    }
-  }
-  // 4) substring fallback
-  for (const [lk, ld] of lastMap.entries()) {
-    for (const k of keys) {
-      if (!k || !lk) continue;
-      if (lk.includes(k) || k.includes(lk)) return { found: ld, matchedKey: lk, reason: `substr` };
-    }
-  }
-  return { found: null as Date | null, matchedKey: null as string | null, reason: "none" };
-}
-
-// ---- collectDueItems ----
 async function collectDueItems(
   db: admin.firestore.Firestore,
   subsPath: string,
@@ -347,13 +267,16 @@ async function collectDueItems(
   includeNever = false
 ) {
   const dueByDoc: Array<{ subId: string; items: SubItem[]; dueInfo: Array<{ key: string; last: Date | null; daysSince: number; threshold: number }> }> = [];
+
   const subsSnap = await db.collection(subsPath).get();
   if (debug) console.log("[DEBUG] subscriptions docs:", subsSnap.size);
 
   for (const doc of subsSnap.docs) {
     const data = doc.data() || {};
     const subLevelFreq = Number((data as any).frequency) || 0;
-    const items: SubItem[] = Array.isArray((data as any).items) ? (data as any).items : [];
+    // subscriptions.items should usually be array; but support object->array as above
+    let rawItems = (data as any).items ?? [];
+    const items: SubItem[] = Array.isArray(rawItems) ? rawItems : (rawItems && typeof rawItems === 'object' ? Object.values(rawItems) : []);
     const dueItems: SubItem[] = [];
     const info: Array<{ key: string; last: Date | null; daysSince: number; threshold: number }> = [];
 
@@ -364,10 +287,54 @@ async function collectDueItems(
       const itemFreq = Number((it as any).frequency) || 0;
       const threshold = itemFreq > 0 ? itemFreq : (subLevelFreq > 0 ? subLevelFreq : defaultDays);
 
-      // find last using helper
-      const r = findLastForKeys(keys, lastMap, explain);
-      const last = r.found;
-      const matchedKey = r.matchedKey;
+      // find last: try exact first, then num:, then substr/name tokens (simple)
+      let last: Date | null = null;
+      let matchedKey: string | null = null;
+      for (const k of keys) {
+        const f = lastMap.get(k);
+        if (f) { last = f; matchedKey = k; break; }
+      }
+      if (!last) {
+        // try numeric candidates
+        const numericCandidates = new Set<string>();
+        for (const k of keys) {
+          if (k.startsWith("num:")) numericCandidates.add(k.slice(4));
+          else {
+            const m = k.match(/\d{4,}/g);
+            if (m && m.length) numericCandidates.add(m.sort((a,b)=>b.length-a.length)[0]);
+          }
+        }
+        if (numericCandidates.size) {
+          for (const [lk, ld] of lastMap.entries()) {
+            if (!lk.startsWith("num:") && !lk.startsWith("id:") && !lk.startsWith("raw:") && !lk.startsWith("rawobj:")) continue;
+            const lkDigits = extractLongestDigitRun(lk);
+            for (const nc of Array.from(numericCandidates)) {
+              if (!nc) continue;
+              if (!lkDigits) continue;
+              if (lkDigits === nc || lkDigits.endsWith(nc) || nc.endsWith(lkDigits) || lkDigits.includes(nc) || nc.includes(lkDigits)) {
+                last = ld; matchedKey = lk; break;
+              }
+            }
+            if (last) break;
+          }
+        }
+      }
+
+      if (!last) {
+        // try name-token overlap (simple)
+        const keyNameTokens: string[] = [];
+        for (const k of keys) if (k.startsWith("name:")) keyNameTokens.push(...String(k.slice(5)).toLowerCase().split(/\s+/).filter(Boolean));
+        if (keyNameTokens.length) {
+          for (const [lk, ld] of lastMap.entries()) {
+            if (!lk.startsWith("name:")) continue;
+            const lkTokens = String(lk.slice(5)).toLowerCase().split(/\s+/).filter(Boolean);
+            if (!lkTokens.length) continue;
+            const matched = lkTokens.filter(t => keyNameTokens.includes(t));
+            const ratio = matched.length / Math.max(1, Math.min(lkTokens.length, keyNameTokens.length));
+            if (ratio >= 0.5) { last = ld; matchedKey = lk; break; }
+          }
+        }
+      }
 
       if (!last) {
         if (includeNever) {
@@ -384,9 +351,9 @@ async function collectDueItems(
         if (daysSince >= threshold) {
           dueItems.push({ ...(it as any), quantity: intQty((it as any).quantity ?? (it as any).qty ?? 1, 1) });
           info.push({ key: matchedKey || keys[0] || "(no-key)", last, daysSince, threshold });
-          if (explain) console.log(`[EXPLAIN] ${doc.id} :: ${(it as any).name || it.url || it.id} -> last=${last.toISOString().slice(0,10)} daysSince=${daysSince} threshold=${threshold} matched=${matchedKey} reason=${r.reason}`);
+          if (explain) console.log(`[EXPLAIN] ${doc.id} :: ${(it as any).name || it.url || it.id} -> last=${last.toISOString().slice(0,10)} daysSince=${daysSince} threshold=${threshold} matchedKey=${matchedKey}`);
         } else {
-          if (explain) console.log(`[EXPLAIN] ${doc.id} :: ${(it as any).name || it.url || it.id} -> last=${last.toISOString().slice(0,10)} daysSince=${daysSince} threshold=${threshold} => not yet (matched=${matchedKey})`);
+          if (explain) console.log(`[EXPLAIN] ${doc.id} :: ${(it as any).name || it.url || it.id} -> last=${last.toISOString().slice(0,10)} daysSince=${daysSince} threshold=${threshold} => not yet`);
         }
       }
     }
@@ -400,7 +367,6 @@ async function collectDueItems(
   return dueByDoc;
 }
 
-// ---- writePurchase (cart の ItemId を doc id にする) ----
 async function writePurchase(
   db: admin.firestore.Firestore,
   uid: string,
@@ -417,7 +383,6 @@ async function writePurchase(
   for (const b of bundles) {
     for (const it of b.items) {
       const docIdCandidate = normalizeId((it as any).itemId ?? (it as any).item_id ?? (it as any).productId ?? (it as any).product_id ?? (it as any).id, it.url);
-      // additionally try numeric digits from url/name if docIdCandidate empty
       let docId = docIdCandidate;
       if (!docId) {
         const byUrlDigits = extractLongestDigitRun(String(it.url || ""));
@@ -433,61 +398,35 @@ async function writePurchase(
           const existingQty = Number((data as any).quantity ?? (data as any).quantify ?? 0) || 0;
           const newQty = existingQty + qty;
           const updateBody: any = {
-            quantity: newQty,
-            quantify: newQty,
-            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-            url: it.url || data.url || "",
-            name: it.name || data.name || "",
-            image: it.image || data.image || "",
+            quantity: newQty, quantify: newQty, updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            url: it.url || data.url || "", name: it.name || data.name || "", image: it.image || data.image || "",
             price: typeof it.price === "number" ? it.price : (data.price ?? null),
             priceTax: typeof it.priceTax === "number" ? it.priceTax : (data.priceTax ?? null),
             source: "auto-subscription",
           };
-          if (dry) {
-            console.log("[DRY RUN] would update cart doc:", ref.path, JSON.stringify(updateBody));
-          } else {
-            await ref.set(updateBody, { merge: true });
-            if (debug) console.log(`[DEBUG] updated cart doc=${ref.path} quantity=${newQty}`);
-          }
+          if (dry) console.log("[DRY RUN] would update cart doc:", ref.path, JSON.stringify(updateBody));
+          else { await ref.set(updateBody, { merge: true }); if (debug) console.log(`[DEBUG] updated cart doc=${ref.path} quantity=${newQty}`); }
           wrote++;
         } else {
           const body: any = {
             createdAt: admin.firestore.FieldValue.serverTimestamp(),
-            quantity: qty,
-            quantify: qty,
-            url: it.url || "",
-            name: it.name || "",
-            image: it.image || "",
-            price: typeof it.price === "number" ? it.price : null,
-            priceTax: typeof it.priceTax === "number" ? it.priceTax : null,
+            quantity: qty, quantify: qty, url: it.url || "", name: it.name || "", image: it.image || "",
+            price: typeof it.price === "number" ? it.price : null, priceTax: typeof it.priceTax === "number" ? it.priceTax : null,
             source: "auto-subscription",
           };
-          if (dry) {
-            console.log("[DRY RUN] would create cart doc:", col.doc(docId).path, JSON.stringify(body));
-          } else {
-            await col.doc(docId).set(body, { merge: true });
-            if (debug) console.log(`[DEBUG] created cart doc=${col.doc(docId).path}`);
-          }
+          if (dry) console.log("[DRY RUN] would create cart doc:", col.doc(docId).path, JSON.stringify(body));
+          else { await col.doc(docId).set(body, { merge: true }); if (debug) console.log(`[DEBUG] created cart doc=${col.doc(docId).path}`); }
           wrote++;
         }
       } else {
         const body: any = {
           createdAt: admin.firestore.FieldValue.serverTimestamp(),
-          quantity: qty,
-          quantify: qty,
-          url: it.url || "",
-          name: it.name || "",
-          image: it.image || "",
-          price: typeof it.price === "number" ? it.price : null,
-          priceTax: typeof it.priceTax === "number" ? it.priceTax : null,
+          quantity: qty, quantify: qty, url: it.url || "", name: it.name || "", image: it.image || "",
+          price: typeof it.price === "number" ? it.price : null, priceTax: typeof it.priceTax === "number" ? it.priceTax : null,
           source: "auto-subscription",
         };
-        if (dry) {
-          console.log("[DRY RUN] would add cart doc (auto-id):", JSON.stringify(body));
-        } else {
-          await col.add(body);
-          if (debug) console.log("[DEBUG] added cart doc (auto-id)");
-        }
+        if (dry) console.log("[DRY RUN] would add cart doc (auto-id):", JSON.stringify(body));
+        else { await col.add(body); if (debug) console.log("[DEBUG] added cart doc (auto-id)"); }
         wrote++;
       }
     }
@@ -496,43 +435,27 @@ async function writePurchase(
   return wrote;
 }
 
-// ---- args parse / getUserIdsWithSubscriptions / main ----
 function parseArgs(): Args {
   const argv = process.argv.slice(2);
-  const get = (k: string, d = "") => {
-    const i = argv.indexOf(k);
-    return i >= 0 ? String(argv[i + 1]) : d;
-  };
+  const get = (k: string, d = "") => { const i = argv.indexOf(k); return i >= 0 ? String(argv[i+1]) : d; };
   const has = (k: string) => argv.includes(k);
   return {
     cred: get("--cred", process.env.GOOGLE_APPLICATION_CREDENTIALS || ""),
     days: Number(get("--days", "30")) || 30,
-    dry: has("--dry"),
-    debug: has("--debug"),
-    explain: has("--explain"),
-    limit: Number(get("--limit", "0")) || undefined,
-    delayMs: Number(get("--delay-ms", "200")) || 200,
-    uid: get("--uid", "") || undefined,
-    includeNever: has("--include-never"),
-    forceAdd: has("--force-add"),
+    dry: has("--dry"), debug: has("--debug"), explain: has("--explain"),
+    limit: Number(get("--limit", "0")) || undefined, delayMs: Number(get("--delay-ms", "200")) || 200,
+    uid: get("--uid", "") || undefined, includeNever: has("--include-never"), forceAdd: has("--force-add"),
   };
 }
 
 async function getUserIdsWithSubscriptions(db: admin.firestore.Firestore, limit?: number, debug = false, uid?: string) {
   if (uid) {
     const doc = await db.collection("users").doc(uid).get();
-    if (!doc.exists) {
-      if (debug) console.log(`[DEBUG] user ${uid} does not exist`);
-      return [];
-    }
+    if (!doc.exists) { if (debug) console.log(`[DEBUG] user ${uid} does not exist`); return []; }
     const subsSnap = await db.collection(`users/${uid}/subscriptions`).limit(1).get();
-    if (subsSnap.empty) {
-      if (debug) console.log(`[DEBUG] user ${uid} has no subscriptions`);
-      return [];
-    }
+    if (subsSnap.empty) { if (debug) console.log(`[DEBUG] user ${uid} has no subscriptions`); return []; }
     return [uid];
   }
-
   const ids: string[] = [];
   const coll = db.collection("users");
   const snap = await coll.get();
@@ -552,15 +475,7 @@ async function getUserIdsWithSubscriptions(db: admin.firestore.Firestore, limit?
   const args = parseArgs();
   const db = initAdmin(args.cred);
 
-  console.log("[INFO] starting autocart-runner", {
-    dry: args.dry,
-    days: args.days,
-    limit: args.limit,
-    delayMs: args.delayMs,
-    uid: args.uid,
-    includeNever: args.includeNever,
-    forceAdd: args.forceAdd,
-  });
+  console.log("[INFO] starting autocart-runner", { dry: args.dry, days: args.days, limit: args.limit, delayMs: args.delayMs, uid: args.uid, includeNever: args.includeNever, forceAdd: args.forceAdd });
 
   const uids = await getUserIdsWithSubscriptions(db, args.limit, args.debug, args.uid);
   console.log(`[INFO] users to process: ${uids.length}`);
@@ -591,7 +506,4 @@ async function getUserIdsWithSubscriptions(db: admin.firestore.Firestore, limit?
 
   console.log(`\nDone. users_processed=${totalProcessed} total_added=${totalAdded} (dry=${args.dry})`);
   process.exit(0);
-})().catch((e) => {
-  console.error(e);
-  process.exit(1);
-});
+})().catch((e) => { console.error(e); process.exit(1); });
