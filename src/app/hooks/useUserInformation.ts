@@ -1,14 +1,20 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { useAuth } from './useAuth';
+import { useAuth } from '@/contexts/AuthContext';
 import type { UserInformation, UserInformationUpdate, UserHealthSettings } from '@/types/user';
 
 export function useUserInformation() {
-  const { user, loading, getIdToken } = useAuth();
+  const { user, loading } = useAuth();
   const [userInfo, setUserInfo] = useState<UserInformation | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // トークンを取得
+  const getIdToken = async () => {
+    if (!user) throw new Error('ユーザーが認証されていません');
+    return await user.getIdToken();
+  };
 
   // ユーザー情報を取得
   const fetchUserInformation = async () => {
@@ -32,10 +38,27 @@ export function useUserInformation() {
       }
 
       const data = await response.json();
-      setUserInfo(data);
+      
+      // AuthContextのdisplayNameと同期
+      const syncedData = {
+        ...data,
+        name: user.displayName || data.name || 'ユーザー',
+        email: user.email || data.email || '',
+      };
+      
+      setUserInfo(syncedData);
     } catch (err) {
       console.error('ユーザー情報取得エラー:', err);
       setErrorMessage(err instanceof Error ? err.message : 'エラーが発生しました');
+      
+      // エラー時もAuthContextから基本情報を設定
+      setUserInfo({
+        uid: user.uid,
+        name: user.displayName || 'ユーザー',
+        email: user.email || '',
+        monthlyBudget: 50000,
+        resetDay: 1,
+      } as UserInformation);
     } finally {
       setIsLoading(false);
     }

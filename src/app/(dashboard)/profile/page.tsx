@@ -4,9 +4,10 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { FILTER_BUTTON_INACTIVE_STYLE, FILTER_BUTTON_TEXT_STYLE } from "@/components/screens/filterStyles";
+import { FILTER_BUTTON_INACTIVE_CLASS, FILTER_BUTTON_TEXT_CLASS } from "@/components/screens/filterStyles";
 import { useUserInformation } from "@/app/hooks/useUserInformation";
 import { useAppContext } from "@/contexts/AppContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { useState, useEffect } from "react";
 import type { Screen } from "@/types/page";
 
@@ -54,6 +55,7 @@ export default function ProfilePage() {
     if (path) router.push(path);
   };
 
+  const { user: authUser } = useAuth();
   const { userInfo, isLoading, updateUserInformation } = useUserInformation();
   const [localBudget, setLocalBudget] = useState(0);
   const [isEditingName, setIsEditingName] = useState(false);
@@ -63,11 +65,14 @@ export default function ProfilePage() {
   // ユーザー情報が読み込まれたらローカル状態を更新
   useEffect(() => {
     if (userInfo) {
-      setLocalBudget(userInfo.monthlyBudget);
-      setLocalName(userInfo.name);
-      setSelectedResetDay(userInfo.resetDay);
+      setLocalBudget(userInfo.monthlyBudget || 50000);
+      setLocalName(userInfo.name || authUser?.displayName || 'ユーザー');
+      setSelectedResetDay(userInfo.resetDay || 1);
+    } else if (authUser) {
+      // userInfoがまだない場合、authUserから初期値を設定
+      setLocalName(authUser.displayName || 'ユーザー');
     }
-  }, [userInfo]);
+  }, [userInfo, authUser]);
 
   // 予算を保存
   const handleBudgetSave = async () => {
@@ -107,15 +112,7 @@ export default function ProfilePage() {
       <div className="flex flex-col items-center gap-4" data-oid=":530dgu">
 
         <Card
-        className="flex flex-col gap-6 p-6"
-        style={{
-          width: "900px",
-          height: "633px",
-          flexShrink: 0,
-          borderRadius: "14.469px",
-          border: "5px solid #FDA900",
-          backgroundColor: "#FFF"
-        }}
+        className="flex flex-col gap-6 p-6 w-[900px] h-[633px] shrink-0 rounded-[14.469px] border-[5px] border-[#FDA900] bg-white"
         data-oid="profile-main-card">
 
           <div className="flex items-center gap-3" data-oid="mhd5qso">
@@ -138,46 +135,26 @@ export default function ProfilePage() {
                         variant="ghost"
                         size="sm"
                         onClick={handleNameSave}
-                        className="border border-transparent p-1"
-                        style={FILTER_BUTTON_INACTIVE_STYLE}>
-                        <span style={FILTER_BUTTON_TEXT_STYLE}>保存</span>
+                        className={`border border-transparent p-1 ${FILTER_BUTTON_INACTIVE_CLASS}`}>
+                        <span className={FILTER_BUTTON_TEXT_CLASS}>保存</span>
                       </Button>
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => {
                           setIsEditingName(false);
-                          setLocalName(userInfo?.name || '');
+                          setLocalName(userInfo?.name || authUser?.displayName || 'ユーザー');
                         }}
-                        className="border border-transparent p-1"
-                        style={FILTER_BUTTON_INACTIVE_STYLE}>
-                        <span style={FILTER_BUTTON_TEXT_STYLE}>キャンセル</span>
+                        className={`border border-transparent p-1 ${FILTER_BUTTON_INACTIVE_CLASS}`}>
+                        <span className={FILTER_BUTTON_TEXT_CLASS}>キャンセル</span>
                       </Button>
                     </div>
                   ) : (
                     <div className="flex items-baseline gap-1" data-oid="2y3hjo1">
-                      <span
-                        style={{
-                          color: "var(--, #101010)",
-                          fontFamily: "BIZ UDPGothic",
-                          fontSize: "36px",
-                          fontStyle: "normal",
-                          fontWeight: 700,
-                          lineHeight: "normal"
-                        }}
-                      >
-                        {userInfo?.name || 'ユーザー'}
+                      <span className="text-[#101010] font-['BIZ_UDPGothic'] text-[36px] font-bold leading-normal">
+                        {localName || authUser?.displayName || 'ユーザー'}
                       </span>
-                      <span
-                        style={{
-                          color: "var(--, #101010)",
-                          fontFamily: "BIZ UDPGothic",
-                          fontSize: "24px",
-                          fontStyle: "normal",
-                          fontWeight: 700,
-                          lineHeight: "normal"
-                        }}
-                      >
+                      <span className="text-[#101010] font-['BIZ_UDPGothic'] text-[24px] font-bold leading-normal">
                         さん
                       </span>
                     </div>
@@ -185,11 +162,10 @@ export default function ProfilePage() {
                   {!isEditingName && (
                     <Button
                       variant="ghost"
-                      className="border border-transparent p-0"
-                      style={FILTER_BUTTON_INACTIVE_STYLE}
+                      className={`border border-transparent p-0 ${FILTER_BUTTON_INACTIVE_CLASS}`}
                       onClick={() => setIsEditingName(true)}
                       data-oid="541gvwr">
-                      <span style={FILTER_BUTTON_TEXT_STYLE}>
+                      <span className={FILTER_BUTTON_TEXT_CLASS}>
                         名前を変更
                       </span>
                     </Button>
@@ -204,16 +180,7 @@ export default function ProfilePage() {
               <div className="space-y-6" data-oid="profile-page-one">
                 <div>
                   <h3
-                    className="mb-3"
-                    style={{
-                      color: "var(--, #101010)",
-                      fontFamily: '"BIZ UDPGothic"',
-                      fontSize: "36px",
-                      fontStyle: "normal",
-                      fontWeight: 700,
-                      lineHeight: "normal",
-                      letterSpacing: "1.872px"
-                    }}
+                    className="mb-3 text-[#101010] font-['BIZ_UDPGothic'] text-[36px] font-bold leading-normal tracking-[1.872px]"
                     data-oid="xkxxiap">
                     今月の予算
                   </h3>
@@ -234,9 +201,8 @@ export default function ProfilePage() {
                           variant="ghost"
                           size="sm"
                           onClick={handleBudgetSave}
-                          className="border border-transparent p-1"
-                          style={FILTER_BUTTON_INACTIVE_STYLE}>
-                          <span style={FILTER_BUTTON_TEXT_STYLE}>保存</span>
+                          className={`border border-transparent p-1 ${FILTER_BUTTON_INACTIVE_CLASS}`}>
+                          <span className={FILTER_BUTTON_TEXT_CLASS}>保存</span>
                         </Button>
                       </div>
                     </div>
@@ -244,40 +210,25 @@ export default function ProfilePage() {
                 </div>
                 <div>
                   <h3
-                    className="mb-3"
-                    style={{
-                      color: "var(--, #101010)",
-                      fontFamily: '"BIZ UDPGothic"',
-                      fontSize: "36px",
-                      fontStyle: "normal",
-                      fontWeight: 700,
-                      lineHeight: "normal",
-                      letterSpacing: "1.872px"
-                    }}
+                    className="mb-3 text-[#101010] font-['BIZ_UDPGothic'] text-[36px] font-bold leading-normal tracking-[1.872px]"
                     data-oid="calc-period-label">
                     計算期間
                   </h3>
-                  <div className="flex flex-wrap" style={{ gap: "37px" }} data-oid="calc-period-buttons">
+                  <div className="flex flex-wrap gap-[37px]" data-oid="calc-period-buttons">
                     {[1, 5, 10, 15, 20, 25].map((num) => {
                       const isSelected = selectedResetDay === num;
                       return (
                         <Button
                           key={`calc-period-${num}`}
                           variant="ghost"
-                          className="border border-transparent p-0"
-                          style={{
-                            ...FILTER_BUTTON_INACTIVE_STYLE,
-                            width: "180px",
-                            minWidth: "180px",
-                            height: "63px",
-                            backgroundColor: isSelected ? "#FDA900" : "#FFF",
-                            boxShadow: isSelected ?
-                              "0 4px 4px 0 rgba(0, 0, 0, 0.25) inset" :
-                              "0 4px 4px 0 rgba(0, 0, 0, 0.25)"
-                          }}
+                          className={`border border-transparent p-0 w-[180px] min-w-[180px] h-[63px] flex items-center justify-center shrink-0 rounded-[20px] border-2 border-[#FDA900] px-6 ${
+                            isSelected
+                              ? 'bg-[#FDA900] shadow-[0_4px_4px_0_rgba(0,0,0,0.25)_inset]'
+                              : 'bg-white shadow-[4.5px_4.5px_0_0_#E4E2E2]'
+                          }`}
                           onClick={() => handleResetDaySave(num)}
                           data-oid={`calc-period-${num}`}>
-                          <span style={FILTER_BUTTON_TEXT_STYLE}> 毎月{num}日</span>
+                          <span className={FILTER_BUTTON_TEXT_CLASS}> 毎月{num}日</span>
                         </Button>
                       );
                     })}
@@ -291,48 +242,30 @@ export default function ProfilePage() {
                 <div className="flex flex-col items-start gap-8 w-full max-w-[520px]" data-oid="profile-page-two-content">
                   <div className="flex flex-col items-start gap-6" data-oid="profile-page-two-subsection">
                     <p
-                      style={{
-                        color: "var(--, #101010)",
-                        fontFamily: '"BIZ UDPGothic"',
-                        fontSize: "24px",
-                        fontStyle: "normal",
-                        fontWeight: 700,
-                        lineHeight: "normal",
-                        letterSpacing: "1.248px"
-                      }}
+                      className="text-[#101010] font-['BIZ_UDPGothic'] text-[24px] font-bold leading-normal tracking-[1.248px]"
                       data-oid="profile-page-two-title">
                       定期購入の確認
                     </p>
                     <Button
                       variant="ghost"
-                      className="border border-transparent p-0"
-                      style={FILTER_BUTTON_INACTIVE_STYLE}
+                      className={`border border-transparent p-0 ${FILTER_BUTTON_INACTIVE_CLASS}`}
                       onClick={() => handleNavigate("subscriptionList")}
                       data-oid="profile-page-two-button">
-                      <span style={FILTER_BUTTON_TEXT_STYLE}>定期購入の確認</span>
+                      <span className={FILTER_BUTTON_TEXT_CLASS}>定期購入の確認</span>
                     </Button>
                   </div>
                   <div className="flex flex-col items-start gap-6" data-oid="profile-page-two-favorite-subsection">
                     <p
-                      style={{
-                        color: "var(--, #101010)",
-                        fontFamily: '"BIZ UDPGothic"',
-                        fontSize: "24px",
-                        fontStyle: "normal",
-                        fontWeight: 700,
-                        lineHeight: "normal",
-                        letterSpacing: "1.248px"
-                      }}
+                      className="text-[#101010] font-['BIZ_UDPGothic'] text-[24px] font-bold leading-normal tracking-[1.248px]"
                       data-oid="profile-page-two-favorite-title">
                       お気に入り登録の確認
                     </p>
                     <Button
                       variant="ghost"
-                      className="border border-transparent p-0"
-                      style={FILTER_BUTTON_INACTIVE_STYLE}
+                      className={`border border-transparent p-0 ${FILTER_BUTTON_INACTIVE_CLASS}`}
                       onClick={() => handleNavigate("favoriteList")}
                       data-oid="profile-page-two-favorite-button">
-                      <span style={FILTER_BUTTON_TEXT_STYLE}>お気に入り一覧へ</span>
+                      <span className={FILTER_BUTTON_TEXT_CLASS}>お気に入り一覧へ</span>
                     </Button>
                   </div>
                 </div>
@@ -347,15 +280,7 @@ export default function ProfilePage() {
             className="flex items-center justify-center gap-[25px]"
             data-oid="profile-pagination">
               <span
-              style={{
-                color: "var(--, #101010)",
-                fontFamily: '"BIZ UDPGothic"',
-                fontSize: "32px",
-                fontStyle: "normal",
-                fontWeight: 700,
-                lineHeight: "normal",
-                letterSpacing: "1.664px"
-              }}
+              className="text-[#101010] font-['BIZ_UDPGothic'] text-[32px] font-bold leading-normal tracking-[1.664px]"
               data-oid="profile-page-label">
                 ページ
               </span>
@@ -366,31 +291,11 @@ export default function ProfilePage() {
                     key={`profile-page-${num}`}
                     size="sm"
                     variant="ghost"
-                    className="border border-transparent p-0"
-                    style={{
-                      display: "flex",
-                      width: "60px",
-                      height: "60px",
-                      padding: "14px 19px",
-                      flexDirection: "column",
-                      justifyContent: "center",
-                      alignItems: "center",
-                      gap: "10px",
-                      flexShrink: 0,
-                      borderRadius: "20px",
-                      background: isActive ? "var(--, #FDA900)" : "var(--, #FFF)",
-                      backgroundColor: isActive ? "#FDA900" : "#FFF",
-                      boxShadow: isActive ?
-                        "0 4px 4px 0 rgba(0, 0, 0, 0.25) inset" :
-                        "0 4px 4px 0 rgba(0, 0, 0, 0.25)",
-                      color: "var(--, #101010)",
-                      fontFamily: '"BIZ UDPGothic"',
-                      fontSize: "32px",
-                      fontStyle: "normal",
-                      fontWeight: 700,
-                      lineHeight: "normal",
-                      letterSpacing: "1.664px"
-                    }}
+                    className={`border border-transparent p-0 flex w-[60px] h-[60px] px-[19px] py-[14px] flex-col justify-center items-center gap-[10px] shrink-0 rounded-[20px] text-[#101010] font-['BIZ_UDPGothic'] text-[32px] font-bold leading-normal tracking-[1.664px] ${
+                      isActive
+                        ? 'bg-[#FDA900] shadow-[0_4px_4px_0_rgba(0,0,0,0.25)_inset]'
+                        : 'bg-white shadow-[0_4px_4px_0_rgba(0,0,0,0.25)]'
+                    }`}
                     onClick={() => onPageChange(num)}
                     data-oid={`profile-page-${num}`}>
                     {num}

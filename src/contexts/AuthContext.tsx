@@ -96,12 +96,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       try {
         await setDoc(userRef, {
+          uid: user.uid,
           email,
+          name: additionalData?.displayName || displayName || "匿名ユーザー",
           displayName: additionalData?.displayName || displayName || "匿名ユーザー",
           photoURL: photoURL || null,
           createdAt,
           updatedAt: createdAt,
           monthlyBudget: 50000,
+          resetDay: 1,
           preferences: {
             notifications: true,
             theme: "light"
