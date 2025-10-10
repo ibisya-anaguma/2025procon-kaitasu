@@ -1,9 +1,6 @@
 name: run-autocart
-
 on:
   workflow_dispatch: {}
-  #schedule:
-  #  - cron: '0 16 * * *'
 
 permissions:
   contents: read
@@ -21,70 +18,67 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Node.js
+      - name: Setup Node.js and python
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      - name: Ensure jq is available
+      - name: Ensure python3 & jq available
         run: |
           sudo apt-get update -y
-          sudo apt-get install -y jq || true
+          sudo apt-get install -y jq python3 python3-pip || true
 
       - name: Prepare Firebase service account file (from secret)
         if: ${{ secrets.FIREBASE_SERVICE_ACCOUNT != '' }}
         shell: bash
         run: |
           set -euo pipefail
-
           mkdir -p .firebase
           TARGET=".firebase/firebase-key.json"
 
-          # Write secret *as-is* (preserve newlines)
-          printf '%s' "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" > "$TARGET"
+          # Put secret value into an environment variable for the inline python to read
+          export SA="${{ secrets.FIREBASE_SERVICE_ACCOUNT }}"
+
+          python3 - <<'PY'
+import os, json, sys
+s = os.environ.get("SA", "")
+if not s:
+    print("ERROR: env SA empty", file=sys.stderr); sys.exit(2)
+# try direct load
+try:
+    json.loads(s)
+    out = s
+except Exception:
+    # try unescape literal \n sequences
+    if "\\n" in s:
+        try:
+            out = s.replace("\\n", "\n")
+            json.loads(out)
+            print("NOTE: secret contained literal \\n sequences; unescaped successfully")
+        except Exception as e2:
+            print("ERROR: secret invalid after unescaping:", e2, file=sys.stderr); sys.exit(3)
+    else:
+        print("ERROR: secret not valid JSON", file=sys.stderr); sys.exit(4)
+# write file
+with open(".firebase/firebase-key.json", "w", encoding="utf-8") as f:
+    f.write(out)
+print("WROTE_OK")
+PY
+
+          if [ ! -s "$TARGET" ]; then
+            echo "::error::Wrote firebase key but it's empty or missing ($TARGET)"; exit 1
+          fi
+          echo "Wrote and validated $TARGET (size=$(wc -c < "$TARGET") bytes)"
           chmod 600 "$TARGET" || true
 
-          # quick sanity: file exists and non-empty
-          if [ ! -s "$TARGET" ]; then
-            echo "::error::Wrote firebase key but file is empty or missing ($TARGET)"; exit 1
-          fi
-
-          # Validate JSON: prefer jq, fallback to Python
-          if command -v jq >/dev/null 2>&1; then
-            if ! jq -e . "$TARGET" >/dev/null 2>&1; then
-              echo "::error::Firebase key JSON validation failed (jq)"; exit 1
-            fi
-          else
-            python3 - <<'PY'
-import json,sys
-p = ".firebase/firebase-key.json"
-s = open(p, "r", encoding="utf-8").read()
-try:
-  json.loads(s)
-except Exception as e:
-  # try unescape \n sequences (handles bad paste where \n are literal characters)
-  if "\\n" in s:
-    try:
-      json.loads(s.replace("\\n", "\n"))
-      print("Warning: json parsed after unescaping literal \\n sequences")
-    except Exception as e2:
-      print("ERROR: firebase key JSON invalid", e2, file=sys.stderr); sys.exit(2)
-  else:
-    print("ERROR: firebase key JSON invalid", e, file=sys.stderr); sys.exit(2)
-PY
-          fi
-
-          # safe non-secret debug: file size only
-          echo "Wrote and validated $TARGET (size=$(wc -c < "$TARGET") bytes)"
-
-      - name: Show runtime info (non-secret)
+      - name: Show runtime info
         shell: bash
         run: |
           set -euo pipefail
           echo "workspace: $GITHUB_WORKSPACE"
           echo "autocart limit: ${AUTOCART_LIMIT}"
 
-      - name: Run autocart-runner (LIVE: writes to Firestore unless --dry passed)
+      - name: Run autocart-runner (LIVE: writes to Firestore unless runner uses --dry)
         id: run_autocart
         shell: bash
         env:
@@ -94,9 +88,9 @@ PY
           cd "${{ github.workspace }}"
 
           echo "GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS}"
-          echo "Invoking autocart-runner (will write to Firestore unless runner internally uses dry)."
+          echo "Running autocart-runner ..."
 
-          # ensure tsx is available via npx (node is installed above)
+          # make sure tsx exists
           npx -y tsx --version || true
 
           npx tsx src/jobs/checkout/autocart-runner.ts \
