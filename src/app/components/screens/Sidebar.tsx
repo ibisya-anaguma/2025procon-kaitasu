@@ -1,12 +1,7 @@
-<<<<<<< HEAD
 "use client";
 
 import { useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
-=======
-﻿"use client";
-
->>>>>>> kizu/develop
 import { Button } from "@/components/ui/button";
 import {
   SidebarCatalogIcon,
@@ -16,12 +11,8 @@ import {
   SidebarProfileIcon,
   SidebarSubscriptionIcon
 } from "@/components/icons/sidebar-icons";
-<<<<<<< HEAD
 import { useAuth } from "@/contexts/AuthContext";
 import type { SidebarIconComponent, SidebarNavKey } from "@/types/page";
-=======
-import type { Screen, SidebarIconComponent, SidebarNavKey } from "@/types/page";
->>>>>>> kizu/develop
 
 const SIDEBAR_ACTIVE_BG =
   "url(\"data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20width=%22192%22%20height=%22100%22%20viewBox=%220%200%20192%20100%22%20fill=%22none%22%3E%3Cpath%20d=%22M0%2040.0005C0%2028.9548%208.9543%2020.0005%2020%2020.0005H192V79.2693H20C8.95431%2079.2693%200%2070.315%200%2059.2693V40.0005Z%22%20fill=%22white%22/%3E%3Cpath%20d=%22M192%2079.2695H172C183.046%2079.2697%20192%2088.224%20192%2099.2695V79.2695Z%22%20fill=%22white%22/%3E%3Cpath%20d=%22M192%2020H172C183.046%2019.9998%20192%2011.0456%20192%200V20Z%22%20fill=%22white%22/%3E%3C/svg%3E\")";
@@ -63,7 +54,6 @@ const SIDEBAR_ICON_STYLE = {
   alignItems: "center"
 };
 
-<<<<<<< HEAD
 export function Sidebar() {
   const router = useRouter();
   const pathname = usePathname();
@@ -82,38 +72,16 @@ export function Sidebar() {
     }
   };
 
-=======
-type SidebarProps = {
-  currentScreen: Screen;
-  hoveredNav: SidebarNavKey | null;
-  onHoverChange: (key: SidebarNavKey | null) => void;
-  onNavigate: (screen: Screen) => void;
-};
-
-export function Sidebar({ currentScreen, hoveredNav, onHoverChange, onNavigate }: SidebarProps) {
->>>>>>> kizu/develop
   const renderSidebarButton = (
     key: SidebarNavKey,
     label: string,
     Icon: SidebarIconComponent,
     dataOid: string,
-<<<<<<< HEAD
     href: string
   ) => {
     const isActive = pathname === href || 
                      (key === "subscription" && (pathname.startsWith("/subscription"))) ||
                      (key === "catalog" && (pathname === "/catalog" || pathname === "/catalog-landing"));
-=======
-    onClick?: () => void
-  ) => {
-    const isSubscriptionKey = key === "subscription";
-    const isCatalogKey = key === "catalog";
-    const isActive = isSubscriptionKey
-      ? currentScreen === "subscription" || currentScreen === "subscriptionAdd"
-      : isCatalogKey
-        ? currentScreen === "catalog" || currentScreen === "catalogLanding"
-        : currentScreen === key;
->>>>>>> kizu/develop
     const isHovered = hoveredNav === key;
     const showHighlight = isActive || isHovered;
     const highlightOpacity = isActive ? 1 : isHovered ? 0.4 : 0;
@@ -127,15 +95,9 @@ export function Sidebar({ currentScreen, hoveredNav, onHoverChange, onNavigate }
         size="sm"
         className="w-full flex justify-end px-0 py-0 bg-transparent hover:bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
         style={{ height: "99.27px" }}
-<<<<<<< HEAD
         onMouseEnter={() => setHoveredNav(key)}
         onMouseLeave={() => setHoveredNav(null)}
         onClick={() => router.push(href)}
-=======
-        onMouseEnter={() => onHoverChange(key)}
-        onMouseLeave={() => onHoverChange(null)}
-        onClick={onClick}
->>>>>>> kizu/develop
         data-oid={dataOid}>
         <span
           className="flex items-center justify-end"
@@ -198,17 +160,12 @@ export function Sidebar({ currentScreen, hoveredNav, onHoverChange, onNavigate }
       <div className="flex flex-col items-center" data-oid="pm140hy">
         <img
           src="/images/logo_kaitasu.png"
-<<<<<<< HEAD
           alt="かいたす"
-=======
-          alt="縺九＞縺溘☆"
->>>>>>> kizu/develop
           className="h-[72px] w-[72px]"
           data-oid="kaitasu-logo"
         />
       </div>
 
-<<<<<<< HEAD
       <nav className="w-full flex flex-col items-end space-y-2 pr-0 flex-1" data-oid="bglg0.p">
         {renderSidebarButton("dashboard", "ホーム", SidebarHomeIcon, "lqzeqpl", "/")}
         {renderSidebarButton("catalog", "買い出し", SidebarCatalogIcon, "iu4097_", "/catalog-landing")}
@@ -246,25 +203,3 @@ export function Sidebar({ currentScreen, hoveredNav, onHoverChange, onNavigate }
     </div>
   );
 }
-=======
-      <nav className="w-full flex flex-col items-end space-y-2 pr-0" data-oid="bglg0.p">
-        {renderSidebarButton("dashboard", "ホーム", SidebarHomeIcon, "lqzeqpl", () => onNavigate("dashboard"))}
-        {renderSidebarButton("catalog", "買い出し", SidebarCatalogIcon, "iu4097_", () => onNavigate("catalogLanding"))}
-        {renderSidebarButton("cart", "買い物かご", SidebarCartIcon, "1yqj0f6", () => onNavigate("cart"))}
-        {renderSidebarButton("history", "購入履歴", SidebarHistoryIcon, "rzbvl29", () => onNavigate("history"))}
-        {renderSidebarButton(
-          "subscription",
-          "定期購入",
-          SidebarSubscriptionIcon,
-          "sub-btn-1",
-          () => onNavigate("subscription")
-        )}
-        {renderSidebarButton("profile", "マイページ", SidebarProfileIcon, "jyqaqbq", () => onNavigate("profile"))}
-      </nav>
-    </div>
-  );
-}
-
-
-
->>>>>>> kizu/develop

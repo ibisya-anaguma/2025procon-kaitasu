@@ -34,6 +34,7 @@ type JapaneseFoodAppState = {
   currentScreen: Screen;
   hoveredNav: SidebarNavKey | null;
   landingPage: number;
+  monthlyBudget: number;
   onHoverChange: HoverChangeHandler;
   onLandingPageChange: LandingPageChangeHandler;
   onNavigate: NavigateHandler;
@@ -68,6 +69,7 @@ export const useJapaneseFoodApp = (): JapaneseFoodAppState => {
   const [selectedSubscriptionProduct, setSelectedSubscriptionProduct] = useState<Product | null>(null);
   const [subscriptionEntries, setSubscriptionEntries] = useState<SubscriptionEntry[]>([]);
   const [favoriteEntries, setFavoriteEntries] = useState<FavoriteEntry[]>([]);
+  const [monthlyBudget] = useState(50000);
 
   const totalLandingPages = LANDING_CARD_CONTENT_PAGES.length;
   const landingPageIndex = Math.min(Math.max(landingPage - 1, 0), totalLandingPages - 1);
@@ -196,6 +198,7 @@ export const useJapaneseFoodApp = (): JapaneseFoodAppState => {
     currentScreen,
     hoveredNav,
     landingPage,
+    monthlyBudget,
     onHoverChange,
     onLandingPageChange,
     onNavigate,
