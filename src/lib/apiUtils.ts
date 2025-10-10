@@ -1,17 +1,11 @@
 // API で共通的に利用する Firestore 周りのユーティリティ
 // うめ + 整理
 
-<<<<<<< HEAD
-import foodData from '@/data/foodData.json'
-import { FieldValue } from "firebase-admin/firestore";
-import { adminDb as db } from "@/lib/firebaseAdmin";
-=======
 import foodData from "@/data/foodData.json";
 import { adminDb } from "@/lib/firebaseAdmin";
 import { FieldValue } from "firebase-admin/firestore";
->>>>>>> kizu/develop
 
-export type FirestoreCollection = "cart" | "subscriptions" | string;
+export type FirestoreCollection = "cart" | "subscriptions" | "favorites" | string;
 
 export type PatchableData = {
   quantity?: number;
@@ -63,22 +57,6 @@ export async function postCollection(
   const data = Array.isArray(items) ? items : [items];
   if (data.length === 0) return;
 
-<<<<<<< HEAD
-    const batch = db.batch();
-
-	// idとquantity, frequencyのみ追加
-	for (const item of arr) {
-		const docRef = cartRef.doc(item.id);
-		const data: { quantity?: number; frequency?: number; createdAt: FieldValue } = {};
-
-		if (item.quantity !== undefined) data.quantity = item.quantity;
-		if (item.frequency !== undefined) data.frequency = item.frequency;
-
-		batch.set(docRef, data, { merge: true });
-
-	}
-	await batch.commit();
-=======
   const collectionRef = adminDb.collection("users").doc(uid).collection(collection);
   const batch = adminDb.batch();
   let hasWrites = false;
@@ -110,24 +88,13 @@ export async function postCollection(
   }
 
   await batch.commit();
->>>>>>> kizu/develop
 }
 
 export async function patchCollection(
-<<<<<<< HEAD
-	uid: string,
-	collection: string,
-	itemId: string,
-	data: {
-		quantity?: number;
-		frequency?: number;
-	}
-=======
   uid: string,
   collection: FirestoreCollection,
   itemId: string,
   data: PatchableData
->>>>>>> kizu/develop
 ) {
   const docRef = adminDb
     .collection("users")
@@ -139,14 +106,6 @@ export async function patchCollection(
 }
 
 export async function deleteCollection(
-<<<<<<< HEAD
-	uid: string,
-	collection: string,
-	itemId: string
-) {
-	const ref = db.collection("users").doc(uid).collection(collection).doc(itemId);
-	await ref.delete();
-=======
   uid: string,
   collection: FirestoreCollection,
   itemId: string
@@ -158,5 +117,4 @@ export async function deleteCollection(
     .doc(itemId);
 
   await docRef.delete();
->>>>>>> kizu/develop
 }

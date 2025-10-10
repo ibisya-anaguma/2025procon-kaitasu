@@ -11,6 +11,8 @@ import { Input } from "@/components/ui/input";
 import { FILTER_BUTTON_INACTIVE_CLASS, FILTER_BUTTON_TEXT_CLASS } from "@/components/screens/filterStyles";
 import { useProductSearch } from "@/app/hooks/useProductSearch";
 import { useAppContext } from "@/contexts/AppContext";
+import { useFavorites } from "@/app/hooks/useFavorites";
+import { useSubscriptions } from "@/app/hooks/useSubscriptions";
 import type { Product, Screen } from "@/types/page";
 
 const CATALOG_FILTER_BUTTONS = [
@@ -55,7 +57,14 @@ export default function CatalogPage() {
     onNavigate: setScreen
   } = useAppContext();
   const { products: searchResults, searchProducts, clearSearch, isLoading } = useProductSearch();
+  const { addToFavorites, removeFromFavorites, isFavorite } = useFavorites();
+  const { addToSubscriptions } = useSubscriptions();
   const [searchQuery, setSearchQuery] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
+  const [selectedProductForSubscription, setSelectedProductForSubscription] = useState<number | null>(null);
+  const [subscriptionFrequency, setSubscriptionFrequency] = useState(7);
 
   const handleNavigate = (screen: Screen) => {
     setScreen(screen);
@@ -82,6 +91,65 @@ export default function CatalogPage() {
     clearSearch();
   };
 
+  // お気に入りトグル
+  const handleToggleFavorite = async (productId: number) => {
+    const productIdStr = String(productId);
+    if (isFavorite(productIdStr)) {
+      const success = await removeFromFavorites(productIdStr);
+      if (success) {
+        setSuccessMessage('お気に入りから削除しました');
+        setTimeout(() => setSuccessMessage(''), 3000);
+      } else {
+        setErrorMessage('お気に入りの削除に失敗しました');
+        setTimeout(() => setErrorMessage(''), 3000);
+      }
+    } else {
+      const success = await addToFavorites(productIdStr);
+      if (success) {
+        setSuccessMessage('お気に入りに追加しました');
+        setTimeout(() => setSuccessMessage(''), 3000);
+      } else {
+        setErrorMessage('お気に入りの追加に失敗しました');
+        setTimeout(() => setErrorMessage(''), 3000);
+      }
+    }
+  };
+
+  // 定期購入モーダルを開く
+  const handleOpenSubscriptionModal = (productId: number) => {
+    setSelectedProductForSubscription(productId);
+    setShowSubscriptionModal(true);
+  };
+
+  // 定期購入を追加
+  const handleAddSubscription = async () => {
+    if (selectedProductForSubscription === null) return;
+    
+    const product = displayProducts.find(p => p.id === selectedProductForSubscription);
+    if (!product || product.quantity === 0) {
+      setErrorMessage('数量を1以上に設定してください');
+      setTimeout(() => setErrorMessage(''), 3000);
+      return;
+    }
+
+    const success = await addToSubscriptions(
+      String(selectedProductForSubscription),
+      product.quantity,
+      subscriptionFrequency
+    );
+
+    if (success) {
+      setSuccessMessage('定期購入に追加しました');
+      setTimeout(() => setSuccessMessage(''), 3000);
+      setShowSubscriptionModal(false);
+      setSelectedProductForSubscription(null);
+      setSubscriptionFrequency(7);
+    } else {
+      setErrorMessage('定期購入の追加に失敗しました');
+      setTimeout(() => setErrorMessage(''), 3000);
+    }
+  };
+
   // 検索結果がある場合は検索結果を、ない場合は静的な商品データを使用
   const displayProducts = searchResults.length > 0 ? searchResults.map(p => {
     // 既存の商品データから数量を取得
@@ -100,6 +168,61 @@ export default function CatalogPage() {
     <div
       className="flex-1 bg-white p-6 ml-[232px] relative min-h-screen flex items-center justify-center"
       data-oid="d95y1m5">
+      {/* 成功メッセージ */}
+      {successMessage && (
+        <div className="fixed top-4 right-4 z-50 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg">
+          {successMessage}
+        </div>
+      )}
+      {/* エラーメッセージ */}
+      {errorMessage && (
+        <div className="fixed top-4 right-4 z-50 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg">
+          {errorMessage}
+        </div>
+      )}
+
+      {/* 定期購入モーダル */}
+      {showSubscriptionModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white rounded-lg p-8 w-[500px] shadow-xl">
+            <h3 className="text-[24px] font-bold mb-4">定期購入の設定</h3>
+            <div className="mb-6">
+              <label className="block text-[18px] font-bold mb-2">配送頻度を選択</label>
+              <div className="flex flex-wrap gap-3">
+                {[7, 14, 21, 30].map((days) => (
+                  <Button
+                    key={days}
+                    variant="ghost"
+                    className={`px-4 py-2 rounded-lg border-2 ${
+                      subscriptionFrequency === days
+                        ? 'bg-[#FDA900] border-[#FDA900] text-white'
+                        : 'bg-white border-[#FDA900] text-[#FDA900]'
+                    }`}
+                    onClick={() => setSubscriptionFrequency(days)}>
+                    {days}日ごと
+                  </Button>
+                ))}
+              </div>
+            </div>
+            <div className="flex gap-4">
+              <Button
+                className="flex-1 bg-[#FDA900] text-white font-bold py-3 rounded-lg hover:bg-[#e09900]"
+                onClick={handleAddSubscription}>
+                追加
+              </Button>
+              <Button
+                className="flex-1 bg-gray-300 text-gray-700 font-bold py-3 rounded-lg hover:bg-gray-400"
+                onClick={() => {
+                  setShowSubscriptionModal(false);
+                  setSelectedProductForSubscription(null);
+                  setSubscriptionFrequency(7);
+                }}>
+                キャンセル
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div
         className="absolute right-0 top-0 bottom-0 w-1 bg-[#fda900]"
@@ -245,22 +368,35 @@ export default function CatalogPage() {
                 className="px-4 pt-1 pb-0 bg-white border-2 border-[#e0e0e0] rounded-xl shadow-sm hover:shadow-md transition-shadow flex flex-col w-[188px] h-[265px]"
                 data-oid="3w-11ql">
 
-                <div className="flex justify-end mb-[3px]" data-oid="catalog-heart-row">
-                  <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="34"
-                height="31"
-                viewBox="0 0 34 31"
-                fill="none"
-                data-oid="eo3z5j5">
-                    <path
-                  d="M17 7.84292C17 7.84292 17 7.66699 15.7967 6.08366C14.4033 4.24699 12.345 2.91699 9.875 2.91699C5.9325 2.91699 2.75 6.09949 2.75 10.042C2.75 11.5145 3.19333 12.8762 3.95333 14.0003C5.23583 15.9162 17 28.2503 17 28.2503M17 7.84292C17 7.84292 17 7.66699 18.2033 6.08366C19.5967 4.24699 21.655 2.91699 24.125 2.91699C28.0675 2.91699 31.25 6.09949 31.25 10.042C31.25 11.5145 30.8067 12.8762 30.0467 14.0003C28.7642 15.9162 17 28.2503 17 28.2503"
-                  stroke="#209FDE"
-                  strokeWidth="3.86"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                  </svg>
+                <div className="flex justify-between items-center mb-[3px]" data-oid="catalog-heart-row">
+                  <button
+                    onClick={() => handleOpenSubscriptionModal(product.id)}
+                    className="text-[#FDA900] hover:text-[#e09900] transition-colors"
+                    title="定期購入に追加">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <circle cx="12" cy="12" r="10"/>
+                      <path d="M12 8v8M8 12h8"/>
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => handleToggleFavorite(product.id)}
+                    className="transition-all">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="34"
+                      height="31"
+                      viewBox="0 0 34 31"
+                      fill={isFavorite(String(product.id)) ? "#209FDE" : "none"}
+                      data-oid="eo3z5j5">
+                      <path
+                        d="M17 7.84292C17 7.84292 17 7.66699 15.7967 6.08366C14.4033 4.24699 12.345 2.91699 9.875 2.91699C5.9325 2.91699 2.75 6.09949 2.75 10.042C2.75 11.5145 3.19333 12.8762 3.95333 14.0003C5.23583 15.9162 17 28.2503 17 28.2503M17 7.84292C17 7.84292 17 7.66699 18.2033 6.08366C19.5967 4.24699 21.655 2.91699 24.125 2.91699C28.0675 2.91699 31.25 6.09949 31.25 10.042C31.25 11.5145 30.8067 12.8762 30.0467 14.0003C28.7642 15.9162 17 28.2503 17 28.2503"
+                        stroke="#209FDE"
+                        strokeWidth="3.86"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </button>
                 </div>
                 <div
                 className="relative mb-[6.5px] h-[106px]"
