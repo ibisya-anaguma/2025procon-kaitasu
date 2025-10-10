@@ -9,11 +9,13 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <AppProvider>
-      <div className="flex">
-        <Sidebar />
-        {children}
-      </div>
-    </AppProvider>
+    <ProtectedRoute>
+      <AppProvider>
+        <div className="flex">
+          <Sidebar />
+          {children}
+        </div>
+      </AppProvider>
+    </ProtectedRoute>
   );
 }
