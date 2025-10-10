@@ -1,104 +1,71 @@
-name: run-autocart
+name: run-rpa-for-user
 
 on:
   workflow_dispatch:
+    inputs:
+      uid:
+        description: 'user id'
+        required: true
+      historyDoc:
+        description: 'history doc id (e.g. last-checkout)'
+        required: true
+      cartPath:
+        description: 'cart path (optional)'
+        required: false
 
 permissions:
   contents: read
+  actions: write
 
 jobs:
-  run-autocart:
+  run_rpa:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-    env:
-      AUTOCART_LIMIT: '50'
-
+    timeout-minutes: 180
     steps:
-      - name: Checkout repo
+      - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
         with:
-          fetch-depth: 0
+          python-version: '3.11'
 
-      - name: Setup Node (for tsx)
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Install tsx (runtime)
+      - name: Install apt deps & chrome
         run: |
-          set -euo pipefail
-          npm i -g tsx@4
+          sudo apt-get update -y
+          sudo apt-get install -y wget gnupg ca-certificates unzip xvfb
+          wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
+          echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" | sudo tee /etc/apt/sources.list.d/google-chrome.list
+          sudo apt-get update -y
+          sudo apt-get install -y google-chrome-stable || true
 
-      # -------------------------------
-      # Prepare Firebase service account (decode base64 secret -> json)
-      # Expect secret: FIREBASE_SERVICE_ACCOUNT_B64 (base64 of JSON, single line)
-      # -------------------------------
-      - name: Prepare Firebase service account file (from secret)
-        if: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_B64 != '' }}
+      - name: Install Python deps (scraper/RPA)
         run: |
-          set -euo pipefail
-          mkdir -p .firebase
+          python -m pip install --upgrade pip
+          if [ -f src/app/api/cart/checkout/requirements.txt ]; then
+            pip install -r src/app/api/cart/checkout/requirements.txt
+          fi
 
-          # write the base64 blob into a file (no newline issues)
-          printf '%s' "${{ secrets.FIREBASE_SERVICE_ACCOUNT_B64 }}" > .firebase/firebase-key.b64
-
-          # decode to JSON file
-          base64 --decode .firebase/firebase-key.b64 > .firebase/firebase-key.json
-
-          # quick validation using python (will exit non-zero if invalid)
-          python3 - <<'PY'
-          import json, sys, pathlib
-          p = pathlib.Path('.firebase/firebase-key.json')
-          try:
-              data = json.loads(p.read_text(encoding='utf-8'))
-          except Exception as e:
-              print("ERROR: FIREBASE_SERVICE_ACCOUNT secret is not valid JSON (decoded).", file=sys.stderr)
-              print(str(e), file=sys.stderr)
-              sys.exit(3)
-          # minimal sanity check
-          if not isinstance(data.get("type"), str) or data.get("type") != "service_account":
-              print("ERROR: decoded JSON missing expected 'type':'service_account'", file=sys.stderr)
-              sys.exit(4)
-          print("WROTE_OK")
-          PY
-          # secure permissions
-          chmod 600 .firebase/firebase-key.json || true
-          rm -f .firebase/firebase-key.b64 || true
-
-      - name: Show runtime info (non-secret)
+      - name: Run AEON RPA (adds items to AEON cart)
+        id: rpa
         run: |
-          set -euo pipefail
-          echo "workspace: $GITHUB_WORKSPACE"
-          echo "autocart limit: ${AUTOCART_LIMIT}"
-
-      - name: Run autocart-runner
-        id: run_autocart
-        env:
-          GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/.firebase/firebase-key.json
-          AUTOCART_LIMIT: ${{ env.AUTOCART_LIMIT }}
+          python3 src/app/api/cart/checkout/aeon_netsuper_cart.py \
+            --use-firebase \
+            --fb-cred "$GOOGLE_APPLICATION_CREDENTIALS" \
+            --uid "${{ github.event.inputs.uid }}" \
+            --cart-path "${{ github.event.inputs.cartPath || format('users/{0}/cart', github.event.inputs.uid) }}" \
+            --dedupe \
+            --call-postprocess false \
+            --postprocess-history-doc "${{ github.event.inputs.historyDoc }}" \
+            --headless
+      - name: Run postprocess (move cart -> history)
+        if: ${{ success() }}
         run: |
-          set -euo pipefail
-          echo "Using GOOGLE_APPLICATION_CREDENTIALS=$GOOGLE_APPLICATION_CREDENTIALS"
-          cd "${{ github.workspace }}"
-          # run the TS runner
-          npx tsx src/jobs/checkout/autocart-runner.ts \
+          # node setup
+          curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+          sudo apt-get install -y nodejs
+          npm install -g tsx
+          npx tsx src/app/api/cart/checkout/route.ts \
             --cred "$GOOGLE_APPLICATION_CREDENTIALS" \
-            --limit "$AUTOCART_LIMIT" \
-            --debug \
-            --explain
-
-      - name: Upload logs (if any)
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: autocart-logs
-          path: |
-            src/jobs/checkout/logs/*.log
-            src/jobs/checkout/*.log
-
-      - name: Cleanup firebase key (always)
-        if: always()
-        run: |
-          set -euo pipefail
-          rm -f .firebase/firebase-key.json || true
-          echo "cleaned firebase key"
+            --uid "${{ github.event.inputs.uid }}" \
+            --history-doc "${{ github.event.inputs.historyDoc }}"
