@@ -17,15 +17,6 @@ export const GET = withAuth(async (_req, uid) => {
 });
 
 export const POST = withAuth(async (req: NextRequest, uid: string) => {
-<<<<<<< HEAD
-	try {
-		const items = await req.json();
-		await postCollection(uid, collection, items);
-		return NextResponse.json({ msg: "success" })
-	} catch (error) {
-		return NextResponse.json({ error: `Failed to add ${collection}` }, {status: 500});
-	}
-=======
   try {
     const body = await req.json();
     const payload = Array.isArray(body) ? body : [body];
@@ -54,5 +45,4 @@ export const POST = withAuth(async (req: NextRequest, uid: string) => {
       { status: 500 }
     );
   }
->>>>>>> kizu/develop
 });

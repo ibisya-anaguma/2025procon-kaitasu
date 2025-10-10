@@ -1,13 +1,3 @@
-<<<<<<< HEAD
-import { NextRequest, NextResponse } from 'next/server';
-import { withAuth } from '@/lib/middleware';
-import { getCollection, addFoodDetails, postCollection } from '@/lib/apiUtils';
-
-const collection = "cart";
-
-export const GET = withAuth(async (_req: NextRequest, uid: string) => {
-  const items = await getCollection(uid, collection);
-=======
 import { NextRequest, NextResponse } from "next/server";
 
 import {
@@ -22,20 +12,12 @@ const COLLECTION_NAME = "cart" as const;
 
 export const GET = withAuth(async (_req, uid) => {
   const items = await getCollection(uid, COLLECTION_NAME);
->>>>>>> kizu/develop
   const mergedItems = addFoodDetails(items);
   return NextResponse.json(mergedItems);
 });
 
 export const POST = withAuth(async (req: NextRequest, uid: string) => {
   try {
-<<<<<<< HEAD
-    const items = await req.json();
-    await postCollection(uid, collection, items);
-    return NextResponse.json({ msg: "success" });
-  } catch (error) {
-    return NextResponse.json({ error: `Failed to add ${collection}` }, { status: 500 });
-=======
     const body = await req.json();
     const payload = Array.isArray(body) ? body : [body];
 
@@ -62,6 +44,5 @@ export const POST = withAuth(async (req: NextRequest, uid: string) => {
       { error: `Failed to add ${COLLECTION_NAME}` },
       { status: 500 }
     );
->>>>>>> kizu/develop
   }
 });
