@@ -5,6 +5,7 @@ import re
 import sys
 import json
 import time
+import math
 import argparse
 import logging
 import contextlib
@@ -21,15 +22,22 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options as ChromeOptions
 from selenium.webdriver.support.ui import WebDriverWait, Select
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import WebDriverException, NoSuchWindowException, StaleElementReferenceException
+from selenium.common.exceptions import (
+    WebDriverException, NoSuchWindowException, StaleElementReferenceException
+)
 from webdriver_manager.chrome import ChromeDriverManager
 
-# Firebase Admin
-import firebase_admin
-from firebase_admin import credentials as fb_credentials
-from firebase_admin import firestore as fb_firestore
+# Firebase Admin (lazy import later)
+try:
+    import firebase_admin
+    from firebase_admin import credentials as fb_credentials
+    from firebase_admin import firestore as fb_firestore
+except Exception:
+    firebase_admin = None
+    fb_credentials = None
+    fb_firestore = None
 
-# --- constants / logging ---
+# ====== Config / constants ======
 STORE_ID = "01050000036000"
 BASE = f"https://shop.aeon.com/netsuper/{STORE_ID}"
 HOME_URL = f"{BASE}/"
@@ -37,30 +45,43 @@ LOGIN_URL = "https://shop.aeon.com/netsuper/customer/account/login/"
 
 DEFAULT_USER_DATA_DIR = os.path.expanduser("~/ChromeSeleniumCart")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
-logger = logging.getLogger("aeon-autocart")
+logger = logging.getLogger("aeon-cart")
 
-DAY_MS = 86400000
 
-# ---------------- Firestore init ----------------
-def init_fb(cred_path: str = "") -> fb_firestore.Client:
-    if cred_path:
-        cred_path = os.path.expanduser(cred_path)
-    # If GOOGLE_APPLICATION_CREDENTIALS env set, firebase_admin will pick it up automatically
-    if cred_path and os.path.exists(cred_path):
-        sa = fb_credentials.Certificate(cred_path)
-        firebase_admin.initialize_app(sa, {"projectId": sa.project_id})
-        return fb_firestore.client()
-    # else try default
-    if os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"):
-        firebase_admin.initialize_app()
-        return fb_firestore.client()
-    raise RuntimeError("No Firebase credentials. Provide --fb-cred or set GOOGLE_APPLICATION_CREDENTIALS.")
+# ====== Firestore helpers ======
+def init_firebase_admin(cred_path: str = "", project_id: Optional[str] = None):
+    """
+    Initialize firebase_admin and return a firestore client.
+    If cred_path is provided, uses that certificate. Otherwise relies on ADC env var.
+    """
+    if firebase_admin is None:
+        raise RuntimeError("firebase-admin not installed. Install via: pip install firebase-admin")
 
-# ---------------- ID/key helpers ----------------
+    if not firebase_admin._apps:
+        if cred_path:
+            cp = os.path.expanduser(cred_path)
+            if not os.path.exists(cp):
+                raise FileNotFoundError(f"Service account JSON not found at: {cp}")
+            sa = fb_credentials.Certificate(cp)
+            firebase_admin.initialize_app(sa, {"projectId": project_id} if project_id else None)
+        else:
+            # use ADC
+            firebase_admin.initialize_app()
+    return fb_firestore.client()
+
+
+def is_collection_path(p: str) -> bool:
+    segs = [s for s in p.split("/") if s]
+    return len(segs) % 2 == 1
+
+
+# ====== ID and key helpers ======
 def id_from_url(url: str) -> str:
-    if not url: return ""
+    if not url:
+        return ""
     m = re.search(r"/(\d{6,})\.html(?:[?#].*)?$", url)
     return m.group(1) if m else ""
+
 
 def normalize_id(v: Any, url: str = "") -> str:
     if url:
@@ -69,22 +90,24 @@ def normalize_id(v: Any, url: str = "") -> str:
             return u
     if isinstance(v, str) and re.fullmatch(r"\d{6,}", v.strip()):
         return v.strip()
-    if isinstance(v, (int, float)):
-        s = str(int(v))
+    if isinstance(v, int):
+        s = str(v)
         return s if re.fullmatch(r"\d{6,}", s) else ""
     return ""
 
+
 def stable_key(item: Dict[str, Any]) -> str:
     pid = normalize_id(item.get("id"), item.get("url") or "")
-    if pid: return f"id:{pid}"
+    if pid:
+        return f"id:{pid}"
     uid = id_from_url(item.get("url") or "")
-    if uid: return f"id:{uid}"
-    name = (item.get("name") or "").strip().lower()
-    if name:
-        return f"name:{name}"
-    return f"row:{time.time_ns()}"
+    if uid:
+        return f"id:{uid}"
+    nm = (item.get("name") or "").strip().lower()
+    return f"name:{nm}" if nm else f"row:{time.time_ns()}"
 
-# ---------------- Selenium helpers ----------------
+
+# ====== Browser helpers ======
 def _try_clear_quarantine(binary_path: str):
     try:
         subprocess.run(["xattr", "-d", "com.apple.quarantine", binary_path],
@@ -92,16 +115,19 @@ def _try_clear_quarantine(binary_path: str):
     except Exception:
         pass
 
+
 def _spawn_with_options(options: ChromeOptions) -> webdriver.Chrome:
     path = ChromeDriverManager().install()
     _try_clear_quarantine(path)
     service = Service(path)
     return webdriver.Chrome(service=service, options=options)
 
-def _make_options(user_data_dir: Optional[str], profile_dir: Optional[str], headless: bool, debugger_address: Optional[str] = None) -> ChromeOptions:
+
+def _make_options(browser: str, user_data_dir: Optional[str], profile_dir: Optional[str],
+                  headless: bool, debugger_address: Optional[str] = None) -> ChromeOptions:
     opts = ChromeOptions()
     if headless:
-        # new headless
+        # use new headless flag
         opts.add_argument("--headless=new")
     opts.add_argument("--no-sandbox")
     opts.add_argument("--disable-dev-shm-usage")
@@ -116,27 +142,36 @@ def _make_options(user_data_dir: Optional[str], profile_dir: Optional[str], head
         if profile_dir:
             opts.add_argument(f"--profile-directory={profile_dir}")
     if debugger_address:
-        # rarely used
         opts.debugger_address = debugger_address
     opts.add_experimental_option("excludeSwitches", ["enable-automation"])
     opts.add_experimental_option("useAutomationExtension", False)
     return opts
 
-def build_driver(user_data_dir: Optional[str], profile_dir: Optional[str], headless: bool, debugger_address: Optional[str], auto_attach: bool = False) -> webdriver.Chrome:
-    opts = _make_options(user_data_dir, profile_dir, headless, debugger_address if auto_attach else None)
+
+def build_driver(browser: str, user_data_dir: Optional[str], profile_dir: Optional[str],
+                 headless: bool, auto_attach: bool, debugger_address: Optional[str]) -> webdriver.Chrome:
+    if browser == "auto":
+        logger.info("browser=auto → chrome を使用")
+        browser = "chrome"
+    opts = _make_options(browser, user_data_dir, profile_dir, headless,
+                         (debugger_address if auto_attach else None))
     try:
         return _spawn_with_options(opts)
     except WebDriverException as e:
         msg = str(e)
         if "user data directory is already in use" in msg or "session not created" in msg:
             tmp = tempfile.mkdtemp(prefix="selenium-profile-")
-            logger.warning("プロファイル競合。一時プロファイルで再試行: %s", tmp)
-            opts2 = _make_options(tmp, None, headless, debugger_address if auto_attach else None)
+            logger.warning("指定プロファイルが使用中 → 一時プロファイルで再試行: %s", tmp)
+            opts2 = _make_options(browser, tmp, None, headless,
+                                  (debugger_address if auto_attach else None))
             return _spawn_with_options(opts2)
+        if "unexpectedly exited" in msg:
+            logger.warning("WebDriver service が即終了: %s", msg)
         raise
 
-# ---------------- login / DOM helpers ----------------
-def is_login_page(driver):
+
+# ====== Login helpers ======
+def is_login_page(driver: webdriver.Chrome) -> bool:
     try:
         url = driver.current_url or ""
     except Exception:
@@ -150,7 +185,8 @@ def is_login_page(driver):
         pass
     return False
 
-def dom_has_logout_marker(driver):
+
+def dom_has_logout_marker(driver: webdriver.Chrome) -> bool:
     try:
         if driver.find_elements(By.CSS_SELECTOR, 'a[href*="/customer/account/logout"]'):
             return True
@@ -160,7 +196,8 @@ def dom_has_logout_marker(driver):
         pass
     return False
 
-def wait_dom_stable(driver, duration=0.8, timeout=15):
+
+def wait_dom_stable(driver: webdriver.Chrome, duration=0.8, timeout=15) -> bool:
     end = time.time() + timeout
     last_url = None
     while time.time() < end:
@@ -178,54 +215,165 @@ def wait_dom_stable(driver, duration=0.8, timeout=15):
         time.sleep(0.2)
     return False
 
-def ensure_logged_in(driver, wait: WebDriverWait, force: bool, max_wait_sec: int = 300):
+
+def ensure_logged_in(driver: webdriver.Chrome, wait: WebDriverWait, force: bool, max_wait_sec: int = 300):
+    """
+    - If already logged in: do nothing
+    - Else: open login page once and wait for the user to login (keeps current page)
+    """
     if not force and dom_has_logout_marker(driver) and not is_login_page(driver):
-        logger.info("既にログイン済み判定。続行。")
+        logger.info("ログイン済みを検知（現在ページ）。続行します。")
         return
+
     if not is_login_page(driver):
         driver.get(LOGIN_URL)
         wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
         wait_dom_stable(driver, duration=0.8, timeout=15)
-    logger.info("ログインページを開きました。ブラウザでログインしてください（最大 %d 秒）", max_wait_sec)
+    logger.info("ログインページを開きました。ブラウザでログインしてください（最長 %d 秒）。", max_wait_sec)
+
     end = time.time() + max_wait_sec
     while time.time() < end:
         time.sleep(0.6)
         wait_dom_stable(driver, duration=0.6, timeout=3)
         if (not is_login_page(driver)) and dom_has_logout_marker(driver):
-            logger.info("ログイン完了を確認しました。")
+            logger.info("ログイン完了を厳密に確認しました。続行します。")
             return
-    raise RuntimeError("ログイン待機タイムアウト")
+    raise RuntimeError("ログイン待機がタイムアウトしました。")
 
-def assert_authenticated_or_relogin(driver, wait: WebDriverWait):
+
+def assert_authenticated_or_relogin(driver: webdriver.Chrome, wait: WebDriverWait):
     if dom_has_logout_marker(driver) and not is_login_page(driver):
         return
-    logger.info("セッション切れの可能性。ログインを要求します。")
+    logger.info("セッションが切れている可能性 → ログインページへ移動して待機します。")
     ensure_logged_in(driver, wait, force=True, max_wait_sec=300)
 
-# ---------------- page helpers: find add button, set qty ----------------
-def try_close_common_popups(driver):
-    xpaths = [
+
+# ====== Page / UI helpers ======
+def is_not_found_page(driver: webdriver.Chrome) -> bool:
+    try:
+        body_text = driver.find_element(By.TAG_NAME, "body").text
+    except Exception:
+        body_text = ""
+    phrases = [
+        "指定のページが見つかりませんでした",
+        "お探しのページは見つかりません",
+        "この商品は現在取り扱っておりません",
+        "在庫がありません",
+        "ページが見つかりません",
+        "404"
+    ]
+    if any(p in body_text for p in phrases):
+        return True
+    title = (driver.title or "")
+    if "404" in title or "見つかりません" in title:
+        return True
+    return False
+
+
+def open_home_and_search(driver: webdriver.Chrome, wait: WebDriverWait, query: str) -> bool:
+    driver.get(HOME_URL)
+    wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
+    wait_dom_stable(driver, duration=0.6, timeout=10)
+    try_close_common_popups(driver)
+
+    inputs = [
+        "input[type='search']", "input[name='q']",
+        "input[placeholder*='検索']", "input[placeholder*='さがす']"
+    ]
+    for sel in inputs:
+        with contextlib.suppress(Exception):
+            el = driver.find_element(By.CSS_SELECTOR, sel)
+            if el.is_displayed():
+                el.clear()
+                el.send_keys(query)
+                el.send_keys(Keys.ENTER)
+                wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
+                wait_dom_stable(driver, duration=0.6, timeout=10)
+                return True
+    return False
+
+
+def click_first_search_result(driver: webdriver.Chrome, wait: WebDriverWait, pid: str, name: str) -> bool:
+    candidates = []
+    sels = [
+        "a.product-item-link",
+        ".product-item a",
+        "a[href*='.html']",
+        "a[href*='/netsuper/']",
+    ]
+    for sel in sels:
+        with contextlib.suppress(Exception):
+            for a in driver.find_elements(By.CSS_SELECTOR, sel):
+                href = (a.get_attribute("href") or "")
+                if not href:
+                    continue
+                candidates.append(a)
+
+    name_l = (name or "").lower()
+
+    def score(el):
+        href = (el.get_attribute("href") or "")
+        t = (el.text or "").lower()
+        s = 0
+        if pid and (pid in href):
+            s += 100
+        if name_l and name_l in t:
+            s += 10
+        if href.endswith(".html"):
+            s += 1
+        return -s
+
+    candidates.sort(key=score)
+
+    for a in candidates[:20]:
+        href = a.get_attribute("href") or ""
+        if not href.endswith(".html"):
+            continue
+        try:
+            driver.execute_script("arguments[0].scrollIntoView({block:'center'});", a)
+            a.click()
+        except Exception:
+            driver.get(href)
+        wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
+        wait_dom_stable(driver, duration=0.6, timeout=10)
+        try_close_common_popups(driver)
+        if not is_not_found_page(driver):
+            return True
+        with contextlib.suppress(Exception):
+            driver.back()
+            wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
+            wait_dom_stable(driver, duration=0.4, timeout=6)
+    return False
+
+
+def try_close_common_popups(driver: webdriver.Chrome) -> None:
+    for xp in [
         "//button[contains(.,'同意') or contains(.,'OK') or contains(.,'閉じる')]",
         "//div[contains(@class,'cookie')]//button",
         "//button[contains(@aria-label,'閉じる')]",
-    ]
-    for xp in xpaths:
+    ]:
         with contextlib.suppress(Exception):
             el = driver.find_element(By.XPATH, xp)
             if el and el.is_displayed():
                 driver.execute_script("arguments[0].click();", el)
                 time.sleep(0.2)
 
-def get_cart_count(driver) -> Optional[int]:
-    sels = ['span.header-cart-count','span.cart-count-badge','a[href*="cart"] .count','[aria-label*="カート"] .count','.header-cart .count']
+
+def get_cart_count(driver: webdriver.Chrome) -> Optional[int]:
+    sels = [
+        'span.header-cart-count', 'span.cart-count-badge', 'a[href*="cart"] .count',
+        '[aria-label*="カート"] .count', '.header-cart .count',
+    ]
     for sel in sels:
         with contextlib.suppress(Exception):
             el = driver.find_element(By.CSS_SELECTOR, sel)
             txt = (el.text or "").strip()
-            if txt.isdigit(): return int(txt)
+            if txt.isdigit():
+                return int(txt)
     return None
 
-def wait_cart_added(driver, before_count=None, expected_delta=1, timeout=14):
+
+def wait_cart_added(driver: webdriver.Chrome, before_count=None, expected_delta=1, timeout=14):
     end = time.time() + timeout
     xps = [
         "//*[contains(.,'カートに入れました')]",
@@ -238,15 +386,17 @@ def wait_cart_added(driver, before_count=None, expected_delta=1, timeout=14):
         for xp in xps:
             with contextlib.suppress(Exception):
                 el = driver.find_element(By.XPATH, xp)
-                if el.is_displayed(): return True
+                if el.is_displayed():
+                    return True
         after = get_cart_count(driver)
         if before_count is not None and after is not None and after - before_count >= expected_delta:
             return True
         time.sleep(0.3)
     return False
 
-def set_qty_if_field_exists(driver, wait, qty: int):
-    for sel in ["input#qty","input[name='qty']","input.qty"]:
+
+def set_qty_if_field_exists(driver: webdriver.Chrome, wait: WebDriverWait, qty: int):
+    for sel in ["input#qty", "input[name='qty']", "input.qty"]:
         with contextlib.suppress(Exception):
             el = driver.find_element(By.CSS_SELECTOR, sel)
             if el and el.is_displayed():
@@ -256,32 +406,38 @@ def set_qty_if_field_exists(driver, wait, qty: int):
                 return True
     return False
 
-def pick_simple_options_if_needed(driver, wait):
-    # select
+
+def pick_simple_options_if_needed(driver: webdriver.Chrome, wait: WebDriverWait) -> None:
+    # selects
     for sel in driver.find_elements(By.CSS_SELECTOR, "select"):
         with contextlib.suppress(Exception):
-            if not sel.is_displayed(): continue
+            if not sel.is_displayed():
+                continue
             s = Select(sel)
             if any(o.is_selected() and o.get_attribute("value") for o in s.options):
                 continue
             for o in s.options:
                 val = (o.get_attribute("value") or "").strip()
                 txt = (o.text or "").strip()
-                if not val: continue
-                if txt in ("選択してください","選択","--"): continue
+                if not val:
+                    continue
+                if txt in ("選択してください", "選択", "--"):
+                    continue
                 s.select_by_value(val)
                 time.sleep(0.2)
                 break
-    # radio
+    # radios
     radios = driver.find_elements(By.CSS_SELECTOR, "input[type='radio']")
     by_name: Dict[str, List[Any]] = {}
     for r in radios:
         with contextlib.suppress(Exception):
             name = r.get_attribute("name") or ""
-            if not name: continue
+            if not name:
+                continue
             by_name.setdefault(name, []).append(r)
     for name, group in by_name.items():
-        if any((r.is_selected() for r in group)): continue
+        if any((r.is_selected() for r in group)):
+            continue
         for r in group:
             with contextlib.suppress(Exception):
                 if r.is_displayed() and r.is_enabled():
@@ -289,11 +445,12 @@ def pick_simple_options_if_needed(driver, wait):
                     time.sleep(0.2)
                     break
 
-def find_add_to_cart_button(driver):
+
+def find_add_to_cart_button(driver: webdriver.Chrome):
     csses = [
-        "button.tocart","button#tocart","form[action*='checkout/cart'] button[type='submit']",
-        "button[title*='カゴ']","button[title*='カート']",
-        "button[aria-label*='カゴ']","button[aria-label*='カート']",
+        "button.tocart", "button#tocart", "form[action*='checkout/cart'] button[type='submit']",
+        "button[title*='カゴ']", "button[title*='カート']",
+        "button[aria-label*='カゴ']", "button[aria-label*='カート']",
         "button.add-to-cart",
     ]
     for sel in csses:
@@ -312,67 +469,32 @@ def find_add_to_cart_button(driver):
                     return e
     return None
 
-# ---------------- add to cart logic ----------------
+
+# ====== Adding logic ======
 def add_to_cart_via_url(driver: webdriver.Chrome, wait: WebDriverWait, *,
-                        url: str, pid: str, name: str, qty: int = 1, max_retries: int = 3, sleep_after_click=0.5):
+                        url: str, pid: str, name: str, qty: int = 1,
+                        max_retries: int = 3):
     assert_authenticated_or_relogin(driver, wait)
 
+    # 1) go to url
     driver.get(url)
     wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
     wait_dom_stable(driver, duration=0.6, timeout=10)
     try_close_common_popups(driver)
 
-    # fallback search if page not found
-    body_text = ""
-    with contextlib.suppress(Exception):
-        body_text = driver.find_element(By.TAG_NAME, "body").text or ""
-    not_found_phrases = ["指定のページが見つかりませんでした","お探しのページは見つかりません","この商品は現在取り扱っておりません","在庫がありません","404"]
-    if any(p in body_text for p in not_found_phrases):
-        # fallback: go to home and search
+    # 2) 404 -> search fallback
+    if is_not_found_page(driver):
         q = pid or (name[:20] if name else "")
-        logger.info("指定URLが無効っぽい。検索で再特定: %s", q)
-        driver.get(HOME_URL)
-        wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
-        wait_dom_stable(driver, duration=0.6, timeout=10)
-        try_close_common_popups(driver)
-        # try basic search inputs
-        found = False
-        for sel in ["input[type='search']", "input[name='q']","input[placeholder*='検索']","input[placeholder*='さがす']"]:
-            with contextlib.suppress(Exception):
-                el = driver.find_element(By.CSS_SELECTOR, sel)
-                if el.is_displayed():
-                    el.clear()
-                    el.send_keys(q)
-                    el.send_keys(Keys.ENTER)
-                    wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
-                    wait_dom_stable(driver, duration=0.6, timeout=10)
-                    found = True
-                    break
-        if not found:
-            raise RuntimeError("検索ボックスが見つからない（404 fallback失敗）")
-        # click first result heuristically
-        clicked = False
-        for sel in ["a.product-item-link","a[href*='.html']","a[href*='/netsuper/']"]:
-            with contextlib.suppress(Exception):
-                for a in driver.find_elements(By.CSS_SELECTOR, sel):
-                    href = (a.get_attribute("href") or "")
-                    if not href.endswith(".html"): continue
-                    try:
-                        driver.execute_script("arguments[0].scrollIntoView({block:'center'});", a)
-                        a.click()
-                    except Exception:
-                        driver.get(href)
-                    wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
-                    wait_dom_stable(driver, duration=0.6, timeout=10)
-                    try_close_common_popups(driver)
-                    clicked = True
-                    break
-            if clicked: break
-        if not clicked:
-            raise RuntimeError("検索しても商品ページを特定できない（404 fallback失敗）")
+        logger.info("指定URLが無効っぽい → 検索で再特定: %s", q)
+        if not open_home_and_search(driver, wait, q):
+            raise RuntimeError("検索ボックスが見つからない（404 fallback 失敗）")
+        if not click_first_search_result(driver, wait, pid, name):
+            raise RuntimeError("検索しても商品ページを特定できない（404 fallback 失敗）")
 
+    # 3) pick options
     pick_simple_options_if_needed(driver, wait)
 
+    # 4) set qty -> click add
     logger.info("Adding: %s x%d (ID=%s)", (name or "(no-name)"), qty, (pid or "N/A"))
     before = get_cart_count(driver)
     clicks_needed = 1 if set_qty_if_field_exists(driver, wait, qty) else max(1, int(qty))
@@ -411,9 +533,9 @@ def add_to_cart_via_url(driver: webdriver.Chrome, wait: WebDriverWait, *,
                     time.sleep(0.2)
                 continue
 
-            # click after might go to login
+            # If clicking sent to login page -> relogin and retry
             if is_login_page(driver):
-                logger.info("クリック後にログインへ遷移。再ログインして再試行。")
+                logger.info("クリック後にログインへ遷移。復帰して再実行します。")
                 ensure_logged_in(driver, wait, force=True, max_wait_sec=300)
                 continue
 
@@ -421,351 +543,283 @@ def add_to_cart_via_url(driver: webdriver.Chrome, wait: WebDriverWait, *,
             if ok:
                 success_any = True
                 now = get_cart_count(driver)
-                if now is not None: before = now
-                time.sleep(sleep_after_click)
+                if now is not None:
+                    before = now
                 break
             else:
                 time.sleep(0.8)
 
     if not success_any:
-        raise RuntimeError("カート投入が検出できず失敗した可能性があります")
+        raise RuntimeError("トースト/バッジ変化が検知できず、投入に失敗した可能性")
 
-# ---------------- Firestore cart read (robust) ----------------
-def _normalize_item_raw(it: Dict[str, Any]) -> Dict[str, Any]:
-    url = (it.get("url") or it.get("link") or "").strip()
-    pid = normalize_id(it.get("id"), url)
-    if not pid:
-        pid = id_from_url(url) or None
-    name = (it.get("name") or it.get("title") or "").strip()
-    q = it.get("quantity") or it.get("qty") or it.get("quantify") or it.get("count") or 1
-    try:
-        q = max(1, int(q))
-    except Exception:
-        q = 1
-    price = None
-    if "price" in it:
-        try:
-            price = float(it.get("price")) if it.get("price") not in (None, "") else None
-        except Exception:
-            price = None
-    return {
-        "id": pid,
-        "url": url,
-        "name": name,
-        "image": it.get("image") or it.get("img") or "",
-        "price": price,
-        "quantity": q,
-        "raw": it,
-    }
 
-def fetch_cart_items(db: fb_firestore.Client, cart_path: str, from_all: bool = False) -> Tuple[int, List[Dict[str, Any]]]:
-    segs = [s for s in cart_path.split("/") if s]
-    docs = []
-    if len(segs) % 2 == 1:
+# ====== Firestore read helpers (cart) ======
+def fetch_cart_items(db: fb_firestore.Client, cart_path: str, from_all: bool) -> Tuple[int, List[Dict[str, Any]]]:
+    """
+    Read cart docs from cart_path (collection or document)
+    Returns (docs_count_read, items_list) where each item is normalized: {id,url,name,quantity}
+    """
+    if is_collection_path(cart_path):
         col = db.collection(cart_path)
-        try:
-            snap_docs = list(col.stream())
-        except Exception:
-            snap_docs = []
-        docs = snap_docs
+        if from_all:
+            docs = list(col.stream())
+        else:
+            # try to get latest by createdAt if present
+            try:
+                docs = list(col.order_by("createdAt", direction=fb_firestore.Query.DESCENDING).limit(1000).stream())
+            except Exception:
+                docs = list(col.stream())
     else:
-        doc_ref = db.document(cart_path)
-        snap = doc_ref.get()
-        docs = [snap] if snap.exists else []
+        doc = db.document(cart_path).get()
+        docs = [doc] if doc.exists else []
 
     items: List[Dict[str, Any]] = []
     for d in docs:
-        data = d.to_dict() if hasattr(d, "to_dict") else (d if isinstance(d, dict) else None)
+        # d may be a DocumentSnapshot
+        data = d.to_dict() if hasattr(d, "to_dict") else (d or {})
         if not data:
             continue
-
-        # 1) items array
-        arr = data.get("items")
-        if isinstance(arr, list) and arr:
+        # If doc directly contains item fields, support both shape {items:[...]} and direct item doc
+        if isinstance(data.get("items"), list):
+            arr = data.get("items")
             for it in arr:
-                if isinstance(it, dict):
-                    items.append(_normalize_item_raw(it))
-                elif isinstance(it, str):
-                    try:
-                        parsed = json.loads(it)
-                        if isinstance(parsed, dict):
-                            items.append(_normalize_item_raw(parsed))
-                    except Exception:
-                        continue
-            continue
-
-        # 2) rawobj
-        if "rawobj" in data and data["rawobj"]:
-            rawobj = data["rawobj"]
-            if isinstance(rawobj, str):
+                if not isinstance(it, dict):
+                    continue
+                url = (it.get("url") or "").strip()
+                pid = normalize_id(it.get("id"), url)
+                nm = (it.get("name") or it.get("title") or "").strip()
+                q = it.get("quantity") or it.get("qty") or 1
                 try:
-                    parsed = json.loads(rawobj)
-                    if isinstance(parsed, dict):
-                        items.append(_normalize_item_raw(parsed))
-                        continue
+                    q = max(1, int(q))
                 except Exception:
-                    pass
-            elif isinstance(rawobj, dict):
-                items.append(_normalize_item_raw(rawobj))
-                continue
-
-        # 3) doc itself contains item-like fields
-        candidate_keys = ["id", "url", "name", "title", "image", "img", "price", "quantity", "qty", "quantify", "count"]
-        candidate = {}
-        for k in candidate_keys:
-            if k in data:
-                candidate[k] = data[k]
-        if candidate:
-            items.append(_normalize_item_raw(candidate))
-            continue
-
-        # 4) try parse any JSON-string field
-        found = False
-        for v in data.values():
-            if isinstance(v, str) and v.strip().startswith("{") and v.strip().endswith("}"):
-                try:
-                    parsed = json.loads(v)
-                    if isinstance(parsed, dict):
-                        items.append(_normalize_item_raw(parsed))
-                        found = True
-                        break
-                except Exception:
-                    pass
-        if found:
-            continue
-
-        # else ignore
-
+                    q = 1
+                page = url or (f"{BASE}/{pid}.html" if pid else "")
+                if not page:
+                    continue
+                items.append({"id": pid, "url": page, "name": nm, "quantity": q})
+        else:
+            # document is single item-like object
+            url = (data.get("url") or "").strip()
+            pid = normalize_id(data.get("id"), url)
+            nm = (data.get("name") or data.get("title") or "").strip()
+            q = data.get("quantity") or data.get("qty") or 1
+            try:
+                q = max(1, int(q))
+            except Exception:
+                q = 1
+            page = url or (f"{BASE}/{pid}.html" if pid else "")
+            if page:
+                items.append({"id": pid, "url": page, "name": nm, "quantity": q})
     return (len(docs), items)
+
 
 def dedupe_items(items: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     seen: Set[str] = set()
     out: List[Dict[str, Any]] = []
     for it in items:
         k = stable_key(it)
-        if k in seen: continue
+        if k in seen:
+            continue
         seen.add(k)
         out.append(it)
     return out
 
-# ---------------- postprocess: move cart -> history ----------------
-def move_cart_to_history(db: fb_firestore.Client, uid: str, cart_path: str, history_doc: str, dry: bool = True, debug: bool = False):
-    # read cart docs
-    segs = [s for s in cart_path.split("/") if s]
-    if len(segs) % 2 == 1:
-        # collection
-        col = db.collection(cart_path)
-        docs = list(col.stream())
-    else:
-        docref = db.document(cart_path)
-        snap = docref.get()
-        docs = [snap] if snap.exists else []
 
-    all_items = []
-    doc_ids_to_delete = []
+# ====== Postprocess: move cart -> history ======
+def move_cart_to_history(db: fb_firestore.Client, uid: str, history_doc: str,
+                         dry: bool = False, logger_obj: Optional[logging.Logger] = None) -> dict:
+    """
+    - Reads users/{uid}/cart (all docs)
+    - Appends items to users/{uid}/history/{history_doc}.items (ArrayUnion)
+    - Sets updatedAt = SERVER_TIMESTAMP on history doc
+    - Deletes cart docs (batched; 500/document limit)
+    """
+    log = (logger_obj.info if logger_obj else print)
+    errlog = (logger_obj.error if logger_obj else print)
+
+    cart_col = f"users/{uid}/cart"
+    history_doc_path = f"users/{uid}/history/{history_doc}"
+
+    col = db.collection(cart_col)
+    docs = list(col.stream())
+    if not docs:
+        log(f"[INFO] cart is empty: {cart_col}")
+        return {"appended": 0, "deleted": 0, "historyDocPath": history_doc_path}
+
+    items = []
+    doc_ids = []
     for d in docs:
-        data = d.to_dict() if hasattr(d, "to_dict") else (d if isinstance(d, dict) else None)
-        if not data: continue
-        # try same normalization as fetch_cart_items
-        arr = data.get("items")
-        if isinstance(arr, list) and arr:
-            for it in arr:
-                if isinstance(it, dict):
-                    norm = _normalize_item_raw(it)
-                    all_items.append(norm)
-        elif "rawobj" in data and data["rawobj"]:
-            rawobj = data["rawobj"]
-            if isinstance(rawobj, str):
-                try:
-                    parsed = json.loads(rawobj)
-                    if isinstance(parsed, dict):
-                        all_items.append(_normalize_item_raw(parsed))
-                except Exception:
-                    pass
-            elif isinstance(rawobj, dict):
-                all_items.append(_normalize_item_raw(rawobj))
-        else:
-            candidate_keys = ["id","url","name","image","price","quantity","qty","quantify","count","title"]
-            candidate = {}
-            for k in candidate_keys:
-                if k in data:
-                    candidate[k] = data[k]
-            if candidate:
-                all_items.append(_normalize_item_raw(candidate))
-
-        # mark doc for deletion if collection-style
-        if hasattr(d, "id"):
-            doc_ids_to_delete.append((d.reference if hasattr(d, "reference") else None, getattr(d, "id", None)))
-        else:
-            # if snap (single doc), store its ref
-            if hasattr(d, "reference"):
-                doc_ids_to_delete.append((d.reference, getattr(d, "id", None)))
-
-    if not all_items:
-        logger.info("move_postprocess: cart has no items to move.")
-        return {"wrote": 0, "deleted": 0, "historyDocPath": f"users/{uid}/history/{history_doc}"}
-
-    # prepare items with timestamp (ISO string) to avoid serverTimestamp inside arrays
-    now_iso = datetime.utcnow().replace(tzinfo=timezone.utc).isoformat()
-    items_for_history = []
-    for it in all_items:
-        item_copy = {
-            "id": it.get("id"),
-            "url": it.get("url"),
-            "name": it.get("name"),
-            "image": it.get("image"),
-            "price": it.get("price"),
-            "quantity": it.get("quantity"),
-            "timeStamp": now_iso,
+        data = d.to_dict() or {}
+        doc_ids.append(d.id)
+        it = {
+            "id": str(data.get("id") or data.get("pid") or "") ,
+            "url": data.get("url") or "",
+            "name": data.get("name") or data.get("title") or "",
+            "image": data.get("image") or data.get("imgUrl") or "",
+            "price": (data.get("price") if isinstance(data.get("price"), (int,float)) else None),
+            "quantity": int(data.get("quantity") or data.get("qty") or 1),
+            # store ISO timestamp string (serverTimestamp cannot be inside array element)
+            "timeStamp": datetime.now(timezone.utc).isoformat()
         }
-        items_for_history.append(item_copy)
+        items.append(it)
 
-    hist_doc_path = f"users/{uid}/history/{history_doc}"
-    hist_ref = db.document(hist_doc_path)
-
-    def txn_fn(tx):
-        # read existing
-        try:
-            hist_snap = tx.get(hist_ref)
-            base = hist_snap.to_dict() if hist_snap.exists else {}
-            existing_items = base.get("items") if base and isinstance(base.get("items"), list) else []
-            new_items = existing_items + items_for_history
-            # set updatedAt server timestamp and items
-            tx.set(hist_ref, {"items": new_items, "updatedAt": fb_firestore.SERVER_TIMESTAMP}, merge=True)
-        except Exception as e:
-            # fallback: set whole
-            tx.set(hist_ref, {"items": items_for_history, "updatedAt": fb_firestore.SERVER_TIMESTAMP}, merge=True)
-
+    log(f"[INFO] collected {len(items)} cart item(s) from {cart_col}")
     if dry:
-        logger.info("[DRY] would append to history doc: %s", hist_doc_path)
-        logger.debug("[DRY] items sample: %s", json.dumps(items_for_history[:4], ensure_ascii=False, indent=2))
-        logger.info("[DRY] would delete %d cart doc(s)", len(doc_ids_to_delete))
-        return {"wrote": 1, "deleted": 0, "historyDocPath": hist_doc_path}
+        log("[DRY] would append to history doc:", history_doc_path)
+        log("[DRY] items sample:", items[:3])
+        log("[DRY] would delete cart docs:", len(doc_ids))
+        return {"appended": len(items), "deleted": 0, "historyDocPath": history_doc_path}
 
-    # commit transaction
-    db.transaction()(txn_fn)  # run transaction
-    # delete cart docs
+    history_ref = db.document(history_doc_path)
+    try:
+        history_ref.set({
+            "items": fb_firestore.ArrayUnion(items),
+            "updatedAt": fb_firestore.SERVER_TIMESTAMP
+        }, merge=True)
+        log(f"[INFO] appended {len(items)} item(s) to {history_doc_path}")
+    except Exception as e:
+        errlog(f"[ERROR] failed to write history doc: {e}")
+        raise
+
+    # delete docs in batches
     deleted = 0
-    for ref, docid in doc_ids_to_delete:
-        if ref is None:
-            continue
-        try:
-            ref.delete()
-            deleted += 1
-        except Exception as e:
-            logger.warning("Failed to delete cart doc %s: %s", docid, e)
+    batch_size = 400
+    try:
+        for i in range(0, len(doc_ids), batch_size):
+            batch = db.batch()
+            chunk = doc_ids[i:i+batch_size]
+            for doc_id in chunk:
+                doc_ref = db.document(f"{cart_col}/{doc_id}")
+                batch.delete(doc_ref)
+            batch.commit()
+            deleted += len(chunk)
+            log(f"[INFO] deleted {len(chunk)} cart docs (progress {deleted}/{len(doc_ids)})")
+    except Exception as e:
+        errlog(f"[ERROR] failed while deleting cart docs: {e}")
+        return {"appended": len(items), "deleted": deleted, "historyDocPath": history_doc_path}
 
-    logger.info("Moved %d items from cart -> history=%s (deleted %d docs)", len(items_for_history), hist_doc_path, deleted)
-    return {"wrote": 1, "deleted": deleted, "historyDocPath": hist_doc_path}
+    return {"appended": len(items), "deleted": deleted, "historyDocPath": history_doc_path}
 
-# ---------------- CLI / main flow ----------------
+
+# ====== CLI ======
 def parse_args():
-    p = argparse.ArgumentParser(description="AEON Netsuper AutoCart: Firestore cart -> AEON cart -> move to history")
+    p = argparse.ArgumentParser(description="AEON / Firestore cart -> add to AEON cart and optionally move to history")
+    p.add_argument("--browser", default="auto", choices=["auto","chrome","brave"])
     p.add_argument("--user-data-dir", default=DEFAULT_USER_DATA_DIR)
     p.add_argument("--profile-dir", default=None)
-    p.add_argument("--debugger-address", default=None)
-    p.add_argument("--headless", action="store_true")
     p.add_argument("--auto-attach", action="store_true")
-    # firebase
+    p.add_argument("--debugger-address", default="127.0.0.1:9222")
+    p.add_argument("--headless", action="store_true")
+    # Firebase
     p.add_argument("--use-firebase", action="store_true")
-    p.add_argument("--fb-cred", default=os.environ.get("GOOGLE_APPLICATION_CREDENTIALS", ""))
+    p.add_argument("--fb-cred", default=os.environ.get("GOOGLE_APPLICATION_CREDENTIALS",""))
     p.add_argument("--fb-project", default="")
-    p.add_argument("--cart-path", default="users/uid/cart")
+    # cart path
+    p.add_argument("--cart-path", default=None, help="Firestore path to cart (collection) e.g. users/uid/cart")
     p.add_argument("--from-all", action="store_true")
-    # behavior
-    p.add_argument("--uid", required=True, help="target user id")
+    # control
     p.add_argument("--dedupe", action="store_true")
     p.add_argument("--sleep-after-add", type=float, default=0.6)
+    p.add_argument("--force-login", action="store_true")
     p.add_argument("--max-retries-per-item", type=int, default=3)
     p.add_argument("--keep-open", action="store_true")
     p.add_argument("--no-home-return", action="store_true")
-    p.add_argument("--call-postprocess", action="store_true", help="after adding, move cart->history")
-    p.add_argument("--history-doc", default="last-checkout")
-    p.add_argument("--dry", action="store_true")
+    # postprocess
+    p.add_argument("--call-postprocess", action="store_true",
+                   help="If set, after adding to AEON cart, move Firestore cart -> history")
+    p.add_argument("--postprocess-history-doc", default="last-checkout")
+    # runtime
+    p.add_argument("--uid", required=True, help="user id to process")
+    p.add_argument("--python-debug", action="store_true")
+    p.add_argument("--dry", action="store_true", help="dry-run: no writes to Firestore")
     return p.parse_args()
+
 
 def main():
     args = parse_args()
-    if args.dedupe:
-        logger.info("重複除去 ON")
 
-    db = None
-    if args.use_firebase:
-        try:
-            db = init_fb(args.fb_cred)
-        except Exception as e:
-            logger.error("Firebase init failed: %s", e)
-            return
-
-    # fetch cart items
-    if not db:
-        logger.error("Firestore client is required (--use-firebase).")
-        return
-    cart_path = args.cart_path.replace("uid", args.uid)
-    docs_count, items = fetch_cart_items(db, cart_path, from_all=args.from_all)
-    logger.info("cart 読み取り: %s docs=%d items=%d", cart_path, docs_count, len(items))
-    if args.dedupe:
-        items = dedupe_items(items)
-        logger.info("重複除去後 items: %d", len(items))
-    if not items:
-        logger.info("投入対象がありません。終了。")
-        return
-
-    # build driver
+    # build webdriver
     try:
-        driver = build_driver(user_data_dir=args.user_data_dir,
-                              profile_dir=args.profile_dir,
-                              headless=args.headless,
-                              debugger_address=args.debugger_address,
-                              auto_attach=args.auto_attach)
-    except Exception as e:
-        logger.error("ブラウザ起動失敗: %s", e)
-        return
+        driver = build_driver(
+            browser=args.browser,
+            user_data_dir=args.user_data_dir,
+            profile_dir=args.profile_dir,
+            headless=args.headless,
+            auto_attach=args.auto_attach,
+            debugger_address=(args.debugger_address if args.auto_attach else None),
+        )
+        logger.info("ブラウザ準備OK")
+    except WebDriverException as e:
+        logger.error("Chrome 起動失敗: %s", e)
+        sys.exit(1)
 
     wait = WebDriverWait(driver, 20)
+
     try:
-        ensure_logged_in(driver, wait, force=False, max_wait_sec=300)
-        success_count = 0
+        # ensure logged-in (keeps current page)
+        ensure_logged_in(driver, wait, force=args.force_login, max_wait_sec=300)
+
+        # Firestore setup (required to fetch cart items)
+        if not args.use_firebase:
+            logger.error("--use-firebase を指定してください。"); return
+
+        credp = os.path.expanduser(args.fb_cred) if args.fb_cred else os.environ.get("GOOGLE_APPLICATION_CREDENTIALS","")
+        if not credp or not os.path.exists(credp):
+            logger.error("サービスアカウントJSONが見つかりません: %s", credp)
+            # proceed without firebase only if not required
+            return
+
+        db = init_firebase_admin(credp, args.fb_project or None)
+
+        cart_path = args.cart_path or f"users/{args.uid}/cart"
+        docs_count, items = fetch_cart_items(db, cart_path, args.from_all)
+        logger.info("cart 読み取り: %s docs=%d items=%d", cart_path, docs_count, len(items))
+
+        if args.dedupe:
+            items = dedupe_items(items)
+            logger.info("重複除去後 items: %d", len(items))
+
+        if not items:
+            logger.info("投入する商品がありません。"); return
+
+        # Add each item to AEON net cart
         for it in items:
-            url = it.get("url") or (f"{BASE}/{it.get('id')}.html" if it.get("id") else "")
-            pid = it.get("id") or normalize_id(it.get("id") or "", url)
-            name = it.get("name") or ""
-            qty = it.get("quantity") or 1
+            url = (it.get("url") or "").strip()
+            pid = normalize_id(it.get("id"), url)
+            name = (it.get("name") or "").strip()
+            qty  = it.get("quantity") or 1
             try:
-                add_to_cart_via_url(driver, wait, url=url, pid=pid or "", name=name, qty=qty,
-                                    max_retries=args.max_retries_per_item, sleep_after_click=args.sleep_after_add)
-                success_count += 1
+                add_to_cart_via_url(driver, wait, url=url, pid=pid, name=name,
+                                    qty=qty, max_retries=args.max_retries_per_item)
+                time.sleep(args.sleep_after_add)
             except Exception as e:
                 logger.error("Failed to add %s: %s", (name or pid or "N/A"), e)
 
+        # Optionally call postprocess (move cart -> history)
+        if args.call_postprocess:
+            try:
+                res = move_cart_to_history(db, args.uid, args.postprocess_history_doc, dry=args.dry, logger_obj=logger)
+                logger.info("postprocess result: %s", res)
+            except Exception as e:
+                logger.error("postprocess failed: %s", e)
+
+        # final navigation
         if not args.no_home_return:
             with contextlib.suppress(Exception):
                 driver.get(HOME_URL)
                 wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
                 wait_dom_stable(driver, duration=0.5, timeout=6)
 
-        logger.info("追加処理完了: success_count=%d / total=%d", success_count, len(items))
-
-        # postprocess: move cart->history
-        if args.call_postprocess:
-            if success_count > 0:
-                logger.info("postprocess を実行します（cart -> history）")
-                res = move_cart_to_history(db, args.uid, cart_path, args.history_doc, dry=args.dry, debug=True)
-                logger.info("postprocess result: %s", res)
-            else:
-                logger.info("追加成功数0。postprocess はスキップします。")
-        else:
-            logger.info("postprocess (--call-postprocess) が指定されていません。スキップ。")
-
-        # keep open?
+        logger.info("完了。ブラウザは開いたままです。" if args.keep_open else "完了。ブラウザを閉じます。")
         if args.keep_open:
-            logger.info("keep-open が有効。ブラウザを開いたまま待機します...")
             while True:
                 time.sleep(1)
+
     finally:
         if not args.keep_open:
             with contextlib.suppress(Exception):
                 driver.quit()
+
 
 if __name__ == "__main__":
     main()
