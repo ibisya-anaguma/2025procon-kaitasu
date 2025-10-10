@@ -170,17 +170,10 @@ def wait_dom_stable(driver: webdriver.Chrome, duration=0.8, timeout=15) -> bool:
     return False
 
 def ensure_logged_in(driver: webdriver.Chrome, wait: WebDriverWait, force: bool, max_wait_sec: int = 300):
-    """
-    余計なページ遷移をしない版:
-      - 既にログイン: 何もしない（現在ページキープ）
-      - 未ログイン or force: ログインページへ1回だけ遷移→完了まで待機→そのまま（HOME等へは戻らない）
-    """
-    # 既ログインなら何もしない
     if not force and dom_has_logout_marker(driver) and not is_login_page(driver):
         logger.info("ログイン済みを検知（現在ページ）。続行します。")
         return
 
-    # ログインページへ
     if not is_login_page(driver):
         driver.get(LOGIN_URL)
         wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
@@ -191,7 +184,6 @@ def ensure_logged_in(driver: webdriver.Chrome, wait: WebDriverWait, force: bool,
     while time.time() < end:
         time.sleep(0.6)
         wait_dom_stable(driver, duration=0.6, timeout=3)
-        # ログインフォームが消え、ログアウト導線が現れたらOK（現在ページのまま）
         if (not is_login_page(driver)) and dom_has_logout_marker(driver):
             logger.info("ログイン完了を厳密に確認しました。続行します。")
             return
@@ -225,7 +217,7 @@ def is_not_found_page(driver: webdriver.Chrome) -> bool:
     return False
 
 def open_home_and_search(driver: webdriver.Chrome, wait: WebDriverWait, query: str) -> bool:
-    driver.get(HOME_URL)  # 検索ボックス利用のための1回だけのHOME遷移
+    driver.get(HOME_URL)
     wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
     wait_dom_stable(driver, duration=0.6, timeout=10)
     try_close_common_popups(driver)
@@ -349,7 +341,6 @@ def set_qty_if_field_exists(driver: webdriver.Chrome, wait: WebDriverWait, qty: 
     return False
 
 def pick_simple_options_if_needed(driver: webdriver.Chrome, wait: WebDriverWait) -> None:
-    # select
     for sel in driver.find_elements(By.CSS_SELECTOR, "select"):
         with contextlib.suppress(Exception):
             if not sel.is_displayed(): continue
@@ -364,7 +355,6 @@ def pick_simple_options_if_needed(driver: webdriver.Chrome, wait: WebDriverWait)
                 s.select_by_value(val)
                 time.sleep(0.2)
                 break
-    # radio
     radios = driver.find_elements(By.CSS_SELECTOR, "input[type='radio']")
     by_name: Dict[str, List[Any]] = {}
     for r in radios:
@@ -410,13 +400,11 @@ def add_to_cart_via_url(driver: webdriver.Chrome, wait: WebDriverWait, *,
                         max_retries: int = 3):
     assert_authenticated_or_relogin(driver, wait)
 
-    # 1) 指定URLへ
     driver.get(url)
     wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
     wait_dom_stable(driver, duration=0.6, timeout=10)
     try_close_common_popups(driver)
 
-    # 2) 404/取り扱い無し → 検索 fallback
     if is_not_found_page(driver):
         q = pid or name[:20]
         logger.info("指定URLが無効っぽい → 検索で再特定: %s", q)
@@ -425,10 +413,8 @@ def add_to_cart_via_url(driver: webdriver.Chrome, wait: WebDriverWait, *,
         if not click_first_search_result(driver, wait, pid, name):
             raise RuntimeError("検索しても商品ページを特定できない（404 fallback 失敗）")
 
-    # 3) オプション自動選択
     pick_simple_options_if_needed(driver, wait)
 
-    # 4) 数量設定→投入
     logger.info("Adding: %s x%d (ID=%s)", (name or "(no-name)"), qty, (pid or "N/A"))
     before = get_cart_count(driver)
     clicks_needed = 1 if set_qty_if_field_exists(driver, wait, qty) else max(1, int(qty))
@@ -467,7 +453,6 @@ def add_to_cart_via_url(driver: webdriver.Chrome, wait: WebDriverWait, *,
                     time.sleep(0.2)
                 continue
 
-            # クリック後にログインへ飛んだ場合 → 復帰して再実行
             if is_login_page(driver):
                 logger.info("クリック後にログインへ遷移。復帰して再実行します。")
                 ensure_logged_in(driver, wait, force=True, max_wait_sec=300)
@@ -487,6 +472,7 @@ def add_to_cart_via_url(driver: webdriver.Chrome, wait: WebDriverWait, *,
 
 # ─────────────── Firestore read ──────────────
 def fetch_purchase_items(db: fb_firestore.Client, purchase_path: str, from_all: bool) -> Tuple[int, List[Dict[str, Any]]]:
+    # purchase_path here is actually cart path (users/{uid}/cart...).
     if is_collection_path(purchase_path):
         col = db.collection(purchase_path)
         if from_all:
@@ -530,7 +516,7 @@ def dedupe_items(items: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
 
 # ─────────────── CLI / main ────────────────
 def parse_args():
-    p = argparse.ArgumentParser(description="AEON 徳島 | Firestore purchase → カート投入（最小遷移）")
+    p = argparse.ArgumentParser(description="AEON 徳島 | Firestore cart -> カート投入（最小遷移）")
     p.add_argument("--browser", default="auto", choices=["auto","chrome","brave"])
     p.add_argument("--user-data-dir", default=DEFAULT_USER_DATA_DIR)
     p.add_argument("--profile-dir", default=None)
@@ -541,7 +527,9 @@ def parse_args():
     p.add_argument("--use-firebase", action="store_true")
     p.add_argument("--fb-cred", default=os.environ.get("GOOGLE_APPLICATION_CREDENTIALS",""))
     p.add_argument("--fb-project", default="")
-    p.add_argument("--purchase-path", default="users/uid/purchase")
+    # NEW: uid と cart-path を明示的に指定可能に
+    p.add_argument("--uid", required=True, help="対象ユーザーの uid (users/{uid}/...)")
+    p.add_argument("--cart-path", default="users/{uid}/cart", help="Firestore の cart パス (デフォルト users/{uid}/cart). {uid} を使用できます。")
     p.add_argument("--from-all", action="store_true")
     # 動作
     p.add_argument("--dedupe", action="store_true")
@@ -549,9 +537,27 @@ def parse_args():
     p.add_argument("--force-login", action="store_true")
     p.add_argument("--max-retries-per-item", type=int, default=3)
     p.add_argument("--keep-open", action="store_true")
-    # 終了時に HOME に戻る（既定ON）。無駄遷移をさらに避けたいなら --no-home-return を付ける
     p.add_argument("--no-home-return", action="store_true")
+    # postprocess hook
+    p.add_argument("--call-postprocess", action="store_true", help="投入完了後に postprocess CLI を呼ぶ")
+    p.add_argument("--postprocess-cmd", default="", help="postprocess を呼ぶコマンド（指定がなければ内部デフォルト）")
+    p.add_argument("--postprocess-history-doc", default="last-checkout", help="postprocess に渡す history doc id")
     return p.parse_args()
+
+def call_postprocess_cli(uid: str, history_doc: str, postprocess_cmd: str, debug=False):
+    if postprocess_cmd:
+        cmd = postprocess_cmd
+    else:
+        # デフォルト: npx tsx route.ts など。必要なら環境に合わせて変更してください。
+        # ここでは route.ts を実行する想定。ユーザー環境で tsx があること。
+        cmd = f'npx tsx src/app/api/cart/checkout/route.ts --cred "$GOOGLE_APPLICATION_CREDENTIALS" --uid {uid} --history-doc {history_doc}'
+    if debug: logger.info("postprocess cmd=%s", cmd)
+    # 実行（非同期にしたければ & をつける等、環境に合わせて）
+    try:
+        subprocess.run(cmd, shell=True, check=True)
+        logger.info("postprocess executed: %s", cmd)
+    except subprocess.CalledProcessError as e:
+        logger.error("postprocess failed: %s", e)
 
 def main():
     args = parse_args()
@@ -572,7 +578,6 @@ def main():
 
     wait = WebDriverWait(driver, 20)
     try:
-        # 余計な遷移をせず、ログインページでのみ待機
         ensure_logged_in(driver, wait, force=args.force_login, max_wait_sec=300)
 
         if not args.use_firebase:
@@ -582,11 +587,16 @@ def main():
             logger.error("サービスアカウントJSONが見つかりません: %s", args.fb_cred); return
         db = fb_client(credp, args.fb_project or None)
 
-        docs_count, items = fetch_purchase_items(db, args.purchase_path, args.from_all)
-        if args.from_all and is_collection_path(args.purchase_path):
-            logger.info("purchase 読み取り: all:%d:%d", docs_count, len(items))
+        # cart_path の {uid} を展開（デフォルト: users/{uid}/cart）
+        cart_path = args.cart_path
+        if "{uid}" in cart_path:
+            cart_path = cart_path.replace("{uid}", args.uid)
         else:
-            logger.info("purchase 読み取り: %s:%d", ("latest" if is_collection_path(args.purchase_path) else "doc"), len(items))
+            # サポート: users/uid/... のように literal が含まれる場合
+            cart_path = cart_path.replace("users/uid", f"users/{args.uid}")
+
+        docs_count, items = fetch_purchase_items(db, cart_path, args.from_all)
+        logger.info("cart 読み取り: %s docs=%d items=%d", cart_path, docs_count, len(items))
         if args.dedupe:
             items = dedupe_items(items)
             logger.info("重複除去後 items: %d", len(items))
@@ -605,13 +615,18 @@ def main():
             except Exception as e:
                 logger.error("Failed to add %s: %s", (name or pid or "N/A"), e)
 
-        # 最後に HOME へ戻したくない場合は --no-home-return を付ける
         if not args.no_home_return:
             with contextlib.suppress(Exception):
                 driver.get(HOME_URL)
                 wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
                 wait_dom_stable(driver, duration=0.5, timeout=6)
         logger.info("完了。ブラウザは開いたままです。" if args.keep_open else "完了。ブラウザを閉じます。")
+
+        # postprocess を呼ぶ（成功したら history へ移動など）
+        if args.call_postprocess:
+            # postprocess-cmd が空なら上のデフォルトを使う
+            call_postprocess_cli(args.uid, args.postprocess_history_doc, args.postprocess_cmd, debug=True)
+
         if args.keep_open:
             while True: time.sleep(1)
     finally:
