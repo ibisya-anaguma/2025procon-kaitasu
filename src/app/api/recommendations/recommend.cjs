@@ -1,3 +1,5 @@
+// src/app/api/recommendations/recommend.cjs
+
 const fs = require("fs");
 const path = require("path");
 const admin = require("firebase-admin");
@@ -250,7 +252,7 @@ function jaccard(a, b) {
 
 function buildSimilarRecs(historyByItem, tokenFreq, byGenreCat, catAll, limit=8) {
   // 履歴の上位ジャンルを優先
-  const topGenres = Object.entries(catAll).sort((a,b)=>b[1]-a[1]).map(([g])=>g).slice(0,6);
+  const topGenres = Object.entries(catAll).sort((a, b)=>b[1]-a[1]).map(([g])=>g).slice(0,6);
   // 履歴トークン上位
   const topTokens = Object.entries(tokenFreq).sort((a,b)=>b[1]-a[1]).map(([t])=>t).slice(0,30);
 
@@ -403,3 +405,4 @@ async function writeRecommendations(db, uid, recs) {
   await writeRecommendations(db, cfg.uid, final);
   console.log(`wrote ${final.length} recommendations to users/${cfg.uid}/recommendations`);
 })();
+

@@ -1,52 +1,151 @@
-name: autocart-daily
+name: run-autosubscriptioncart
 
 on:
-  schedule:
-    - cron: "0 16 * * *" # JST 01:00
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      dry:
+        description: 'Dry run? true or false'
+        required: false
+        default: 'false'
+      uid:
+        description: 'Process single user id (optional)'
+        required: false
+        default: ''
+      limit:
+        description: 'Limit how many users to process'
+        required: false
+        default: '50'
+  # schedule:
+  #   - cron: "0 16 * * *"  # daily 01:00 JST
+
+permissions:
+  contents: read
+
+concurrency:
+  group: run-autocart-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   run-autocart:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 45
+
+    env:
+      SA_PATH: .firebase/firebase-key.json
+      ENTRY: src/jobs/checkout/autocart-runner.ts
+      # pick inputs into env for the run step (safe defaults)
+      DRY: ${{ github.event.inputs.dry || 'false' }}
+      UID: ${{ github.event.inputs.uid || '' }}
+      LIMIT: ${{ github.event.inputs.limit || '50' }}
 
     steps:
-      - name: Checkout
+      - name: Checkout repo
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Setup Node
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "18"
+          node-version: 20
+          cache: 'npm'
 
-      - name: Prepare credentials and run (dry)
+      - name: Install dependencies (if any)
+        run: |
+          set -euo pipefail
+          if [ -f package-lock.json ] || [ -f package.json ]; then
+            npm ci --no-audit --prefer-offline || npm install --no-audit --prefer-offline
+          fi
+
+      - name: Ensure .firebase dir
+        run: mkdir -p .firebase
+
+      - name: Validate FIREBASE_SERVICE_ACCOUNT secret exists
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" ]; then
+            echo "::error::FIREBASE_SERVICE_ACCOUNT secret is not set. Go to Settings → Secrets and variables → Actions and add it (paste the service account JSON file contents)."
+            exit 1
+          fi
+          echo "FIREBASE_SERVICE_ACCOUNT found."
+
+      - name: Write FIREBASE_SERVICE_ACCOUNT to file (secure)
+        shell: bash
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
         run: |
           set -euo pipefail
-          if [ -z "${FIREBASE_SERVICE_ACCOUNT:-}" ]; then
-            echo "::error::FIREBASE_SERVICE_ACCOUNT is not set. Add it at Settings → Secrets and variables → Actions"
+          printf '%s' "${FIREBASE_SERVICE_ACCOUNT}" > "${{ env.SA_PATH }}"
+          chmod 600 "${{ env.SA_PATH }}"
+          echo "Wrote ${SA_PATH} (mode 600)."
+
+      - name: Show credential info (debug)
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "GOOGLE_APPLICATION_CREDENTIALS -> $(realpath "${{ env.SA_PATH }}" 2>/dev/null || echo "${{ env.SA_PATH }}")"
+          echo "Credential size: $(wc -c < "${{ env.SA_PATH }}") bytes"
+
+      - name: Run autocart-runner (LIVE unless dry=true)
+        shell: bash
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ env.SA_PATH }}
+          DRY: ${{ env.DRY }}
+          UID: ${{ env.UID }}
+          LIMIT: ${{ env.LIMIT }}
+          ENTRY: ${{ env.ENTRY }}
+        run: |
+          set -euo pipefail
+
+          # Normalize values (in case empty)
+          : "${DRY:=false}"
+          : "${LIMIT:=50}"
+          : "${UID:=}"
+
+          echo "[INFO] runner inputs: dry=${DRY}, uid='${UID}', limit=${LIMIT}"
+          ARGS=(--cred "$GOOGLE_APPLICATION_CREDENTIALS" --limit "${LIMIT}" --debug)
+
+          if [ -n "${UID}" ]; then
+            ARGS+=(--uid "${UID}")
+          fi
+
+          if [ "${DRY}" = "true" ] || [ "${DRY}" = "1" ]; then
+            ARGS+=(--dry)
+            echo "[INFO] Running in DRY mode (no writes will occur)."
+          else
+            echo "[INFO] LIVE run — Firestore WILL be written (ensure the service account has appropriate permissions)."
+          fi
+
+          # Ensure entry exists
+          if [ ! -f "${ENTRY}" ]; then
+            echo "::error::Entry file ${ENTRY} not found in repository. Aborting."
             exit 1
           fi
 
-          mkdir -p .firebase
-          printf "%s" "$FIREBASE_SERVICE_ACCOUNT" > .firebase/firebase-key.json
-          export GOOGLE_APPLICATION_CREDENTIALS=$(pwd)/.firebase/firebase-key.json
-          echo "GOOGLE_APPLICATION_CREDENTIALS set to $GOOGLE_APPLICATION_CREDENTIALS"
+          # Run the runner via tsx (npx will install tsx if missing)
+          echo "[INFO] Executing: npx --yes tsx ${ENTRY} ${ARGS[*]}"
+          npx --yes tsx "${ENTRY}" "${ARGS[@]}"
 
-          # run as dry-run for safety; remove --dry for production
-          npx -y ts-node --transpile-only src/jobs/checkout/autocart-runner.ts --dry --limit 50 --debug --explain 2>&1 | tee autocart-runner.log
-          EXIT_CODE=${PIPESTATUS[0]}
-          echo "exit code: $EXIT_CODE"
-          if [ "$EXIT_CODE" -ne 0 ]; then exit "$EXIT_CODE"; fi
-
-      - name: Upload logs
+      - name: Upload logs (optional)
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: autocart-logs
-          path: autocart-runner.log
+          name: autocart-runner-logs
+          path: |
+            src/jobs/checkout/logs || true
 
-      - name: Cleanup creds
+      - name: Cleanup credentials (always)
         if: always()
-        run: rm -f .firebase/firebase-key.json || true
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -f "${{ env.SA_PATH }}" ]; then
+            # if shred exists use it, otherwise rm
+            if command -v shred >/dev/null 2>&1; then
+              shred -u -z "${{ env.SA_PATH }}" || rm -f "${{ env.SA_PATH }}"
+            else
+              rm -f "${{ env.SA_PATH }}"
+            fi
+            echo "Removed ${SA_PATH}"
+          fi
