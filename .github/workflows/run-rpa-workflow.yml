@@ -1,0 +1,88 @@
+name: run-autocart
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: write    # optional, required if you push branches/changes from workflow
+  # adjust other permissions if needed
+
+jobs:
+  run-autocart:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      # default limit here; override by editing step command if needed
+      AUTOCART_LIMIT: "50"
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Setup Python (optional, if your repo uses python tools)
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Prepare Firebase service account file (from secret)
+        # fail fast if secret missing
+        run: |
+          set -euo pipefail
+          if [ -z "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" ]; then
+            echo "::error::FIREBASE_SERVICE_ACCOUNT secret is not set. Add it in Settings → Secrets and variables → Actions"
+            exit 1
+          fi
+          mkdir -p .firebase
+          # write secret into file (preserve newlines)
+          printf '%s' "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" > .firebase/firebase-key.json
+          # sanity-check JSON quickly (jq optional). If jq not installed, skip check (safe fallback).
+          if command -v jq >/dev/null 2>&1; then
+            if ! jq -e . .firebase/firebase-key.json >/dev/null 2>&1; then
+              echo "::error::Wrote firebase key but it's not valid JSON"
+              head -n 50 .firebase/firebase-key.json || true
+              exit 1
+            fi
+          fi
+          chmod 600 .firebase/firebase-key.json
+          echo "Wrote .firebase/firebase-key.json (mode 600)"
+
+      - name: Show runtime info (non-secret)
+        run: |
+          set -euo pipefail
+          echo "Node: $(node -v)"
+          echo "npm:  $(npm -v || echo 'npm-not-found')"
+          echo "workspace: $GITHUB_WORKSPACE"
+          echo "autocart limit: ${{ env.AUTOCART_LIMIT }}"
+
+      - name: Run autocart-runner (LIVE — will write to Firestore)
+        # set GOOGLE_APPLICATION_CREDENTIALS so firebase-admin picks it up by default
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/.firebase/firebase-key.json
+        run: |
+          set -euo pipefail
+          echo "Running autocart-runner (LIVE). Limit=${{ env.AUTOCART_LIMIT }}"
+          # ensure dependencies installed if needed
+          cd "${{ github.workspace }}"
+          # install node deps if your job needs them (uncomment if package.json exists)
+          # npm ci --prefix src/jobs/checkout
+
+          # run runner using tsx (or npx tsx); we pass explicit --cred just to be safe
+          npx --yes tsx src/jobs/checkout/autocart-runner.ts \
+            --cred "${GOOGLE_APPLICATION_CREDENTIALS}" \
+            --limit "${{ env.AUTOCART_LIMIT }}" \
+            --debug \
+            --explain
+      - name: Upload logs (optional)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: autocart-logs
+          path: |
+            src/jobs/checkout/logs/*.log
