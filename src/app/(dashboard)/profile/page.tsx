@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -61,6 +62,8 @@ export default function ProfilePage() {
   const [isEditingName, setIsEditingName] = useState(false);
   const [localName, setLocalName] = useState('');
   const [selectedResetDay, setSelectedResetDay] = useState(1);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
 
   // ユーザー情報が読み込まれたらローカル状態を更新
   useEffect(() => {
@@ -76,27 +79,45 @@ export default function ProfilePage() {
 
   // 予算を保存
   const handleBudgetSave = async () => {
+    setSuccessMessage('');
+    setErrorMessage('');
     const success = await updateUserInformation({ monthlyBudget: localBudget });
     if (success) {
-      console.log('予算を更新しました');
+      setSuccessMessage('予算を更新しました');
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } else {
+      setErrorMessage('予算の更新に失敗しました');
+      setTimeout(() => setErrorMessage(''), 3000);
     }
   };
 
   // 名前を保存
   const handleNameSave = async () => {
+    setSuccessMessage('');
+    setErrorMessage('');
     const success = await updateUserInformation({ name: localName });
     if (success) {
       setIsEditingName(false);
-      console.log('名前を更新しました');
+      setSuccessMessage('名前を更新しました');
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } else {
+      setErrorMessage('名前の更新に失敗しました');
+      setTimeout(() => setErrorMessage(''), 3000);
     }
   };
 
   // リセット日を保存
   const handleResetDaySave = async (day: number) => {
+    setSuccessMessage('');
+    setErrorMessage('');
     setSelectedResetDay(day);
     const success = await updateUserInformation({ resetDay: day });
     if (success) {
-      console.log('リセット日を更新しました');
+      setSuccessMessage('リセット日を更新しました');
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } else {
+      setErrorMessage('リセット日の更新に失敗しました');
+      setTimeout(() => setErrorMessage(''), 3000);
     }
   };
 
@@ -109,6 +130,18 @@ export default function ProfilePage() {
   }
   return (
     <div className="flex-1 bg-white p-6 ml-[232px] min-h-screen flex items-center justify-center" data-oid="3pchgx4">
+      {/* 成功メッセージ */}
+      {successMessage && (
+        <div className="fixed top-4 right-4 z-50 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg">
+          {successMessage}
+        </div>
+      )}
+      {/* エラーメッセージ */}
+      {errorMessage && (
+        <div className="fixed top-4 right-4 z-50 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg">
+          {errorMessage}
+        </div>
+      )}
       <div className="flex flex-col items-center gap-4" data-oid=":530dgu">
 
         <Card
@@ -118,10 +151,25 @@ export default function ProfilePage() {
           <div className="flex items-center gap-3" data-oid="mhd5qso">
             {profilePage === 1 ? (
               <>
+                {/* User Icon */}
                 <div
-                  className="w-12 h-12 bg-[#adadad] rounded-full"
+                  className="w-[72px] h-[72px] rounded-full overflow-hidden bg-gradient-to-br from-[#FDA900] to-[#209fde] flex items-center justify-center shrink-0"
                   data-oid="v96ohmr">
+                  {authUser?.photoURL ? (
+                    <Image
+                      src={authUser.photoURL}
+                      alt={localName || 'ユーザー'}
+                      width={72}
+                      height={72}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-white font-['BIZ_UDPGothic'] text-[32px] font-bold">
+                      {(localName || authUser?.displayName || 'ユーザー').charAt(0).toUpperCase()}
+                    </span>
+                  )}
                 </div>
+
                 <div data-oid="w32:5lp" className="flex items-center gap-4">
                   {isEditingName ? (
                     <div className="flex items-center gap-2">

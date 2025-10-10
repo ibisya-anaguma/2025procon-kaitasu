@@ -1,8 +1,5 @@
-﻿import { NextRequest, NextResponse } from 'next/server';
-// import { adminAuth, adminDb } from '@/lib/firebaseAdmin';
-
-// テスト用のユーザー情報ストレージ
-const testUserStorage = new Map<string, any>();
+import { NextRequest, NextResponse } from 'next/server';
+import { adminAuth, adminDb } from '@/lib/firebaseAdmin';
 
 // GET /api/user-information - ユーザー情報を取得
 export async function GET(request: NextRequest) {
@@ -15,26 +12,45 @@ export async function GET(request: NextRequest) {
 
     const token = authHeader.split('Bearer ')[1];
     
-    // テスト用のユーザーID
-    const uid = 'test-user-123';
-
-    // テスト用のユーザー情報を取得
-    let userData = testUserStorage.get(uid);
-    
-    if (!userData) {
-      // デフォルトのユーザー情報を設定
-      userData = {
-        userName: 'テストユーザー',
-        monthlyBudget: 50000,
-        resetDay: 10
-      };
-      testUserStorage.set(uid, userData);
+    // トークンを検証してuidを取得
+    let uid: string;
+    try {
+      const decodedToken = await adminAuth.verifyIdToken(token);
+      uid = decodedToken.uid;
+    } catch (error) {
+      console.error('トークン検証エラー:', error);
+      return NextResponse.json({ error: '無効な認証トークンです' }, { status: 401 });
     }
+
+    // Firestoreからユーザー情報を取得
+    const userDoc = await adminDb.collection('users').doc(uid).get();
+    
+    if (!userDoc.exists) {
+      // ドキュメントが存在しない場合、デフォルト値を返す
+      const defaultData = {
+        name: '',
+        monthlyBudget: 50000,
+        resetDay: 1
+      };
+      
+      // デフォルト値でドキュメントを作成
+      await adminDb.collection('users').doc(uid).set({
+        userName: '',
+        monthlyBudget: 50000,
+        resetDay: 1,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      });
+      
+      return NextResponse.json(defaultData);
+    }
+    
+    const userData = userDoc.data();
     
     // レスポンス形式に合わせてデータを整形
     const response = {
       name: userData?.userName || '',
-      monthlyBudget: userData?.monthlyBudget || 0,
+      monthlyBudget: userData?.monthlyBudget || 50000,
       resetDay: userData?.resetDay || 1
     };
 
@@ -45,7 +61,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST /api/user-information - ユーザー情報を初期設定
+// POST /api/user-information - ユーザー情報を初期設定（健康設定）
 export async function POST(request: NextRequest) {
   try {
     // Authorizationヘッダーからトークンを取得
@@ -56,8 +72,15 @@ export async function POST(request: NextRequest) {
 
     const token = authHeader.split('Bearer ')[1];
     
-    // テスト用のユーザーID
-    const uid = 'test-user-123';
+    // トークンを検証してuidを取得
+    let uid: string;
+    try {
+      const decodedToken = await adminAuth.verifyIdToken(token);
+      uid = decodedToken.uid;
+    } catch (error) {
+      console.error('トークン検証エラー:', error);
+      return NextResponse.json({ error: '無効な認証トークンです' }, { status: 401 });
+    }
 
     // リクエストボディを取得
     const body = await request.json();
@@ -89,14 +112,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '無効なreduceNutrientsの値が含まれています' }, { status: 400 });
     }
 
-    // テスト用のユーザー情報を更新
-    const currentData = testUserStorage.get(uid) || {};
-    testUserStorage.set(uid, {
-      ...currentData,
+    // Firestoreのユーザードキュメントを更新
+    await adminDb.collection('users').doc(uid).set({
       disease: disease || [],
       increaseNutrients: increaseNutrients || [],
-      reduceNutrients: reduceNutrients || []
-    });
+      reduceNutrients: reduceNutrients || [],
+      updatedAt: new Date().toISOString()
+    }, { merge: true });
 
     return NextResponse.json({ msg: 'success' });
   } catch (error) {
@@ -116,8 +138,15 @@ export async function PATCH(request: NextRequest) {
 
     const token = authHeader.split('Bearer ')[1];
     
-    // テスト用のユーザーID
-    const uid = 'test-user-123';
+    // トークンを検証してuidを取得
+    let uid: string;
+    try {
+      const decodedToken = await adminAuth.verifyIdToken(token);
+      uid = decodedToken.uid;
+    } catch (error) {
+      console.error('トークン検証エラー:', error);
+      return NextResponse.json({ error: '無効な認証トークンです' }, { status: 401 });
+    }
 
     // リクエストボディを取得
     const body = await request.json();
@@ -147,12 +176,11 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: '更新するフィールドが指定されていません' }, { status: 400 });
     }
 
-    // テスト用のユーザー情報を更新
-    const currentData = testUserStorage.get(uid) || {};
-    testUserStorage.set(uid, {
-      ...currentData,
-      ...updateData
-    });
+    // タイムスタンプを追加
+    updateData.updatedAt = new Date().toISOString();
+
+    // Firestoreのユーザー情報を更新
+    await adminDb.collection('users').doc(uid).set(updateData, { merge: true });
 
     return NextResponse.json({ msg: 'success' });
   } catch (error) {
