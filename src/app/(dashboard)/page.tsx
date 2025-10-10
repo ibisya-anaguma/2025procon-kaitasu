@@ -15,12 +15,7 @@ export default function DashboardPage() {
       <div className="mx-auto w-[903px] space-y-4" data-oid=":xr07ip">
         {/* Notification Card */}
         <Card
-          className="w-[903px] p-4"
-          style={{
-            borderRadius: "14.469px",
-            border: "5px solid var(--primary, #FDA900)",
-            background: "var(--card, #FFF)"
-          }}
+          className="w-[903px] p-4 rounded-[14.469px] border-[5px] border-[#FDA900] bg-white"
           data-oid="2bp9lo4">
           <h3 className="text-center font-medium mb-3 text-sm" data-oid="aek175l">
             お知らせ
@@ -30,47 +25,41 @@ export default function DashboardPage() {
 
         {/* Budget Card */}
         <Card
-          className="w-[903px] h-[230px] p-4 gap-[9px]"
-          style={{
-            borderRadius: "14.469px",
-            border: "5px solid var(--primary, #FDA900)",
-            background: "var(--card, #FFF)"
-          }}
+          className="w-[903px] h-[230px] p-4 gap-[9px] rounded-[14.469px] border-[5px] border-[#FDA900] bg-white"
           data-oid="t2fyzfc">
           <div className="flex justify-between items-smart mt-[7px] mb-2" data-oid=":be0a2k">
-            <span className="text-sm font-medium text-[30px]" data-oid=":6v2jl-">
+            <span className="text-[30px] font-medium" data-oid=":6v2jl-">
               今月の予算 ▶
             </span>
             <div className="flex items-baseline gap-2 mt-[29px] mr-[81px] self-end" data-oid="qq2w-88">
-              <span className="font-bold text-lg text-[20px]">残り</span>
+              <span className="font-bold text-[20px]">残り</span>
               <span className="font-bold text-[36px] leading-none">
                 ¥{monthlyBudget.toLocaleString("ja-JP")}
               </span>
             </div>
           </div>
           <div className="flex w-[703px] justify-between mb-[7px] mt-[9px]" data-oid="h3m4f7m">
-            <div className="text-xs text-[#adadad] text-[20px]" data-oid="woecoz3">
+            <div className="text-[20px] text-[#adadad]" data-oid="woecoz3">
               ¥12,500
             </div>
             <div className="flex" data-oid="h3m4f7m">
-              <div className="text-xs text-right text-[#209fde] text-[20px]" data-oid="6x91r4a">
+              <div className="text-[20px] text-right text-[#209fde]" data-oid="6x91r4a">
                 使用率:
               </div>
-              <div className="text-xs text-right text-[#101010] text-[20px]" data-oid="6x91r4a">
+              <div className="text-[20px] text-right text-[#101010]" data-oid="6x91r4a">
                 60%
               </div>
             </div>
           </div>
           <div className="w-[744px] bg-[#adadad] rounded-full h-[34px] mb-1 mx-auto" data-oid="pk6di4e">
-            <div className="bg-[#209fde] h-[34px] rounded-full" style={{ width: "60%" }} data-oid="5_0shjj"></div>
+            <div className="bg-[#209fde] h-[34px] rounded-full w-[60%]" data-oid="5_0shjj"></div>
           </div>
         </Card>
 
         <div className="mx-auto flex justify-center gap-[61px] w-[903px]" data-oid="ta8f1it">
           <Button
             variant="outline"
-            className="w-[180px] h-[180px] text-center border-[5px] border-[#fda900] bg-white hover:bg-gray-50 rounded-[20px] flex-col px-6 pb-6 pt-[17px] relative"
-            style={{ filter: "drop-shadow(4.5px 4.5px 0 #E4E2E2)" }}
+            className="w-[180px] h-[180px] text-center border-[5px] border-[#fda900] bg-white hover:bg-gray-50 rounded-[20px] flex-col px-6 pb-6 pt-[17px] relative shadow-[4.5px_4.5px_0_#E4E2E2]"
             onClick={() => router.push("/catalog")}
             data-oid="6g1e2.x">
             <div className="flex h-[145px] flex-col items-center justify-between">
@@ -78,7 +67,7 @@ export default function DashboardPage() {
                 買い出し
               </span>
               <div className="flex w-full justify-center">
-                <div style={{ width: "126px", height: "126px" }}>
+                <div className="w-[126px] h-[126px]">
                   <SidebarCatalogIcon fill="#209fde" stroke="#209fde" />
                 </div>
               </div>
@@ -86,8 +75,7 @@ export default function DashboardPage() {
           </Button>
           <Button
             variant="outline"
-            className="w-[180px] h-[180px] text-center border-[5px] border-[#fda900] bg-white hover:bg-gray-50 rounded-[20px] flex-col px-6 pb-6 pt-[17px] relative"
-            style={{ filter: "drop-shadow(4.5px 4.5px 0 #E4E2E2)" }}
+            className="w-[180px] h-[180px] text-center border-[5px] border-[#fda900] bg-white hover:bg-gray-50 rounded-[20px] flex-col px-6 pb-6 pt-[17px] relative shadow-[4.5px_4.5px_0_#E4E2E2]"
             onClick={() => router.push("/subscription")}
             data-oid="eljule7">
             <div className="flex h-[145px] flex-col items-center justify-between">
@@ -95,7 +83,7 @@ export default function DashboardPage() {
                 定期購入の確認
               </span>
               <div className="flex w-full justify-center">
-                <div style={{ width: "110px", height: "110px", padding: "10px" }}>
+                <div className="w-[110px] h-[110px] p-[10px]">
                   <SidebarSubscriptionIcon fill="#209fde" stroke="#209fde" />
                 </div>
               </div>
@@ -103,8 +91,7 @@ export default function DashboardPage() {
           </Button>
           <Button
             variant="outline"
-            className="w-[180px] h-[180px] text-center border-[5px] border-[#fda900] bg-white hover:bg-gray-50 rounded-[20px] flex-col px-6 pb-6 pt-[17px] relative"
-            style={{ filter: "drop-shadow(4.5px 4.5px 0 #E4E2E2)" }}
+            className="w-[180px] h-[180px] text-center border-[5px] border-[#fda900] bg-white hover:bg-gray-50 rounded-[20px] flex-col px-6 pb-6 pt-[17px] relative shadow-[4.5px_4.5px_0_#E4E2E2]"
             onClick={() => router.push("/history")}
             data-oid="vhz4ae4">
             <div className="flex h-[145px] flex-col items-center justify-between">
@@ -112,7 +99,7 @@ export default function DashboardPage() {
                 購入履歴
               </span>
               <div className="flex w-full justify-center">
-                <div style={{ width: "91px", height: "91px" }}>
+                <div className="w-[91px] h-[91px]">
                   <SidebarHistoryIcon fill="#209fde" stroke="#209fde" />
                 </div>
               </div>
@@ -120,8 +107,7 @@ export default function DashboardPage() {
           </Button>
           <Button
             variant="outline"
-            className="w-[180px] h-[180px] text-center border-[5px] border-[#fda900] bg-white hover:bg-gray-50 rounded-[20px] flex-col px-6 pb-6 pt-[17px] relative"
-            style={{ filter: "drop-shadow(4.5px 4.5px 0 #E4E2E2)" }}
+            className="w-[180px] h-[180px] text-center border-[5px] border-[#fda900] bg-white hover:bg-gray-50 rounded-[20px] flex-col px-6 pb-6 pt-[17px] relative shadow-[4.5px_4.5px_0_#E4E2E2]"
             onClick={() => router.push("/profile")}
             data-oid="oodndhw">
             <div className="flex h-[145px] flex-col items-center justify-between">
@@ -129,7 +115,7 @@ export default function DashboardPage() {
                 マイページ
               </span>
               <div className="flex w-full justify-center">
-                <div style={{ width: "65.386px", height: "84.068px", flexShrink: 0 }}>
+                <div className="w-[65.386px] h-[84.068px] shrink-0">
                   <SidebarProfileIcon fill="#209fde" stroke="#209fde" />
                 </div>
               </div>

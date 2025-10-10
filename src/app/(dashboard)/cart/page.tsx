@@ -61,8 +61,7 @@ export default function CartPage() {
   return (
     <div className="flex-1 bg-white p-6 ml-[232px]" data-oid="qie1-gm">
       <div
-        className="mx-auto"
-        style={{ width: "970px" }}
+        className="mx-auto w-[970px]"
         data-oid="-j93.-d">
         <h2 className="text-base font-bold mb-4" data-oid="gdwztq6">
           買い物かご
@@ -78,29 +77,13 @@ export default function CartPage() {
               <img
                 src={item.image || "/placeholder.svg"}
                 alt={item.name}
-                className="object-cover rounded"
-                style={{
-                  width: "164.548px",
-                  height: "109px",
-                  flexShrink: 0,
-                  aspectRatio: "164.55 / 109.00"
-                }}
+                className="object-cover rounded w-[164.548px] h-[109px] shrink-0 aspect-[164.55/109]"
                 data-oid="b0g5711"
               />
 
               <div className="flex-1 min-w-0" data-oid="yd66:be">
                 <h4
-                  style={{
-                    color: "var(--, #101010)",
-                    fontFamily: '"BIZ UDPGothic"',
-                    fontSize: "24px",
-                    fontStyle: "normal",
-                    fontWeight: 700,
-                    lineHeight: "normal",
-                    letterSpacing: "1.248px",
-                    width: "208px"
-                  }}
-                  className="truncate"
+                  className="truncate w-[208px] text-[#101010] font-['BIZ_UDPGothic'] text-[24px] font-bold leading-normal tracking-[1.248px]"
                   data-oid="5tlgvsv">
                   {item.name}
                 </h4>
@@ -112,28 +95,12 @@ export default function CartPage() {
                   onClick={() => onAddFavoriteEntry(item)}
                   data-oid="cart-favorite-button">
                   <span
-                    style={{
-                      color: "#000",
-                      fontFamily: '"BIZ UDPGothic"',
-                      fontSize: "19.098px",
-                      fontStyle: "normal",
-                      fontWeight: 700,
-                      lineHeight: "normal",
-                      letterSpacing: "0.993px"
-                    }}
+                    className="text-black font-['BIZ_UDPGothic'] text-[19.098px] font-bold leading-normal tracking-[0.993px]"
                     data-oid="cart-favorite-text">
                     お気に入りに追加
                   </span>
                   <div
-                    style={{
-                      width: "25px",
-                      height: "25px",
-                      borderRadius: "6px",
-                      background: "#FFF",
-                      display: "flex",
-                      justifyContent: "center",
-                      alignItems: "center"
-                    }}
+                    className="w-[25px] h-[25px] rounded-md bg-white flex justify-center items-center"
                     data-oid="cart-favorite-icon">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -153,16 +120,7 @@ export default function CartPage() {
                 </Button>
                 <div className="flex flex-col items-center gap-1" data-oid="f:g9-vr">
                   <span
-                    style={{
-                      color: "var(--, #101010)",
-                      textAlign: "center",
-                      fontFamily: '"BIZ UDPGothic"',
-                      fontSize: "24px",
-                      fontStyle: "normal",
-                      fontWeight: 700,
-                      lineHeight: "150%",
-                      letterSpacing: "1.248px"
-                    }}
+                    className="text-[#101010] text-center font-['BIZ_UDPGothic'] text-[24px] font-bold leading-[150%] tracking-[1.248px]"
                     data-oid="3_9wxay">
                     数量
                   </span>
@@ -170,8 +128,7 @@ export default function CartPage() {
                     <Button
                       size="icon"
                       variant="ghost"
-                      className="rounded bg-transparent hover:bg-transparent focus:bg-transparent focus-visible:bg-transparent active:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none"
-                      style={{ width: "41px", height: "40px", flexShrink: 0 }}
+                      className="rounded bg-transparent hover:bg-transparent focus:bg-transparent focus-visible:bg-transparent active:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none w-[41px] h-[40px] shrink-0"
                       onClick={() => onUpdateProductQuantity(item.id, -1)}
                       data-oid="g4qqy_k"
                     >
@@ -185,27 +142,14 @@ export default function CartPage() {
                       />
                     </Button>
                     <div
-                      className="flex items-center justify-center"
-                      style={{
-                        minWidth: "73px",
-                        height: "40px",
-                        color: "var(--, #101010)",
-                        textAlign: "center",
-                        fontFamily: '"BIZ UDPGothic"',
-                        fontSize: "24px",
-                        fontStyle: "normal",
-                        fontWeight: 700,
-                        lineHeight: "150%",
-                        letterSpacing: "1.248px"
-                      }}
+                      className="flex items-center justify-center min-w-[73px] h-[40px] text-[#101010] text-center font-['BIZ_UDPGothic'] text-[24px] font-bold leading-[150%] tracking-[1.248px]"
                       data-oid="weymacu">
                       {item.quantity}
                     </div>
                     <Button
                       size="icon"
                       variant="ghost"
-                      className="rounded bg-transparent hover:bg-transparent focus:bg-transparent focus-visible:bg-transparent active:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none"
-                      style={{ width: "41px", height: "40px", flexShrink: 0 }}
+                      className="rounded bg-transparent hover:bg-transparent focus:bg-transparent focus-visible:bg-transparent active:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none w-[41px] h-[40px] shrink-0"
                       onClick={() => onUpdateProductQuantity(item.id, 1)}
                       data-oid="4kc4n3t"
                     >
@@ -222,15 +166,7 @@ export default function CartPage() {
                 </div>
                 <div className="text-right" data-oid="8ke_pvk">
                   <span
-                    style={{
-                      color: "var(--, #101010)",
-                      fontFamily: '"BIZ UDPGothic"',
-                      fontSize: "24px",
-                      fontStyle: "normal",
-                      fontWeight: 700,
-                      lineHeight: "normal",
-                      letterSpacing: "1.248px"
-                    }}
+                    className="text-[#101010] font-['BIZ_UDPGothic'] text-[24px] font-bold leading-normal tracking-[1.248px]"
                     data-oid="jo1znli">
                     ¥{item.price}
                   </span>
