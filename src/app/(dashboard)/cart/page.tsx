@@ -8,11 +8,7 @@ import { useAppContext } from "@/contexts/AppContext";
 
 export default function CartPage() {
   const router = useRouter();
-<<<<<<< HEAD
-  const { cartItems, onUpdateProductQuantity } = useAppContext();
-=======
   const { cartItems, onUpdateProductQuantity, onAddFavoriteEntry } = useAppContext();
->>>>>>> kizu/develop
 
   const totalCartQuantity = cartItems.reduce((sum, item) => sum + item.quantity, 0);
   const totalCartPrice = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -60,9 +56,6 @@ export default function CartPage() {
                   {item.name}
                 </h4>
               </div>
-<<<<<<< HEAD
-              <div className="flex items-center gap-[20px] pr-[62px]" data-oid="cart-right-group">
-=======
               <div className="flex items-center gap-[20px] pr-[20px]" data-oid="cart-right-group">
                 <Button
                   variant="ghost"
@@ -106,7 +99,6 @@ export default function CartPage() {
                     </svg>
                   </div>
                 </Button>
->>>>>>> kizu/develop
                 <div className="flex flex-col items-center gap-1" data-oid="f:g9-vr">
                   <span
                     style={{
