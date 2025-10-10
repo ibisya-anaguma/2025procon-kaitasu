@@ -172,7 +172,7 @@ def build_items_for_solver(products, require_health=True):
         if require_health and hs is None:
             continue
         Items.append({
-            "id": p["id"], "name": p.get("name"), "category": p.get("category"),
+            "id": p["id"], "name": p.get("name"), "category": get_genre_value(p),
             "price_yen": price_yen, "health_score": hs,
         })
     return Items
@@ -183,15 +183,17 @@ def to_api_shape(products, ids):
     out = []
     for p in products:
         if p["id"] in idset:
-            genre_val = (p.get("genres") or [None])[0]
+            g = get_genre_value(p)
             out.append({
                 "id": p["id"],
-                "genre": genre_val,
+                "genre": g,
                 "name": p.get("name"),
                 "price": int(round(p.get("price_yen", p.get("priceTax", 0) or 0))),
                 "imgUrl": p.get("imgUrl"),
             })
     return out
+
+def get_genre_value(p): return p.get("genre") or (p.get("genres") or [None])[0]
 
 # ====== main ======
 if __name__ == "__main__":
@@ -206,6 +208,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="かいたす: 組み合わせ最適化スクリプト")
     parser.add_argument("--prefs-json", type=str, default="", help="Firebaseから渡す up/down の辞書(JSON文字列)")
     parser.add_argument("--input", type=str, default="", help="入力JSONファイルパス")
+    parser.add_argument("--genre", type=str,default="", help="ジャンル")
     parser.add_argument("--budget", type=int, default=2500, help="予算（円）")
     parser.add_argument("--health", type=str2bool, default=True, help="健康重視モード true/false")
     args = parser.parse_args()
@@ -217,6 +220,13 @@ if __name__ == "__main__":
     # --- json読み込み ---
     with open(DATA, "r", encoding="utf-8") as f:
         products = json.load(f)
+        
+    selected_genres = set()
+    if isinstance(args.genre, str) and args.genre.strip():
+        try:
+            selected_genres = {int(x) for x in args.genre.split(",") if x.strip()}
+        except ValueError:
+            selected_genres = set()
 
     # --- Firebaseからの prefs を読み取り ---
     user_prefs = {}

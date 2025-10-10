@@ -9,6 +9,7 @@ const execFileAsync = promisify(execFile);
 const SCRIPT_PATH = path.resolve(process.cwd(), "src/app/api/combos/combination.py");
 
 type Body = {
+  genre?:number[];
   budget?: number;
   isHealthImportance?: boolean;
 };
@@ -33,6 +34,7 @@ export const POST = withAuth(async (req, uid) => {
     return NextResponse.json({ error: "invalid-budget" }, { status: 400 });
   }
   const health = body?.isHealthImportance ? "true" : "false";
+  const genreArg =Array.isArray(body?.genre)? body.genre.filter((n) => Number.isInteger(n as number)).join(","): "";
 
   // 2) Firestore から nutrition を取得
   const doc = await adminDb.doc(`users/uid`).get();//ログイン中のuidは使用していない
@@ -49,6 +51,7 @@ export const POST = withAuth(async (req, uid) => {
     "--budget", String(budget),
     "--health", health,
     "--prefs-json", prefsJson,
+    "--genre", genreArg
   ];
   const { stdout } = await execFileAsync("python3", args, { maxBuffer: 1024 * 1024 * 16 });
 
