@@ -3,11 +3,17 @@ name: run-autocart
 on:
   workflow_dispatch: {}
 
+permissions:
+  contents: write    # optional, required if you push branches/changes from workflow
+  # adjust other permissions if needed
+
 jobs:
-  autocart:
+  run-autocart:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     env:
-      AUTOCART_LIMIT: 50
+      # default limit here; override by editing step command if needed
+      AUTOCART_LIMIT: ""
 
     steps:
       - name: Checkout repo
@@ -15,104 +21,68 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Ensure Python & Node
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.11"
-      - name: Setup Node
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "20"
 
-      - name: Prepare .firebase directory
+      - name: Setup Python (optional, if your repo uses python tools)
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Prepare Firebase service account file (from secret)
+        # fail fast if secret missing
         run: |
           set -euo pipefail
+          if [ -z "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" ]; then
+            echo "::error::FIREBASE_SERVICE_ACCOUNT secret is not set. Add it in Settings → Secrets and variables → Actions"
+            exit 1
+          fi
           mkdir -p .firebase
-          chmod 700 .firebase
-
-      - name: Write firebase key (supports B64 or raw JSON)
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          # prefer B64 single-line secret (recommended)
-          if [ -n "${{ secrets.FIREBASE_SERVICE_ACCOUNT_B64 }}" ]; then
-            echo "Using FIREBASE_SERVICE_ACCOUNT_B64"
-            printf '%s' "${{ secrets.FIREBASE_SERVICE_ACCOUNT_B64 }}" > .firebase/firebase-key.b64
-            if ! ( base64 --decode .firebase/firebase-key.b64 > .firebase/firebase-key.json 2>/dev/null ); then
-              echo "base64 --decode failed; trying python fallback"
-              python3 - <<PY
-import base64,sys
-b = open('.firebase/firebase-key.b64','rb').read()
-open('.firebase/firebase-key.json','wb').write(base64.b64decode(b))
-PY
+          # write secret into file (preserve newlines)
+          printf '%s' "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" > .firebase/firebase-key.json
+          # sanity-check JSON quickly (jq optional). If jq not installed, skip check (safe fallback).
+          if command -v jq >/dev/null 2>&1; then
+            if ! jq -e . .firebase/firebase-key.json >/dev/null 2>&1; then
+              echo "::error::Wrote firebase key but it's not valid JSON"
+              head -n 50 .firebase/firebase-key.json || true
+              exit 1
             fi
-          elif [ -n "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" ]; then
-            echo "Using FIREBASE_SERVICE_ACCOUNT (raw JSON)"
-            # write raw JSON secret as-is (GitHub preserves newlines)
-            printf '%s' "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" > .firebase/firebase-key.json
-          else
-            echo "::error::Neither FIREBASE_SERVICE_ACCOUNT_B64 nor FIREBASE_SERVICE_ACCOUNT is set."
-            exit 2
           fi
-
-          # basic sanity
-          if [ ! -s .firebase/firebase-key.json ]; then
-            echo "::error::Wrote firebase key but file is empty or missing: .firebase/firebase-key.json"
-            ls -l .firebase || true
-            exit 3
-          fi
-
-          # validate it's JSON
-          if ! python3 -c "import json,sys; json.load(open('.firebase/firebase-key.json')); print('JSON_OK')" >/dev/null 2>&1; then
-            echo "::error::Decoded firebase key is not valid JSON; printing head for debugging"
-            head -n 50 .firebase/firebase-key.json || true
-            exit 4
-          fi
-
           chmod 600 .firebase/firebase-key.json
-          echo "Wrote and validated .firebase/firebase-key.json (size=$(wc -c < .firebase/firebase-key.json) bytes)"
+          echo "Wrote .firebase/firebase-key.json (mode 600)"
 
-      - name: Show runtime info
+      - name: Show runtime info (non-secret)
         run: |
           set -euo pipefail
+          echo "Node: $(node -v)"
+          echo "npm:  $(npm -v || echo 'npm-not-found')"
           echo "workspace: $GITHUB_WORKSPACE"
-          echo "GOOGLE_APPLICATION_CREDENTIALS will be: $GITHUB_WORKSPACE/.firebase/firebase-key.json"
-          echo "AUTOCART_LIMIT: ${AUTOCART_LIMIT}"
+          echo "autocart limit: ${{ env.AUTOCART_LIMIT }}"
 
-      - name: Run autocart-runner (LIVE: will write to Firestore unless runner uses --dry)
+      - name: Run autocart-runner (LIVE — will write to Firestore)
+        # set GOOGLE_APPLICATION_CREDENTIALS so firebase-admin picks it up by default
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/.firebase/firebase-key.json
-          AUTOCART_LIMIT: ${{ env.AUTOCART_LIMIT }}
-        shell: bash
         run: |
           set -euo pipefail
-          cd "${GITHUB_WORKSPACE:-$PWD}"
-          echo "Using GOOGLE_APPLICATION_CREDENTIALS=$GOOGLE_APPLICATION_CREDENTIALS"
-          echo "Running autocart-runner (LIVE unless you pass --dry)."
+          echo "Running autocart-runner (LIVE). Limit=${{ env.AUTOCART_LIMIT }}"
+          # ensure dependencies installed if needed
+          cd "${{ github.workspace }}"
+          # install node deps if your job needs them (uncomment if package.json exists)
+          # npm ci --prefix src/jobs/checkout
 
-          # If you keep node deps under src/jobs/checkout uncomment:
-          # cd src/jobs/checkout
-          # npm ci
-
-          npx tsx src/jobs/checkout/autocart-runner.ts \
-            --cred "$GOOGLE_APPLICATION_CREDENTIALS" \
-            --limit "${AUTOCART_LIMIT:-50}" \
+          # run runner using tsx (or npx tsx); we pass explicit --cred just to be safe
+          npx --yes tsx src/jobs/checkout/autocart-runner.ts \
+            --cred "${GOOGLE_APPLICATION_CREDENTIALS}" \
+            --limit "${{ env.AUTOCART_LIMIT }}" \
             --debug \
             --explain
-
-      - name: Upload logs (always)
+      - name: Upload logs (optional)
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: autocart-logs
           path: |
             src/jobs/checkout/logs/*.log
-            src/jobs/checkout/*.log
-
-      - name: Cleanup firebase key (always)
-        if: always()
-        run: |
-          set -euo pipefail
-          rm -f .firebase/firebase-key.b64 .firebase/firebase-key.json || true
-          echo "cleaned firebase key artifacts"
