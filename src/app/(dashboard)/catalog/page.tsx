@@ -1,10 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { Search } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { FILTER_BUTTON_INACTIVE_CLASS, FILTER_BUTTON_TEXT_CLASS } from "@/components/screens/filterStyles";
 import { useProductSearch } from "@/app/hooks/useProductSearch";
 import { useAppContext } from "@/contexts/AppContext";
@@ -51,7 +54,8 @@ export default function CatalogPage() {
     catalogScrollRef,
     onNavigate: setScreen
   } = useAppContext();
-  const { products: searchResults } = useProductSearch();
+  const { products: searchResults, searchProducts, clearSearch, isLoading } = useProductSearch();
+  const [searchQuery, setSearchQuery] = useState('');
 
   const handleNavigate = (screen: Screen) => {
     setScreen(screen);
@@ -59,15 +63,38 @@ export default function CatalogPage() {
     if (path) router.push(path);
   };
 
+  const handleSearch = async () => {
+    if (searchQuery.trim()) {
+      await searchProducts({ q: searchQuery.trim(), limit: 50 });
+    } else {
+      clearSearch();
+    }
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
+  };
+
+  const handleClearSearch = () => {
+    setSearchQuery('');
+    clearSearch();
+  };
+
   // 検索結果がある場合は検索結果を、ない場合は静的な商品データを使用
-  const displayProducts = searchResults.length > 0 ? searchResults.map(p => ({
-    id: Number(p.id),
-    name: p.name,
-    price: p.price,
-    image: p.imgUrl,
-    quantity: 0,
-    description: ''
-  })) : staticProducts;
+  const displayProducts = searchResults.length > 0 ? searchResults.map(p => {
+    // 既存の商品データから数量を取得
+    const existingProduct = staticProducts.find(sp => sp.id === Number(p.id));
+    return {
+      id: Number(p.id),
+      name: p.name,
+      price: p.price,
+      image: p.imgUrl,
+      quantity: existingProduct?.quantity || 0,
+      description: ''
+    };
+  }) : staticProducts;
 
   return (
     <div
@@ -80,10 +107,46 @@ export default function CatalogPage() {
       </div>
 
       <div className="mx-auto w-[1000px]" data-oid="psedc55">
+        {/* 検索ボックス */}
+        <div className="relative mb-6" data-oid="catalog-search">
+          <Search
+            className="absolute left-4 top-1/2 -translate-y-1/2 text-[#fda900]"
+            size={24}
+            data-oid="catalog-search-icon"
+          />
+
+          <Input
+            placeholder="商品名で検索（例: 牛乳、パン、卵など）"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyPress={handleKeyPress}
+            className="pl-14 h-14 border-2 border-[#fda900] text-[18px] rounded-lg bg-white shadow-sm focus:border-[#209fde] focus:ring-2 focus:ring-[#209fde]/20 font-['BIZ_UDPGothic']"
+            data-oid="catalog-search-input"
+          />
+          {searchQuery && (
+            <button
+              onClick={handleClearSearch}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-[24px]"
+              data-oid="catalog-search-clear">
+              ✕
+            </button>
+          )}
+        </div>
+
         {/* 検索結果情報 */}
-        {searchResults.length > 0 && (
-          <div className="mb-4 text-sm text-gray-600">
+        {isLoading && (
+          <div className="mb-4 text-[18px] text-[#FDA900] font-['BIZ_UDPGothic'] font-bold">
+            検索中...
+          </div>
+        )}
+        {!isLoading && searchQuery && searchResults.length > 0 && (
+          <div className="mb-4 text-[18px] text-[#209fde] font-['BIZ_UDPGothic'] font-bold">
             {searchResults.length}件の商品が見つかりました
+          </div>
+        )}
+        {!isLoading && searchQuery && searchResults.length === 0 && (
+          <div className="mb-4 text-[18px] text-[#adadad] font-['BIZ_UDPGothic'] font-bold">
+            「{searchQuery}」に一致する商品が見つかりませんでした
           </div>
         )}
 

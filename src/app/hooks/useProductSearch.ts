@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from 'react';
-import { useAuth } from './useAuth';
+import { useAuth } from '@/contexts/AuthContext';
 
 export interface SearchProduct {
   id: string;
@@ -30,7 +30,7 @@ export function useProductSearch() {
     try {
       const searchBody = {
         ...params,
-        uid: user?.uid || 'test-user-123' // テスト用のUID
+        uid: user?.uid
       };
 
       const response = await fetch('/api/search', {

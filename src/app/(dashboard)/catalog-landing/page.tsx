@@ -109,18 +109,26 @@ export default function CatalogLandingPage() {
         <div className="relative mb-6" data-oid="catalog-landing-search">
           <Search
             className="absolute left-4 top-1/2 -translate-y-1/2 text-[#fda900]"
-            size={18}
+            size={24}
             data-oid="catalog-landing-search-icon"
           />
 
           <Input
-            placeholder="商品名で検索"
+            placeholder="商品名で検索（例: 牛乳、パン、卵など）"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyPress={handleKeyPress}
-            className="pl-12 h-12 border-2 border-[#fda900] text-sm rounded-lg bg-white shadow-sm focus:border-[#209fde] focus:ring-2 focus:ring-[#209fde]/20"
+            className="pl-14 h-14 border-2 border-[#fda900] text-[18px] rounded-lg bg-white shadow-sm focus:border-[#209fde] focus:ring-2 focus:ring-[#209fde]/20 font-['BIZ_UDPGothic']"
             data-oid="catalog-landing-search-input"
           />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-[24px]"
+              data-oid="catalog-landing-search-clear">
+              ✕
+            </button>
+          )}
         </div>
 
         <div className="flex items-center gap-[25px] mb-6" data-oid="catalog-landing-filters">
