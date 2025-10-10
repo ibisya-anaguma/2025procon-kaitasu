@@ -1,23 +1,53 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
+import { useAppContext } from "@/contexts/AppContext";
 import type { Product, Screen, SubscriptionEntry } from "@/types/page";
 
-type SubscriptionAddProps = {
-  onNavigate: (screen: Screen) => void;
-  onUpdateProductQuantity: (id: number, change: number) => void;
-  onSaveSubscriptionEntry: (entry: SubscriptionEntry) => void;
-  product: Product | null;
-};
+function screenToPath(screen: Screen): string | null {
+  switch (screen) {
+    case "dashboard":
+      return "/";
+    case "catalog":
+      return "/catalog";
+    case "catalogLanding":
+      return "/catalog-landing";
+    case "cart":
+      return "/cart";
+    case "order":
+      return "/order";
+    case "history":
+      return "/history";
+    case "profile":
+      return "/profile";
+    case "subscription":
+      return "/subscription";
+    case "subscriptionAdd":
+      return "/subscription/add";
+    case "subscriptionList":
+      return "/subscription/list";
+    default:
+      return null;
+  }
+}
 
-export function SubscriptionAdd({
-  onNavigate,
-  onUpdateProductQuantity,
-  onSaveSubscriptionEntry,
-  product
-}: SubscriptionAddProps) {
+export default function SubscriptionAddPage() {
+  const router = useRouter();
+  const {
+    onUpdateProductQuantity,
+    onSaveSubscriptionEntry,
+    selectedSubscriptionProduct: product,
+    onNavigate: setScreen
+  } = useAppContext();
+
+  const handleNavigate = (screen: Screen) => {
+    setScreen(screen);
+    const path = screenToPath(screen);
+    if (path) router.push(path);
+  };
   const [deliveryFrequency, setDeliveryFrequency] = useState(1);
 
   const handleFrequencyChange = (change: number) => {
@@ -39,7 +69,7 @@ export function SubscriptionAdd({
       frequencyDays: deliveryFrequency
     });
     setDeliveryFrequency(1);
-    onNavigate("subscriptionList");
+    handleNavigate("subscriptionList");
   };
 
   return (
@@ -341,7 +371,7 @@ export function SubscriptionAdd({
                     boxSizing: "border-box",
                     filter: "drop-shadow(4.5px 4.5px 0 #E4E2E2)"
                   }}
-                  onClick={() => onNavigate("subscription")}
+                  onClick={() => handleNavigate("subscription")}
                   data-oid="subscription-add-action-cancel"
                 >
                   <span
@@ -362,7 +392,7 @@ export function SubscriptionAdd({
                     border: "3px solid #FDA900",
                     boxShadow: "4.5px 4.5px 0 0 #E4E2E2"
                   }}
-                  onClick={() => onNavigate("subscriptionList")}
+                  onClick={() => handleNavigate("subscriptionList")}
                   data-oid="subscription-add-action-list"
                 >
                   <span style={ACTION_BUTTON_TEXT_STYLE}>定期購入一覧へ</span>

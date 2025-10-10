@@ -1,27 +1,59 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { FILTER_BUTTON_INACTIVE_STYLE, FILTER_BUTTON_TEXT_STYLE } from "@/components/screens/filterStyles";
 import { useUserInformation } from "@/app/hooks/useUserInformation";
+import { useAppContext } from "@/contexts/AppContext";
 import { useState, useEffect } from "react";
 import type { Screen } from "@/types/page";
-import type { UserInformation } from "@/types/user";
 
-type ProfileProps = {
-  profilePage: number;
-  totalProfilePages: number;
-  onPageChange: (page: number) => void;
-  onNavigate: (screen: Screen) => void;
-};
+function screenToPath(screen: Screen): string | null {
+  switch (screen) {
+    case "dashboard":
+      return "/";
+    case "catalog":
+      return "/catalog";
+    case "catalogLanding":
+      return "/catalog-landing";
+    case "cart":
+      return "/cart";
+    case "order":
+      return "/order";
+    case "history":
+      return "/history";
+    case "profile":
+      return "/profile";
+    case "subscription":
+      return "/subscription";
+    case "subscriptionAdd":
+      return "/subscription/add";
+    case "subscriptionList":
+      return "/subscription/list";
+    case "favoriteList":
+      return "/favorites";
+    default:
+      return null;
+  }
+}
 
-export function Profile({
-  profilePage,
-  totalProfilePages,
-  onPageChange,
-  onNavigate
-}: ProfileProps) {
+export default function ProfilePage() {
+  const router = useRouter();
+  const {
+    profilePage,
+    totalProfilePages,
+    onPageChange,
+    onNavigate: setScreen
+  } = useAppContext();
+
+  const handleNavigate = (screen: Screen) => {
+    setScreen(screen);
+    const path = screenToPath(screen);
+    if (path) router.push(path);
+  };
+
   const { userInfo, isLoading, updateUserInformation } = useUserInformation();
   const [localBudget, setLocalBudget] = useState(0);
   const [isEditingName, setIsEditingName] = useState(false);
@@ -275,7 +307,7 @@ export function Profile({
                       variant="ghost"
                       className="border border-transparent p-0"
                       style={FILTER_BUTTON_INACTIVE_STYLE}
-                      onClick={() => onNavigate("subscriptionList")}
+                      onClick={() => handleNavigate("subscriptionList")}
                       data-oid="profile-page-two-button">
                       <span style={FILTER_BUTTON_TEXT_STYLE}>定期購入の確認</span>
                     </Button>
@@ -298,7 +330,7 @@ export function Profile({
                       variant="ghost"
                       className="border border-transparent p-0"
                       style={FILTER_BUTTON_INACTIVE_STYLE}
-                      onClick={() => onNavigate("favoriteList")}
+                      onClick={() => handleNavigate("favoriteList")}
                       data-oid="profile-page-two-favorite-button">
                       <span style={FILTER_BUTTON_TEXT_STYLE}>お気に入り一覧へ</span>
                     </Button>

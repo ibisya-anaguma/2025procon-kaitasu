@@ -1,24 +1,54 @@
 "use client";
 
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { useAppContext } from "@/contexts/AppContext";
 import type { Product, Screen } from "@/types/page";
 
-type CartProps = {
-  cartItems: Product[];
-  onNavigate: (screen: Screen) => void;
-  onUpdateProductQuantity: (id: number, change: number) => void;
-  onAddFavoriteEntry: (product: Product) => void;
-};
+function screenToPath(screen: Screen): string | null {
+  switch (screen) {
+    case "dashboard":
+      return "/";
+    case "catalog":
+      return "/catalog";
+    case "catalogLanding":
+      return "/catalog-landing";
+    case "cart":
+      return "/cart";
+    case "order":
+      return "/order";
+    case "history":
+      return "/history";
+    case "profile":
+      return "/profile";
+    case "subscription":
+      return "/subscription";
+    case "subscriptionAdd":
+      return "/subscription/add";
+    case "subscriptionList":
+      return "/subscription/list";
+    default:
+      return null;
+  }
+}
 
-export function Cart({
-  cartItems,
-  onNavigate,
-  onUpdateProductQuantity,
-  onAddFavoriteEntry
-}: CartProps) {
+export default function CartPage() {
+  const router = useRouter();
+  const {
+    cartItems,
+    onUpdateProductQuantity,
+    onAddFavoriteEntry,
+    onNavigate: setScreen
+  } = useAppContext();
+
+  const handleNavigate = (screen: Screen) => {
+    setScreen(screen);
+    const path = screenToPath(screen);
+    if (path) router.push(path);
+  };
   const totalCartQuantity = cartItems.reduce(
     (sum, item) => sum + item.quantity,
     0,
@@ -227,14 +257,14 @@ export function Cart({
           <Button
             variant="outline"
             className="flex-1 text-sm border-2 border-[#fda900] text-[#fda900] rounded-md bg-transparent"
-            onClick={() => onNavigate("order")}
+            onClick={() => handleNavigate("order")}
             data-oid="8i_h.o."
           >
             注文確認
           </Button>
           <Button
             className="flex-1 bg-[#fda900] text-sm border-2 border-[#fda900] rounded-md hover:bg-[#fda900]/90"
-            onClick={() => onNavigate("catalog")}
+            onClick={() => handleNavigate("catalog")}
             data-oid="mgchczd"
           >
             買い物を続ける

@@ -1,14 +1,47 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { useAppContext } from "@/contexts/AppContext";
 import type { Screen } from "@/types/page";
 
-type OrderProps = {
-  onNavigate: (screen: Screen) => void;
-};
+function screenToPath(screen: Screen): string | null {
+  switch (screen) {
+    case "dashboard":
+      return "/";
+    case "catalog":
+      return "/catalog";
+    case "catalogLanding":
+      return "/catalog-landing";
+    case "cart":
+      return "/cart";
+    case "order":
+      return "/order";
+    case "history":
+      return "/history";
+    case "profile":
+      return "/profile";
+    case "subscription":
+      return "/subscription";
+    case "subscriptionAdd":
+      return "/subscription/add";
+    case "subscriptionList":
+      return "/subscription/list";
+    default:
+      return null;
+  }
+}
 
-export function Order({ onNavigate }: OrderProps) {
+export default function OrderPage() {
+  const router = useRouter();
+  const { onNavigate: setScreen } = useAppContext();
+
+  const handleNavigate = (screen: Screen) => {
+    setScreen(screen);
+    const path = screenToPath(screen);
+    if (path) router.push(path);
+  };
   return (
     <div className="flex-1 bg-white p-6 ml-[232px]" data-oid="syv6qb8">
       <div className="max-w-sm mx-auto" data-oid="9cyq3uk">
@@ -100,7 +133,7 @@ export function Order({ onNavigate }: OrderProps) {
           <Button
             variant="outline"
             className="flex-1 text-sm border-2 border-[#fda900] text-[#fda900] rounded-md bg-transparent"
-            onClick={() => onNavigate("cart")}
+            onClick={() => handleNavigate("cart")}
             data-oid="-fxs0ta">
 
             かごに戻る

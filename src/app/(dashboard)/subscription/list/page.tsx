@@ -3,14 +3,10 @@
 import { Fragment } from "react";
 import Image from "next/image";
 
-import type { SubscriptionEntry } from "@/types/page";
+import { useAppContext } from "@/contexts/AppContext";
 
-type SubscriptionListProps = {
-  entries: SubscriptionEntry[];
-  onRemoveEntry: (productId: number) => void;
-};
-
-export function SubscriptionList({ entries, onRemoveEntry }: SubscriptionListProps) {
+export default function SubscriptionListPage() {
+  const { subscriptionEntries: entries, onRemoveSubscriptionEntry: onRemoveEntry } = useAppContext();
   return (
     <div
       className="flex-1 bg-white p-6 ml-[232px] min-h-screen"

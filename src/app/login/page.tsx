@@ -123,7 +123,7 @@ export default function Login() {
         <div className="flex flex-col gap-10 w-full max-w-[580px]">
           <div className="flex flex-col items-center justify-center gap-4">
             <Image
-              src="/images/logo_kaitasu.png"
+              src="/images/logo_kaitasu.svg"
               alt="かいたすロゴ"
               width={500}
               height={500}

@@ -1,12 +1,14 @@
-﻿"use client";
+"use client";
 
 import { Fragment, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Search } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FILTER_BUTTON_INACTIVE_STYLE, FILTER_BUTTON_TEXT_STYLE } from "@/components/screens/filterStyles";
 import { useProductSearch } from "@/app/hooks/useProductSearch";
+import { useAppContext } from "@/contexts/AppContext";
 import type { LandingCardContent, Screen } from "@/types/page";
 import { cn } from "@/lib/utils";
 
@@ -15,21 +17,42 @@ const LANDING_FILTER_BUTTONS = [
   { label: "お気に入り", buttonDataOid: "jm:hia2", textDataOid: "btn-text-favorite" }
 ];
 
-type CatalogLandingProps = {
-  landingPage: number;
-  totalLandingPages: number;
-  onLandingPageChange: (page: number) => void;
-  onNavigate: (screen: Screen) => void;
-  currentLandingCards: LandingCardContent[];
-};
+function screenToPath(screen: Screen): string | null {
+  switch (screen) {
+    case "dashboard":
+      return "/";
+    case "catalog":
+      return "/catalog";
+    case "catalogLanding":
+      return "/catalog-landing";
+    case "cart":
+      return "/cart";
+    case "order":
+      return "/order";
+    case "history":
+      return "/history";
+    case "profile":
+      return "/profile";
+    case "subscription":
+      return "/subscription";
+    case "subscriptionAdd":
+      return "/subscription/add";
+    case "subscriptionList":
+      return "/subscription/list";
+    default:
+      return null;
+  }
+}
 
-export function CatalogLanding({
-  landingPage,
-  totalLandingPages,
-  onLandingPageChange,
-  onNavigate,
-  currentLandingCards
-}: CatalogLandingProps) {
+export default function CatalogLandingPage() {
+  const router = useRouter();
+  const {
+    landingPage,
+    totalLandingPages,
+    onLandingPageChange,
+    currentLandingCards,
+    onNavigate: setScreen
+  } = useAppContext();
   const { searchProducts, isLoading } = useProductSearch();
   const [selectedCards, setSelectedCards] = useState<number[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -39,6 +62,18 @@ export function CatalogLanding({
     setSelectedCards((prev) =>
       prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index]
     );
+  };
+
+  const handleNavigate = (screen: Screen) => {
+    setScreen(screen);
+
+    if (screen === "catalog") {
+      router.push("/catalog?fromLanding=1");
+      return;
+    }
+
+    const path = screenToPath(screen);
+    if (path) router.push(path);
   };
 
   const handleSearch = async () => {
@@ -56,7 +91,7 @@ export function CatalogLanding({
       limit: 50
     });
 
-    onNavigate("catalog");
+    handleNavigate("catalog");
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {

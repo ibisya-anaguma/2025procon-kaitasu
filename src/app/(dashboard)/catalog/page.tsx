@@ -1,36 +1,63 @@
 "use client";
 
 import Image from "next/image";
-import type { MutableRefObject } from "react";
+import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { FILTER_BUTTON_INACTIVE_STYLE, FILTER_BUTTON_TEXT_STYLE } from "@/components/screens/filterStyles";
 import { useProductSearch } from "@/app/hooks/useProductSearch";
+import { useAppContext } from "@/contexts/AppContext";
 import type { Product, Screen } from "@/types/page";
 
 const CATALOG_FILTER_BUTTONS = [
   { label: "お気に入り", buttonDataOid: "jm:hia2", textDataOid: "btn-text-favorite" }
 ];
 
-type CatalogProps = {
-  products: Product[];
-  catalogQuantitySum: number;
-  catalogPriceSum: number;
-  onNavigate: (screen: Screen) => void;
-  onUpdateProductQuantity: (id: number, change: number) => void;
-  catalogScrollRef: MutableRefObject<HTMLDivElement | null>;
-};
+function screenToPath(screen: Screen): string | null {
+  switch (screen) {
+    case "dashboard":
+      return "/";
+    case "catalog":
+      return "/catalog";
+    case "catalogLanding":
+      return "/catalog-landing";
+    case "cart":
+      return "/cart";
+    case "order":
+      return "/order";
+    case "history":
+      return "/history";
+    case "profile":
+      return "/profile";
+    case "subscription":
+      return "/subscription";
+    case "subscriptionAdd":
+      return "/subscription/add";
+    case "subscriptionList":
+      return "/subscription/list";
+    default:
+      return null;
+  }
+}
 
-export function Catalog({
-  products: staticProducts,
-  catalogQuantitySum,
-  catalogPriceSum,
-  onNavigate,
-  onUpdateProductQuantity,
-  catalogScrollRef
-}: CatalogProps) {
+export default function CatalogPage() {
+  const router = useRouter();
+  const {
+    products: staticProducts,
+    catalogQuantitySum,
+    catalogPriceSum,
+    onUpdateProductQuantity,
+    catalogScrollRef,
+    onNavigate: setScreen
+  } = useAppContext();
   const { products: searchResults } = useProductSearch();
+
+  const handleNavigate = (screen: Screen) => {
+    setScreen(screen);
+    const path = screenToPath(screen);
+    if (path) router.push(path);
+  };
 
   // 検索結果がある場合は検索結果を、ない場合は静的な商品データを使用
   const displayProducts = searchResults.length > 0 ? searchResults.map(p => ({
@@ -41,6 +68,7 @@ export function Catalog({
     quantity: 0,
     description: ''
   })) : staticProducts;
+
   return (
     <div
       className="flex-1 bg-white p-6 ml-[232px] relative min-h-screen"
@@ -65,7 +93,7 @@ export function Catalog({
             variant="ghost"
             className="border border-transparent p-0"
             style={FILTER_BUTTON_INACTIVE_STYLE}
-            onClick={() => onNavigate("catalogLanding")}
+            onClick={() => handleNavigate("catalogLanding")}
             data-oid="catalog-back-button">
             <span className="mr-3 flex items-center">
               <svg
@@ -331,7 +359,7 @@ export function Catalog({
           </span>
           <Button
             className="bg-white text-[#fda900] text-base font-bold px-8 h-11 border-2 border-white rounded-lg hover:bg-gray-50 shadow-sm"
-            onClick={() => onNavigate("cart")}
+            onClick={() => handleNavigate("cart")}
             data-oid="b9c3xju">
 
             購入

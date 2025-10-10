@@ -1,22 +1,56 @@
 "use client";
 
 import Image from "next/image";
-import type { MutableRefObject } from "react";
+import { useRouter } from "next/navigation";
 import { Search } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { useAppContext } from "@/contexts/AppContext";
 import type { Product, Screen } from "@/types/page";
 
-type SubscriptionProps = {
-  products: Product[];
-  subscriptionScrollRef: MutableRefObject<HTMLDivElement | null>;
-  onNavigate: (screen: Screen) => void;
-  onSelectSubscriptionProduct: (product: Product) => void;
-};
+function screenToPath(screen: Screen): string | null {
+  switch (screen) {
+    case "dashboard":
+      return "/";
+    case "catalog":
+      return "/catalog";
+    case "catalogLanding":
+      return "/catalog-landing";
+    case "cart":
+      return "/cart";
+    case "order":
+      return "/order";
+    case "history":
+      return "/history";
+    case "profile":
+      return "/profile";
+    case "subscription":
+      return "/subscription";
+    case "subscriptionAdd":
+      return "/subscription/add";
+    case "subscriptionList":
+      return "/subscription/list";
+    default:
+      return null;
+  }
+}
 
-export function Subscription({ products, subscriptionScrollRef, onNavigate, onSelectSubscriptionProduct }: SubscriptionProps) {
+export default function SubscriptionPage() {
+  const router = useRouter();
+  const {
+    products,
+    subscriptionScrollRef,
+    onSelectSubscriptionProduct,
+    onNavigate: setScreen
+  } = useAppContext();
+
+  const handleNavigate = (screen: Screen) => {
+    setScreen(screen);
+    const path = screenToPath(screen);
+    if (path) router.push(path);
+  };
   return (
     <div
       className="flex-1 bg-white p-6 ml-[232px] relative min-h-screen"
@@ -202,7 +236,7 @@ export function Subscription({ products, subscriptionScrollRef, onNavigate, onSe
                     <Button
                       variant="ghost"
                       className="p-0 bg-transparent hover:bg-transparent"
-                      onClick={() => { onSelectSubscriptionProduct(product); onNavigate("subscriptionAdd"); }}
+                      onClick={() => { onSelectSubscriptionProduct(product); handleNavigate("subscriptionAdd"); }}
                       data-oid="subscription-favorite-button">
                       <Image
                         src="/images/favorite.png"

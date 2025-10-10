@@ -3,14 +3,10 @@
 import { Fragment } from "react";
 import Image from "next/image";
 
-import type { FavoriteEntry } from "@/types/page";
+import { useAppContext } from "@/contexts/AppContext";
 
-type FavoriteListProps = {
-  entries: FavoriteEntry[];
-  onRemoveEntry: (productId: number) => void;
-};
-
-export function FavoriteList({ entries, onRemoveEntry }: FavoriteListProps) {
+export default function FavoriteListPage() {
+  const { favoriteEntries: entries, onRemoveFavoriteEntry: onRemoveEntry } = useAppContext();
   return (
     <div
       className="flex-1 bg-white p-6 ml-[232px] min-h-screen"
