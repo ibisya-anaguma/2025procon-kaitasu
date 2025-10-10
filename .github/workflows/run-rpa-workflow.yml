@@ -21,72 +21,67 @@ jobs:
         with:
           python-version: '3.x'
 
-      # ---- prepare firebase key from secret (robust) ----
       - name: Prepare Firebase service account file (from secret)
-        # keep shell explicit so heredoc works the same on runner
         shell: bash
         env:
-          # Put your secret in repo Settings → Secrets as FIREBASE_SERVICE_ACCOUNT (see instructions below)
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
         run: |
           set -euo pipefail
           mkdir -p .firebase
 
-          # Robust Python block:
-          # - accepts raw JSON
-          # - accepts a JSON with literal "\n" sequences (unescape)
-          # - accepts base64(JSON) (one-line base64) and decodes it
+          # This Python block robustly accepts:
+          #  - raw JSON pasted into the secret
+          #  - JSON pasted where newline characters are literal "\n"
+          #  - one-line base64(JSON)
           python3 - <<'PY'
-            import os, sys, json, base64, re
+          import os, sys, json, base64, re
 
-            s = os.environ.get("FIREBASE_SERVICE_ACCOUNT", "")
-            if not s:
-                print("ERROR: FIREBASE_SERVICE_ACCOUNT secret is empty", file=sys.stderr)
-                sys.exit(2)
-            s = s.strip()
+          s = os.environ.get("FIREBASE_SERVICE_ACCOUNT", "")
+          if not s:
+              print("ERROR: FIREBASE_SERVICE_ACCOUNT secret is empty", file=sys.stderr)
+              sys.exit(2)
+          s = s.strip()
 
-            def is_json(x):
-                try:
-                    json.loads(x)
-                    return True
-                except Exception:
-                    return False
+          def is_json(x):
+              try:
+                  json.loads(x)
+                  return True
+              except Exception:
+                  return False
 
-            out = None
+          out = None
 
-            # 1) raw JSON?
-            if is_json(s):
-                out = s
-            else:
-                # 2) literal "\n" sequences (common paste problem)
-                try_unescape = s.replace("\\n", "\n")
-                if is_json(try_unescape):
-                    out = try_unescape
-                else:
-                    # 3) base64 (strip whitespace/newlines then decode)
-                    b64 = re.sub(r"\s+", "", s)
-                    try:
-                        dec = base64.b64decode(b64)
-                        text = dec.decode("utf-8")
-                        if is_json(text):
-                            out = text
-                        else:
-                            # maybe decoded text still contains literal \n
-                            text2 = text.replace("\\n", "\n")
-                            if is_json(text2):
-                                out = text2
-                    except Exception:
-                        out = None
+          # 1) raw JSON?
+          if is_json(s):
+              out = s
+          else:
+              # 2) unescape literal "\n" sequences (common paste issue)
+              try_unescape = s.replace("\\n", "\n")
+              if is_json(try_unescape):
+                  out = try_unescape
+              else:
+                  # 3) try base64 decode (strip whitespace/newlines first)
+                  b64 = re.sub(r"\s+", "", s)
+                  try:
+                      dec = base64.b64decode(b64)
+                      text = dec.decode("utf-8")
+                      if is_json(text):
+                          out = text
+                      else:
+                          text2 = text.replace("\\n", "\n")
+                          if is_json(text2):
+                              out = text2
+                  except Exception:
+                      out = None
 
-            if not out:
-                print("ERROR: FIREBASE_SERVICE_ACCOUNT secret is not valid JSON (tried raw/unescape/base64)", file=sys.stderr)
-                sys.exit(3)
+          if not out:
+              print("ERROR: FIREBASE_SERVICE_ACCOUNT secret is not valid JSON (tried raw/unescape/base64)", file=sys.stderr)
+              sys.exit(3)
 
-            # Write validated JSON to file (no secret printed)
-            with open(".firebase/firebase-key.json", "w", encoding="utf-8") as f:
-                f.write(out)
+          with open(".firebase/firebase-key.json", "w", encoding="utf-8") as f:
+              f.write(out)
 
-            print("WROTE_OK")
+          print("WROTE_OK")
           PY
 
           TARGET=".firebase/firebase-key.json"
@@ -104,12 +99,10 @@ jobs:
           echo "GITHUB_WORKSPACE=$GITHUB_WORKSPACE"
           echo "AUTOCART_LIMIT=${{ env.AUTOCART_LIMIT || '50' }}"
 
-      # ---- run the runner (LIVE: will write to Firestore unless runner itself is called with --dry) ----
-      - name: Run autocart-runner (LIVE:will write to Firestore unless runner uses --dry)
+      - name: Run autocart-runner (LIVE:will write to Firestore unless --dry)
         id: run_autocart
         shell: bash
         env:
-          # make the file available to firebase-admin as ADC (Application Default Credentials)
           GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/.firebase/firebase-key.json
           AUTOCART_LIMIT: '50'
         run: |
@@ -117,13 +110,8 @@ jobs:
           cd "${GITHUB_WORKSPACE}"
 
           echo "Using GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS}"
-          echo "Running autocart-runner (LIVE unless you pass --dry to the runner)."
+          echo "Running autocart-runner (LIVE unless you pass --dry)."
 
-          # If your node deps are committed inside src/jobs/checkout uncomment:
-          # cd src/jobs/checkout
-          # npm ci
-
-          # run TS runner using tsx (it will compile & run). Pass explicit --cred
           npx tsx src/jobs/checkout/autocart-runner.ts \
             --cred "${GOOGLE_APPLICATION_CREDENTIALS}" \
             --limit "${AUTOCART_LIMIT}" \
