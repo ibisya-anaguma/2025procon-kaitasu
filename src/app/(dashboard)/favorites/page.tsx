@@ -3,10 +3,31 @@
 import { Fragment } from "react";
 import Image from "next/image";
 
-import { useAppContext } from "@/contexts/AppContext";
+import { useFavorites } from "@/app/hooks/useFavorites";
 
 export default function FavoriteListPage() {
-  const { favoriteEntries: entries, onRemoveFavoriteEntry: onRemoveEntry } = useAppContext();
+  const { favorites: entries, isLoading, error, removeFavorite } = useFavorites();
+
+  const handleRemove = async (productId: number) => {
+    await removeFavorite(productId.toString());
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex-1 bg-white p-6 ml-[232px] min-h-screen flex items-center justify-center">
+        <div className="text-[24px] font-['BIZ_UDPGothic']">読み込み中...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex-1 bg-white p-6 ml-[232px] min-h-screen flex items-center justify-center">
+        <div className="text-[24px] font-['BIZ_UDPGothic'] text-red-500">{error}</div>
+      </div>
+    );
+  }
+
   return (
     <div
       className="flex-1 bg-white p-6 ml-[232px] min-h-screen flex items-center justify-center"
@@ -100,7 +121,7 @@ export default function FavoriteListPage() {
                   </div>
                   <button
                     className="rounded-md border border-[#FDA900] px-4 py-2 text-sm font-medium text-[#FDA900]"
-                    onClick={() => onRemoveEntry(entry.productId)}
+                    onClick={() => handleRemove(entry.productId)}
                     data-oid="favorite-list-remove">
                     削除
                   </button>

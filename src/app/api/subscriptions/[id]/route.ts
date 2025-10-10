@@ -1,24 +1,39 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { deleteCollection, patchCollection } from "@/lib/apiUtils";
-import { withAuth } from "@/lib/middleware";
+import { adminAuth } from '@/lib/firebaseAdmin';
 
 const COLLECTION_NAME = "subscriptions" as const;
 
-type RouteContext = {
-  params: {
-    id: string;
-  };
-};
-
-export const PATCH = withAuth<RouteContext>(async (req: NextRequest, uid: string, context) => {
-  const itemId = context?.params?.id;
-  if (!itemId) {
-    return NextResponse.json({ error: "Missing item id" }, { status: 400 });
-  }
-
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
-    const body = (await req.json()) as Record<string, unknown> | null;
+    // Authorizationヘッダーからトークンを取得
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json({ error: '認証トークンが必要です' }, { status: 401 });
+    }
+
+    const token = authHeader.split('Bearer ')[1];
+    
+    // トークンを検証してuidを取得
+    let uid: string;
+    try {
+      const decodedToken = await adminAuth.verifyIdToken(token);
+      uid = decodedToken.uid;
+    } catch (error) {
+      console.error('トークン検証エラー:', error);
+      return NextResponse.json({ error: '無効な認証トークンです' }, { status: 401 });
+    }
+
+    const itemId = params.id;
+    if (!itemId) {
+      return NextResponse.json({ error: "Missing item id" }, { status: 400 });
+    }
+
+    const body = (await request.json()) as Record<string, unknown> | null;
     const payload = body ?? {};
     const data = {
       ...(typeof payload.quantity === "number" ? { quantity: payload.quantity } : {}),
@@ -38,15 +53,36 @@ export const PATCH = withAuth<RouteContext>(async (req: NextRequest, uid: string
       { status: 500 }
     );
   }
-});
+}
 
-export const DELETE = withAuth<RouteContext>(async (_req: NextRequest, uid: string, context) => {
-  const itemId = context?.params?.id;
-  if (!itemId) {
-    return NextResponse.json({ error: "Missing item id" }, { status: 400 });
-  }
-
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
+    // Authorizationヘッダーからトークンを取得
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json({ error: '認証トークンが必要です' }, { status: 401 });
+    }
+
+    const token = authHeader.split('Bearer ')[1];
+    
+    // トークンを検証してuidを取得
+    let uid: string;
+    try {
+      const decodedToken = await adminAuth.verifyIdToken(token);
+      uid = decodedToken.uid;
+    } catch (error) {
+      console.error('トークン検証エラー:', error);
+      return NextResponse.json({ error: '無効な認証トークンです' }, { status: 401 });
+    }
+
+    const itemId = params.id;
+    if (!itemId) {
+      return NextResponse.json({ error: "Missing item id" }, { status: 400 });
+    }
+
     await deleteCollection(uid, COLLECTION_NAME, itemId);
     return NextResponse.json({ msg: "success" });
   } catch (error) {
@@ -56,4 +92,4 @@ export const DELETE = withAuth<RouteContext>(async (_req: NextRequest, uid: stri
       { status: 500 }
     );
   }
-});
+};

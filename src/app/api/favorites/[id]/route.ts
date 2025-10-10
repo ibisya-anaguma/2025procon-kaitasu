@@ -1,21 +1,44 @@
-// src/app/api/favorites/[id]/route.ts
-// うめ
-
 import { NextRequest, NextResponse } from 'next/server';
-import { withAuth } from "@/lib/middleware";
 import { deleteCollection } from "@/lib/apiUtils";
+import { adminAuth } from '@/lib/firebaseAdmin';
 
-const collection = "favorites";
+const COLLECTION_NAME = "favorites" as const;
 
-export const DELETE = withAuth(async (
-  _req: NextRequest,
-  uid: string,
+export async function DELETE(
+  request: NextRequest,
   { params }: { params: { id: string } }
-) => {
+) {
   try {
-	await deleteCollection(uid, collection, params.id);
-	return NextResponse.json({ msg: "success" });
+    // Authorizationヘッダーからトークンを取得
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json({ error: '認証トークンが必要です' }, { status: 401 });
+    }
+
+    const token = authHeader.split('Bearer ')[1];
+    
+    // トークンを検証してuidを取得
+    let uid: string;
+    try {
+      const decodedToken = await adminAuth.verifyIdToken(token);
+      uid = decodedToken.uid;
+    } catch (error) {
+      console.error('トークン検証エラー:', error);
+      return NextResponse.json({ error: '無効な認証トークンです' }, { status: 401 });
+    }
+
+    const itemId = params.id;
+    if (!itemId) {
+      return NextResponse.json({ error: "Missing item id" }, { status: 400 });
+    }
+
+    await deleteCollection(uid, COLLECTION_NAME, itemId);
+    return NextResponse.json({ msg: "success" });
   } catch (error) {
-	return NextResponse.json({ error: `fail to delete ${collection}` }, { status: 500 });
+    console.error("[favorites][DELETE] failed", error);
+    return NextResponse.json(
+      { error: `Failed to delete ${COLLECTION_NAME}` },
+      { status: 500 }
+    );
   }
-});
+};
