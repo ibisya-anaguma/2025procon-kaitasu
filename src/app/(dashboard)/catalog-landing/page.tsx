@@ -314,9 +314,10 @@ export default function CatalogLandingPage() {
         </div>
 
         <div className="mt-4 flex justify-end" data-oid="catalog-landing-next-wrapper">
+          {/* 組み合わせを生成ボタン（テキストに合わせた幅） */}
           <Button
             variant="ghost"
-            className="border border-transparent p-0 rounded-[20px] border-[3px] border-[#FDA900] bg-white shadow-[4.5px_4.5px_0_0_#E4E2E2] w-[150px] h-[60px] shrink-0"
+            className="border border-transparent p-0 rounded-[20px] border-[3px] border-[#FDA900] bg-white shadow-[4.5px_4.5px_0_0_#E4E2E2] h-[60px] px-6"
             onClick={handleSearch}
             disabled={isLoading}
             data-oid="catalog-landing-next-button">

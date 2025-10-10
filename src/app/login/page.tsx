@@ -39,9 +39,37 @@ export default function Login() {
   }, [searchParams]);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
-        router.replace(redirectTarget);
+        // アンケート完了状態をチェック（機能オフ中）
+        /* 
+        try {
+          const idToken = await user.getIdToken();
+          const response = await fetch('/api/user-information', {
+            headers: {
+              'Authorization': `Bearer ${idToken}`,
+            },
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            // アンケート未完了の場合はアンケートページへ
+            if (!data.surveyCompleted) {
+              router.replace('/survey');
+            } else {
+              router.replace(redirectTarget);
+            }
+          } else {
+            // エラーの場合はアンケートページへ
+            router.replace('/survey');
+          }
+        } catch (error) {
+          console.error('Error checking survey:', error);
+          router.replace('/survey');
+        }
+        */
+        // 機能オフ中：常にアンケートページへ
+        router.replace('/survey');
       }
       setIsCheckingAuth(false);
     });
@@ -59,6 +87,33 @@ export default function Login() {
     return DEFAULT_ERROR_MESSAGE;
   };
 
+  /* アンケート完了チェック機能（機能オフ中）
+  const checkAndRedirect = async (user: any) => {
+    try {
+      const idToken = await user.getIdToken();
+      const response = await fetch('/api/user-information', {
+        headers: {
+          'Authorization': `Bearer ${idToken}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (!data.surveyCompleted) {
+          router.replace('/survey');
+        } else {
+          router.replace(redirectTarget);
+        }
+      } else {
+        router.replace('/survey');
+      }
+    } catch (error) {
+      console.error('Error checking survey:', error);
+      router.replace('/survey');
+    }
+  };
+  */
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setErrorMessage(null);
@@ -74,7 +129,9 @@ export default function Login() {
 
     try {
       await signInWithEmailAndPassword(auth, trimmedEmail, password);
-      router.replace(redirectTarget);
+      // 機能オフ中：常にアンケートページへ
+      router.replace('/survey');
+      // await checkAndRedirect(userCredential.user);
     } catch (error) {
       setErrorMessage(getFriendlyMessage(error));
     } finally {
@@ -87,7 +144,11 @@ export default function Login() {
     setIsSubmitting(true);
     try {
       await signInWithGoogle();
-      router.replace(redirectTarget);
+      // 機能オフ中：常にアンケートページへ
+      router.replace('/survey');
+      // if (user) {
+      //   await checkAndRedirect(user);
+      // }
     } catch (error) {
       setErrorMessage(getFriendlyMessage(error));
     } finally {
@@ -100,7 +161,11 @@ export default function Login() {
     setIsSubmitting(true);
     try {
       await signInWithFacebook();
-      router.replace(redirectTarget);
+      // 機能オフ中：常にアンケートページへ
+      router.replace('/survey');
+      // if (user) {
+      //   await checkAndRedirect(user);
+      // }
     } catch (error) {
       setErrorMessage(getFriendlyMessage(error));
     } finally {

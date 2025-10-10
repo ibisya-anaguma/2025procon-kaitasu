@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 
@@ -52,6 +53,8 @@ export default function CatalogPage() {
     onNavigate: setScreen
   } = useAppContext();
   const { products: searchResults } = useProductSearch();
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 8;
 
   const handleNavigate = (screen: Screen) => {
     setScreen(screen);
@@ -60,7 +63,7 @@ export default function CatalogPage() {
   };
 
   // 検索結果がある場合は検索結果を、ない場合は静的な商品データを使用
-  const displayProducts = searchResults.length > 0 ? searchResults.map(p => ({
+  const allProducts = searchResults.length > 0 ? searchResults.map(p => ({
     id: Number(p.id),
     name: p.name,
     price: p.price,
@@ -68,6 +71,20 @@ export default function CatalogPage() {
     quantity: 0,
     description: ''
   })) : staticProducts;
+
+  // ページネーション計算
+  const totalPages = Math.ceil(allProducts.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE;
+  const displayProducts = allProducts.slice(startIndex, endIndex);
+
+  // ページ変更時にスクロールをトップに戻す
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    if (catalogScrollRef.current) {
+      catalogScrollRef.current.scrollTop = 0;
+    }
+  };
 
   return (
     <div
@@ -143,13 +160,14 @@ export default function CatalogPage() {
             data-oid="catalog-page-label">
               ページ
             </span>
-            {[1, 2, 3, 4, 5].map((num) => {
-              const isActive = num === 1;
+            {totalPages > 0 && Array.from({ length: totalPages }, (_, i) => i + 1).map((num) => {
+              const isActive = num === currentPage;
               return (
                 <Button
                   key={num}
                   size="sm"
                   variant="ghost"
+                  onClick={() => handlePageChange(num)}
                   className={`border border-transparent p-0 flex w-[60px] h-[60px] px-[19px] py-[14px] flex-col justify-center items-center gap-[10px] shrink-0 rounded-[20px] text-[#101010] font-['BIZ_UDPGothic'] text-[32px] font-bold leading-normal tracking-[1.664px] ${
                     isActive
                       ? 'bg-[#FDA900] shadow-[0_4px_4px_0_rgba(0,0,0,0.25)_inset]'
@@ -160,16 +178,6 @@ export default function CatalogPage() {
                   </Button>
               );
             })}
-            <span className="text-sm self-center font-medium" data-oid="xd09rri">
-              ...
-            </span>
-            <Button
-            size="sm"
-            variant="ghost"
-            className="border border-transparent p-0 flex w-[60px] h-[60px] px-[19px] py-[14px] flex-col justify-center items-center gap-[10px] rounded-[20px] bg-white shadow-[0_4px_4px_0_rgba(0,0,0,0.25)] text-[#101010] font-['BIZ_UDPGothic'] text-[32px] font-bold leading-normal tracking-[1.664px]"
-            data-oid="f8qlkjv">
-              15
-            </Button>
             </div>
 
             <div

@@ -51,7 +51,8 @@ export async function GET(request: NextRequest) {
     const response = {
       name: userData?.userName || '',
       monthlyBudget: userData?.monthlyBudget || 50000,
-      resetDay: userData?.resetDay || 1
+      resetDay: userData?.resetDay || 1,
+      surveyCompleted: userData?.surveyCompleted || false
     };
 
     return NextResponse.json(response);
@@ -87,8 +88,8 @@ export async function POST(request: NextRequest) {
     const { disease, increaseNutrients, reduceNutrients } = body;
 
     // バリデーション
-    const validDiseases = ['Hypertension', 'HeartDisease', 'Sarcopenia', 'Diabetes', 'Osteoporosis'];
-    const validIncreaseNutrients = ['Protein', 'VitaminD', 'Ca', 'Fiber'];
+    const validDiseases = ['Hypertension', 'KidneyDisease', 'Sarcopenia', 'Diabetes', 'Osteoporosis'];
+    const validIncreaseNutrients = ['Protein', 'VitaminD', 'Ca', 'Fiber', 'Potassium'];
     const validReduceNutrients = ['Salt', 'Fat', 'Sugar', 'Vitamin', 'Mineral'];
 
     if (disease && !Array.isArray(disease)) {
@@ -150,7 +151,7 @@ export async function PATCH(request: NextRequest) {
 
     // リクエストボディを取得
     const body = await request.json();
-    const { name, monthlyBudget, resetDay } = body;
+    const { name, monthlyBudget, resetDay, surveyCompleted } = body;
 
     // 更新するフィールドを準備
     const updateData: any = {};
@@ -169,6 +170,12 @@ export async function PATCH(request: NextRequest) {
         return NextResponse.json({ error: 'resetDayは1-31の数値である必要があります' }, { status: 400 });
       }
       updateData.resetDay = resetDay;
+    }
+    if (surveyCompleted !== undefined) {
+      if (typeof surveyCompleted !== 'boolean') {
+        return NextResponse.json({ error: 'surveyCompletedはbooleanである必要があります' }, { status: 400 });
+      }
+      updateData.surveyCompleted = surveyCompleted;
     }
 
     // 少なくとも1つのフィールドが更新される必要がある

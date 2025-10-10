@@ -48,6 +48,8 @@ export default function SubscriptionPage() {
   } = useAppContext();
   const { history, isLoading, error } = useHistory();
   const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 8;
 
   const handleNavigate = (screen: Screen) => {
     setScreen(screen);
@@ -70,6 +72,26 @@ export default function SubscriptionPage() {
     ? products.filter((p) => p.name.toLowerCase().includes(searchQuery.toLowerCase()))
     : products;
 
+  // ページネーション計算
+  const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE;
+  const currentProducts = filteredProducts.slice(startIndex, endIndex);
+
+  // ページ変更時にスクロールをトップに戻す
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    if (subscriptionScrollRef.current) {
+      subscriptionScrollRef.current.scrollTop = 0;
+    }
+  };
+
+  // 検索時にページを1にリセット
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+    setCurrentPage(1);
+  };
+
   return (
     <div
       className="flex-1 bg-white p-6 ml-[232px] relative min-h-screen flex items-center justify-center"
@@ -91,7 +113,7 @@ export default function SubscriptionPage() {
           <Input
             placeholder="商品名で検索"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => handleSearch(e.target.value)}
             className="pl-12 h-12 border-2 border-[#fda900] text-sm rounded-lg bg-white shadow-sm focus:border-[#209fde] focus:ring-2 focus:ring-[#209fde]/20"
             data-oid="subscription-search-input"
           />
@@ -115,14 +137,15 @@ export default function SubscriptionPage() {
             <div
             className="flex justify-center gap-[25px] mb-6"
             data-oid="subscription-pagination">
-            {[1, 2, 3, 4, 5].map((num) => {
-              const isActive = num === 1;
+            {totalPages > 0 && Array.from({ length: totalPages }, (_, i) => i + 1).map((num) => {
+              const isActive = num === currentPage;
               return (
                 <Button
                   key={`subscription-page-${num}`}
                   size="sm"
                   variant="ghost"
                   className="border border-transparent p-0"
+                  onClick={() => handlePageChange(num)}
                   style={{
                     display: "flex",
                     width: "60px",
@@ -152,37 +175,6 @@ export default function SubscriptionPage() {
                   </Button>
               );
             })}
-            <span className="text-sm self-center font-medium" data-oid="subscription-pagination-ellipsis">
-              ...
-            </span>
-            <Button
-            size="sm"
-            variant="ghost"
-            className="border border-transparent p-0"
-            style={{
-              display: "flex",
-              width: "60px",
-              height: "60px",
-              padding: "14px 19px",
-              flexDirection: "column",
-              justifyContent: "center",
-              alignItems: "center",
-              gap: "10px",
-              borderRadius: "20px",
-              background: "var(--, #FFF)",
-              backgroundColor: "#FFF",
-              boxShadow: "0 4px 4px 0 rgba(0, 0, 0, 0.25)",
-              color: "var(--, #101010)",
-              fontFamily: '"BIZ UDPGothic"',
-              fontSize: "32px",
-              fontStyle: "normal",
-              fontWeight: 700,
-              lineHeight: "normal",
-              letterSpacing: "1.664px"
-            }}
-            data-oid="subscription-pagination-last">
-              15
-            </Button>
             </div>
             <div
             className="grid grid-cols-4 gap-y-4"
@@ -207,7 +199,7 @@ export default function SubscriptionPage() {
                 </span>
               </div>
             ) : (
-              filteredProducts.map((product) => (
+              currentProducts.map((product) => (
               <Card
                 key={`subscription-${product.id}`}
                 className="px-4 pt-1 pb-0 bg-white border-2 border-[#e0e0e0] rounded-xl shadow-sm hover:shadow-md transition-shadow flex flex-col"

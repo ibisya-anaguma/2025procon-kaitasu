@@ -56,7 +56,7 @@ export default function ProfilePage() {
     if (path) router.push(path);
   };
 
-  const { user: authUser } = useAuth();
+  const { user: authUser, signOut } = useAuth();
   const { userInfo, isLoading, updateUserInformation } = useUserInformation();
   const [localBudget, setLocalBudget] = useState(0);
   const [isEditingName, setIsEditingName] = useState(false);
@@ -123,6 +123,18 @@ export default function ProfilePage() {
       setTimeout(() => setSuccessMessage(''), 3000);
     } else {
       setErrorMessage('リセット日の更新に失敗しました');
+      setTimeout(() => setErrorMessage(''), 3000);
+    }
+  };
+
+  // ログアウト処理
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      router.push('/login');
+    } catch (error) {
+      console.error('ログアウトエラー:', error);
+      setErrorMessage('ログアウトに失敗しました');
       setTimeout(() => setErrorMessage(''), 3000);
     }
   };
@@ -291,7 +303,7 @@ export default function ProfilePage() {
               </div>
             ) : (
               <div
-                className="flex h-full items-start"
+                className="flex h-full flex-col justify-between"
                 data-oid="profile-page-two">
                 <div className="flex flex-col items-start gap-8 w-full max-w-[520px]" data-oid="profile-page-two-content">
                   <div className="flex flex-col items-start gap-6" data-oid="profile-page-two-subsection">
@@ -322,6 +334,19 @@ export default function ProfilePage() {
                       <span className={FILTER_BUTTON_TEXT_CLASS}>お気に入り一覧へ</span>
                     </Button>
                   </div>
+                </div>
+                
+                {/* ログアウトボタン */}
+                <div className="w-full flex justify-center mb-8" data-oid="profile-logout-wrapper">
+                  <Button
+                    variant="ghost"
+                    className="border border-transparent p-0 w-[280px] h-[70px] flex items-center justify-center shrink-0 rounded-[20px] border-[3px] border-[#FF4444] bg-white shadow-[4.5px_4.5px_0_0_#E4E2E2]"
+                    onClick={handleLogout}
+                    data-oid="profile-logout-button">
+                    <span className="text-[#FF4444] font-['BIZ_UDPGothic'] text-[32px] font-bold leading-normal tracking-[1.664px]">
+                      ログアウト
+                    </span>
+                  </Button>
                 </div>
               </div>
             )}
