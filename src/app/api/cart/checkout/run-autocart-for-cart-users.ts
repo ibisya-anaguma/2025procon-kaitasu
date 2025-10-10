@@ -1,176 +1,218 @@
 import * as fs from "fs";
 import * as path from "path";
+import * as child_process from "child_process";
+import * as util from "util";
 import * as admin from "firebase-admin";
-import { spawnSync } from "child_process";
 
-type Args = {
-  fbCred: string;            // path to service account JSON (required)
-  python: string;            // python binary (default: python3)
-  pythonScript: string;      // path to aeon_netsuper_cart.py
-  headless: boolean;
-  dry: boolean;
-  debug: boolean;
-  limit?: number;            // max users to process
-  cartPathTemplate: string;  // e.g. 'users/{uid}/cart'
-  sleepMsBetween?: number;   // optional delay between user runs
-  timeoutMs?: number;        // per-user python timeout
+const spawn = child_process.spawn;
+const execFile = util.promisify(child_process.execFile);
+
+type Opts = {
+  fbCred?: string;
+  python?: string;
+  pythonScript?: string;
+  headless?: boolean;
+  debug?: boolean;
+  dry?: boolean;
+  limit?: number;
+  cartPathTemplate?: string;
+  sleepMsBetween?: number;
+  timeoutMs?: number;
+  debuggerAddress?: string;
 };
 
-function parseArgs(): Args {
+function parseArgs(): Opts {
   const argv = process.argv.slice(2);
-  const get = (k: string, d = "") => {
+  const get = (k: string, d?: string) => {
     const i = argv.indexOf(k);
-    return i >= 0 ? argv[i + 1] ?? d : d;
+    return i >= 0 ? argv[i + 1] : d;
   };
   const has = (k: string) => argv.includes(k);
 
-  const fbCred = get("--fb-cred", process.env.GOOGLE_APPLICATION_CREDENTIALS || "");
-  const python = get("--python", "python3");
-  const pythonScript = get("--python-script", "src/app/api/cart/checkout/aeon_netsuper_cart.py");
-
-  const args: Args = {
-    fbCred,
-    python,
-    pythonScript,
+  return {
+    fbCred: get("--fb-cred", process.env.GOOGLE_APPLICATION_CREDENTIALS || undefined),
+    python: get("--python", "python3"),
+    pythonScript: get("--python-script", "src/app/api/cart/checkout/aeon_netsuper_cart.py"),
     headless: has("--headless"),
-    dry: has("--dry"),
     debug: has("--debug"),
-    limit: Number(get("--limit", "")) || undefined,
+    dry: has("--dry"),
+    limit: Number(get("--limit", "50")) || 50,
     cartPathTemplate: get("--cart-path-template", "users/{uid}/cart"),
     sleepMsBetween: Number(get("--sleep-ms-between", "0")) || 0,
     timeoutMs: Number(get("--timeout-ms", String(15 * 60 * 1000))) || 15 * 60 * 1000,
+    debuggerAddress: get("--debugger-address", ""),
   };
-
-  if (!args.fbCred) {
-    console.error("ERROR: --fb-cred <path-to-service-account.json> is required (or set GOOGLE_APPLICATION_CREDENTIALS).");
-    process.exit(1);
-  }
-
-  return args;
 }
 
-function initAdmin(fbCredPath: string) {
-  const p = path.resolve(fbCredPath);
-  if (!fs.existsSync(p)) {
-    console.error(`Fatal: Service account JSON not found at: ${p}`);
-    process.exit(2);
+function log(...args: any[]) {
+  console.log(new Date().toISOString(), ...args);
+}
+
+async function initAdmin(fbCred?: string) {
+  // prefer explicit fbCred path, else env var GOOGLE_APPLICATION_CREDENTIALS
+  const credPath = fbCred || process.env.GOOGLE_APPLICATION_CREDENTIALS;
+  if (!credPath) throw new Error("Service account JSON path not provided (fbCred or GOOGLE_APPLICATION_CREDENTIALS).");
+  const resolved = path.resolve(credPath);
+  if (!fs.existsSync(resolved)) throw new Error(`Service account JSON not found at: ${resolved}`);
+  const sa = JSON.parse(fs.readFileSync(resolved, "utf8"));
+  if (!admin.apps.length) {
+    admin.initializeApp({
+      credential: admin.credential.cert(sa),
+      projectId: sa.project_id,
+    });
   }
-  const sa = JSON.parse(fs.readFileSync(p, "utf8"));
-  admin.initializeApp({
-    credential: admin.credential.cert(sa),
-    projectId: sa.project_id || undefined,
-  });
   return admin.firestore();
 }
 
-async function listUsersWithCart(db: admin.firestore.Firestore, cartPathTemplate: string, limit?: number, debug = false) {
-  // Simple approach: list users collection, check if cart has at least one doc
-  // (This assumes top-level 'users' collection.)
+function isCollectionPath(p: string) {
+  const segs = p.split("/").filter(Boolean);
+  return segs.length % 2 === 1;
+}
+
+async function usersWithCart(db: admin.firestore.Firestore, cartPathTemplate: string, limit: number, debug = false) {
+  // Simple approach: list users collection and check subcollection 'cart'.
+  // If your users structure differs, adjust this function.
   const usersCol = db.collection("users");
-  const snaps = await usersCol.get();
-  if (debug) console.log(`[DEBUG] users found: ${snaps.size}`);
-  const out: Array<{ uid: string; cartCount: number; cartPath: string }> = [];
-  for (const doc of snaps.docs) {
-    const uid = doc.id;
+  const snap = await usersCol.get();
+  const out: string[] = [];
+  for (const udoc of snap.docs) {
+    const uid = udoc.id;
     const cartPath = cartPathTemplate.replace("{uid}", uid);
-    const cartColRef = db.collection(cartPath);
-    const cartSnap = await cartColRef.limit(1).get();
+    const cartRef = db.collection(cartPath);
+    // only check existence / non-empty
+    const cartSnap = await cartRef.limit(1).get();
     if (!cartSnap.empty) {
-      out.push({ uid, cartCount: 1, cartPath });
-      if (limit && out.length >= limit) break;
+      out.push(uid);
+      if (debug) log(`[DEBUG] found cart for uid=${uid}`);
+      if (out.length >= limit) break;
+    } else if (debug) {
+      log(`[DEBUG] empty cart uid=${uid}`);
     }
   }
   return out;
 }
 
-function buildPythonArgsForUser(args: Args, uid: string) {
-  // Build CLI args to call aeon_netsuper_cart.py for this user
-  const pyArgs = [
-    args.pythonScript,
-    "--use-firebase",
-    "--fb-cred", args.fbCred,
-    "--uid", uid,
-    "--cart-path", args.cartPathTemplate.replace("{uid}", uid),
-    "--dedupe",
-    "--call-postprocess",
-    "--postprocess-history-doc", "last-checkout",
-  ];
-  if (args.headless) pyArgs.push("--headless");
-  if (args.dry) pyArgs.push("--dry");
-  if (args.debug) pyArgs.push("--debug");
-  return pyArgs;
+function buildPythonArgs(opts: Opts, uid: string): string[] {
+  // Build args array safely. **Only include flags that have values**.
+  const args: string[] = [];
+
+  // script-specific options
+  args.push(opts.pythonScript || "src/app/api/cart/checkout/aeon_netsuper_cart.py");
+
+  // must provide uid
+  args.push("--uid", uid);
+
+  // use firebase
+  args.push("--use-firebase");
+
+  // fb cred path (if provided)
+  if (opts.fbCred && opts.fbCred.trim()) {
+    args.push("--fb-cred", opts.fbCred);
+  } else if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+    args.push("--fb-cred", process.env.GOOGLE_APPLICATION_CREDENTIALS);
+  }
+
+  // cart-path template => expand for this uid
+  if (opts.cartPathTemplate) {
+    const cartPath = (opts.cartPathTemplate || "users/{uid}/cart").replace("{uid}", uid);
+    args.push("--cart-path", cartPath);
+  }
+
+  // boolean flags
+  if (opts.headless) args.push("--headless");
+  if (opts.dry) args.push("--dry");
+  if (opts.debug) args.push("--debug");
+  if (opts.debuggerAddress && opts.debuggerAddress.trim()) {
+    // IMPORTANT: only pass the debugger flag with a value
+    args.push("--debugger-address", opts.debuggerAddress.trim());
+  }
+
+  // optional: postprocess integration (we'll always call postprocess in this script by default)
+  args.push("--call-postprocess", "--postprocess-history-doc", "last-checkout");
+
+  // dedupe for safety
+  args.push("--dedupe");
+
+  return args;
 }
 
-function runPythonSync(pythonBin: string, pyArgs: string[], timeoutMs: number, debug = false) {
-  if (debug) console.log(`[DEBUG] spawn: ${pythonBin} ${pyArgs.map(a => `"${a}"`).join(" ")}`);
-  const res = spawnSync(pythonBin, pyArgs, {
-    encoding: "utf8",
+function spawnPython(pythonBin: string, args: string[], cwd?: string) {
+  log(`[SPAWN] ${pythonBin} ${args.map(a => (a.includes(" ") ? `"${a}"` : a)).join(" ")}`);
+  const child = spawn(pythonBin, args, {
     stdio: ["ignore", "pipe", "pipe"],
-    timeout: timeoutMs,
-    maxBuffer: 20 * 1024 * 1024,
+    cwd: cwd || process.cwd(),
+    env: process.env,
   });
-  return res;
+
+  return new Promise<{ code: number | null; stdout: string; stderr: string }>((res) => {
+    let stdout = "";
+    let stderr = "";
+    child.stdout.on("data", (b) => {
+      const s = b.toString();
+      stdout += s;
+      process.stdout.write(s);
+    });
+    child.stderr.on("data", (b) => {
+      const s = b.toString();
+      stderr += s;
+      process.stderr.write(s);
+    });
+    child.on("close", (code) => {
+      res({ code, stdout, stderr });
+    });
+    child.on("error", (err) => {
+      stderr += String(err);
+      res({ code: 1, stdout, stderr });
+    });
+  });
 }
 
 async function main() {
-  const args = parseArgs();
-  if (args.debug) console.log("[INFO] parsed args:", { ...args, fbCred: args.fbCred ? "<provided>" : "<none>" });
+  const opts = parseArgs();
+  log("parsed args:", JSON.stringify(opts));
 
-  const db = initAdmin(args.fbCred);
-
-  console.log("[INFO] scanning users for cart items...");
-  const users = await listUsersWithCart(db, args.cartPathTemplate, args.limit, args.debug);
-  console.log(`[INFO] users with non-empty cart: ${users.length}${args.limit ? ` (limit ${args.limit})` : ""}`);
-
-  if (!users.length) {
-    console.log("[INFO] nothing to do.");
-    process.exit(0);
+  const fbCred = opts.fbCred || process.env.GOOGLE_APPLICATION_CREDENTIALS;
+  if (!fbCred) {
+    throw new Error("Provide service account via --fb-cred or set GOOGLE_APPLICATION_CREDENTIALS");
   }
 
+  const db = await initAdmin(fbCred);
+
+  const users = await usersWithCart(db, opts.cartPathTemplate || "users/{uid}/cart", opts.limit || 50, opts.debug || false);
+  log(`users with non-empty cart: ${users.length} (limit=${opts.limit})`);
   let processed = 0;
-  for (const u of users) {
+
+  for (const uid of users) {
+    if (processed >= (opts.limit || 50)) break;
+    log(`--- processing uid=${uid} (${processed + 1}/${users.length}) ---`);
+    const pyArgs = buildPythonArgs(opts, uid);
+
+    if (opts.dry) {
+      log("[DRY RUN] would spawn Python with args:", pyArgs.join(" "));
+      processed++;
+      continue;
+    }
+
+    const pythonBin = opts.python || "python3";
+    const result = await spawnPython(pythonBin, pyArgs);
+    log(`[PYTHON EXIT] uid=${uid} code=${result.code}`);
+    if (result.code !== 0) {
+      log(`[ERROR] Python failed for uid=${uid}. stderr:\n${result.stderr}`);
+    } else {
+      log(`[OK] Python finished for uid=${uid}`);
+    }
+
+    // throttle between users if requested
+    if (opts.sleepMsBetween && opts.sleepMsBetween > 0) {
+      await new Promise((r) => setTimeout(r, opts.sleepMsBetween));
+    }
     processed++;
-    const uid = u.uid;
-    console.log(`\n[INFO] (${processed}/${users.length}) processing uid=${uid}`);
-    const pyArgs = buildPythonArgsForUser(args, uid);
-
-    // Note: we call python binary with script as first argument
-    // e.g. python3 src/.../aeon_netsuper_cart.py --use-firebase ...
-    const spawnArgs = pyArgs; // first element is script path
-
-    try {
-      const result = runPythonSync(args.python, spawnArgs, args.timeoutMs!, args.debug);
-      // print stdout/stderr
-      if (result.stdout && result.stdout.length) {
-        console.log(`[PY stdout] ${result.stdout.trim()}`);
-      }
-      if (result.stderr && result.stderr.length) {
-        console.error(`[PY stderr] ${result.stderr.trim()}`);
-      }
-      if (result.error) {
-        console.error("[ERROR] spawn failed:", result.error);
-      }
-      const ok = result.status === 0 && !result.error;
-      if (ok) {
-        console.log(`[INFO] python succeeded for uid=${uid} (exit ${result.status})`);
-      } else {
-        console.error(`[WARN] python failed for uid=${uid} (exit ${result.status}). See stderr above.`);
-      }
-    } catch (e: any) {
-      console.error("[EXCEPTION] while running python:", e && e.stack ? e.stack : e);
-    }
-
-    if (args.sleepMsBetween && processed < users.length) {
-      await new Promise((r) => setTimeout(r, args.sleepMsBetween));
-    }
   }
 
-  console.log("\n[INFO] finished processing all users. total:", users.length);
+  log("done. processed:", processed);
 }
 
-if (require.main === module) {
-  main().catch((e) => {
-    console.error("[FATAL] uncaught error:", e && e.stack ? e.stack : e);
-    process.exit(1);
-  });
-}
+main().catch((err) => {
+  console.error("Fatal:", err && (err.stack || err.message || err));
+  process.exit(1);
+});
