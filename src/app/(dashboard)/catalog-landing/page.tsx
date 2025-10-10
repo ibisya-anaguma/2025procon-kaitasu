@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useState } from "react";
+import { Fragment, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Search } from "lucide-react";
 
@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { FILTER_BUTTON_INACTIVE_CLASS, FILTER_BUTTON_TEXT_CLASS } from "@/components/screens/filterStyles";
 import { useProductSearch } from "@/app/hooks/useProductSearch";
 import { useAppContext } from "@/contexts/AppContext";
+import { useUserInformation } from "@/app/hooks/useUserInformation";
 import type { LandingCardContent, Screen } from "@/types/page";
 import { cn } from "@/lib/utils";
 
@@ -54,9 +55,26 @@ export default function CatalogLandingPage() {
     onNavigate: setScreen
   } = useAppContext();
   const { searchProducts, isLoading } = useProductSearch();
+  const { userInfo, updateUserInformation } = useUserInformation();
   const [selectedCards, setSelectedCards] = useState<number[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [budget, setBudget] = useState('');
+
+  // ユーザー情報から予算を読み込み
+  useEffect(() => {
+    if (userInfo?.monthlyBudget) {
+      setBudget(userInfo.monthlyBudget.toString());
+    }
+  }, [userInfo]);
+
+  // 予算が変更されたときにデータベースに保存
+  const handleBudgetChange = async (value: string) => {
+    setBudget(value);
+    const budgetValue = parseInt(value, 10);
+    if (!isNaN(budgetValue) && budgetValue > 0) {
+      await updateUserInformation({ monthlyBudget: budgetValue });
+    }
+  };
 
   const handleCardToggle = (index: number) => {
     setSelectedCards((prev) =>
@@ -146,7 +164,7 @@ export default function CatalogLandingPage() {
               type="number"
               placeholder="0"
               value={budget}
-              onChange={(e) => setBudget(e.target.value)}
+              onChange={(e) => handleBudgetChange(e.target.value)}
               className="w-[120px] h-[40px] border-none text-center text-[#101010] font-['BIZ_UDPGothic'] text-[32px] font-bold bg-transparent focus:outline-none focus:ring-0"
               data-oid="catalog-landing-budget-input"
             />

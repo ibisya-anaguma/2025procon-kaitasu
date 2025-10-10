@@ -34,9 +34,6 @@ export default function HistoryPage() {
                   <h4 className="text-[24px] font-bold mb-2 text-[#101010] font-['BIZ_UDPGothic']" data-oid="uwyj:6y">
                     トップバリュ 特製
                   </h4>
-                  <p className="text-[18px] text-[#adadad] mb-3 font-['BIZ_UDPGothic']" data-oid="p5nlqyv">
-                    ナンバー 260g
-                  </p>
                   <Badge
                     variant="secondary"
                     className="text-base px-4 py-2 border-2 border-[#209fde] bg-white text-[#209fde] rounded-lg font-['BIZ_UDPGothic'] font-bold hover:bg-[#209fde] hover:text-white cursor-pointer transition-colors"

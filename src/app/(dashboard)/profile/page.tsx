@@ -65,6 +65,12 @@ export default function ProfilePage() {
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
 
+  // プロフィールページであることをAppContextに通知
+  useEffect(() => {
+    setScreen("profile");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // ユーザー情報が読み込まれたらローカル状態を更新
   useEffect(() => {
     if (userInfo) {
@@ -290,7 +296,7 @@ export default function ProfilePage() {
                 <div className="flex flex-col items-start gap-8 w-full max-w-[520px]" data-oid="profile-page-two-content">
                   <div className="flex flex-col items-start gap-6" data-oid="profile-page-two-subsection">
                     <p
-                      className="text-[#101010] font-['BIZ_UDPGothic'] text-[24px] font-bold leading-normal tracking-[1.248px]"
+                      className="text-[#101010] font-['BIZ_UDPGothic'] text-[36px] font-bold leading-normal tracking-[1.872px]"
                       data-oid="profile-page-two-title">
                       定期購入の確認
                     </p>
@@ -304,7 +310,7 @@ export default function ProfilePage() {
                   </div>
                   <div className="flex flex-col items-start gap-6" data-oid="profile-page-two-favorite-subsection">
                     <p
-                      className="text-[#101010] font-['BIZ_UDPGothic'] text-[24px] font-bold leading-normal tracking-[1.248px]"
+                      className="text-[#101010] font-['BIZ_UDPGothic'] text-[36px] font-bold leading-normal tracking-[1.872px]"
                       data-oid="profile-page-two-favorite-title">
                       お気に入り登録の確認
                     </p>

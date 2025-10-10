@@ -10,6 +10,7 @@ import type {
   SubscriptionEntry
 } from "@/types/page";
 import { SAMPLE_PRODUCTS } from "@/lib/data/sampleProducts";
+import { useUserInformation } from "./useUserInformation";
 
 type NavigateHandler = (screen: Screen) => void;
 
@@ -69,7 +70,8 @@ export const useJapaneseFoodApp = (): JapaneseFoodAppState => {
   const [selectedSubscriptionProduct, setSelectedSubscriptionProduct] = useState<Product | null>(null);
   const [subscriptionEntries, setSubscriptionEntries] = useState<SubscriptionEntry[]>([]);
   const [favoriteEntries, setFavoriteEntries] = useState<FavoriteEntry[]>([]);
-  const [monthlyBudget] = useState(50000);
+  const { userInfo } = useUserInformation();
+  const monthlyBudget = userInfo?.monthlyBudget || 50000;
 
   const totalLandingPages = LANDING_CARD_CONTENT_PAGES.length;
   const landingPageIndex = Math.min(Math.max(landingPage - 1, 0), totalLandingPages - 1);
