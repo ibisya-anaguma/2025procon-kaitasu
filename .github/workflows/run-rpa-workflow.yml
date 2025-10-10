@@ -1,43 +1,19 @@
-name: Run autocart (autocart-runner)
+name: run-autocart
 
 on:
-  workflow_dispatch:
-    inputs:
-      uid:
-        description: 'User ID to process (empty = all users)'
-        required: false
-        default: ''
-      limit:
-        description: 'Limit number of users to process (0 = no limit)'
-        required: false
-        default: '50'
-      dry:
-        description: 'Run in DRY mode (true/false). If true, no writes to Firestore.'
-        required: false
-        default: 'false'
-      explain:
-        description: 'Add --explain flag to runner (true/false)'
-        required: false
-        default: 'false'
-      debug:
-        description: 'Add --debug flag to runner (true/false)'
-        required: false
-        default: 'true'
+  workflow_dispatch: {}
 
 permissions:
-  contents: read
-
-concurrency:
-  group: run-autocart-${{ github.ref }}
-  cancel-in-progress: false
+  contents: write    # optional, required if you push branches/changes from workflow
+  # adjust other permissions if needed
 
 jobs:
-  run:
+  run-autocart:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     env:
-      # TypeScript entry (adjust if path differs)
-      TS_SCRIPT: src/jobs/checkout/autocart-runner.ts
-      FIREBASE_KEY_PATH: .firebase/firebase-key.json
+      # default limit here; override by editing step command if needed
+      AUTOCART_LIMIT: "1"
 
     steps:
       - name: Checkout repo
@@ -45,140 +21,68 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: "20"
 
-      - name: Ensure jq (JSON validator) available
-        run: |
-          sudo apt-get update -y
-          sudo apt-get install -y jq
+      - name: Setup Python (optional, if your repo uses python tools)
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
 
       - name: Prepare Firebase service account file (from secret)
-        id: prep_firebase_key
-        shell: bash
+        # fail fast if secret missing
         run: |
           set -euo pipefail
-          # Secret must exist and be non-empty
-          if [ -z "${{ secrets.FIREBASE_SERVICE_ACCOUNT || '' }}" ]; then
-            echo "::error ::FIREBASE_SERVICE_ACCOUNT secret is not set. Please add it in Settings → Secrets and variables → Actions"
+          if [ -z "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" ]; then
+            echo "::error::FIREBASE_SERVICE_ACCOUNT secret is not set. Add it in Settings → Secrets and variables → Actions"
             exit 1
           fi
-
-          mkdir -p "$(dirname '${{ env.FIREBASE_KEY_PATH }}')"
-
-          # Write secret contents to file (preserve newlines)
-          printf '%s' "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" > "${{ env.FIREBASE_KEY_PATH }}"
-
-          # Validate JSON quickly with jq
-          if ! jq -e . "${{ env.FIREBASE_KEY_PATH }}" >/dev/null 2>&1; then
-            echo "::error ::Written Firebase key is not valid JSON. Aborting."
-            echo "First 200 chars (safe preview):"
-            head -c 200 "${{ env.FIREBASE_KEY_PATH }}" || true
-            exit 1
+          mkdir -p .firebase
+          # write secret into file (preserve newlines)
+          printf '%s' "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" > .firebase/firebase-key.json
+          # sanity-check JSON quickly (jq optional). If jq not installed, skip check (safe fallback).
+          if command -v jq >/dev/null 2>&1; then
+            if ! jq -e . .firebase/firebase-key.json >/dev/null 2>&1; then
+              echo "::error::Wrote firebase key but it's not valid JSON"
+              head -n 50 .firebase/firebase-key.json || true
+              exit 1
+            fi
           fi
-
-          chmod 600 "${{ env.FIREBASE_KEY_PATH }}"
-
-          # publish path as step output (modern way)
-          echo "path=${{ env.FIREBASE_KEY_PATH }}" >> "$GITHUB_OUTPUT"
-          echo "Wrote firebase key -> ${{ env.FIREBASE_KEY_PATH }} (mode 600)"
+          chmod 600 .firebase/firebase-key.json
+          echo "Wrote .firebase/firebase-key.json (mode 600)"
 
       - name: Show runtime info (non-secret)
-        shell: bash
         run: |
           set -euo pipefail
-          echo "TS script: $TS_SCRIPT"
-          echo "Firebase key path (will be used from step output): ${{ steps.prep_firebase_key.outputs.path }}"
-          echo "Node version: $(node -v)"
-          echo "NPM version: $(npm -v)"
+          echo "Node: $(node -v)"
+          echo "npm:  $(npm -v || echo 'npm-not-found')"
+          echo "workspace: $GITHUB_WORKSPACE"
+          echo "autocart limit: ${{ env.AUTOCART_LIMIT }}"
 
-      - name: Run autocart-runner (LIVE: will write to Firestore unless dry=true)
-        id: run_autocart
-        shell: bash
+      - name: Run autocart-runner (LIVE — will write to Firestore)
+        # set GOOGLE_APPLICATION_CREDENTIALS so firebase-admin picks it up by default
         env:
-          # use path published by the previous step
-          GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.prep_firebase_key.outputs.path }}
-          TS_SCRIPT: ${{ env.TS_SCRIPT }}
-          FIREBASE_KEY_PATH: ${{ steps.prep_firebase_key.outputs.path }}
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/.firebase/firebase-key.json
         run: |
           set -euo pipefail
-          set -x
+          echo "Running autocart-runner (LIVE). Limit=${{ env.AUTOCART_LIMIT }}"
+          # ensure dependencies installed if needed
+          cd "${{ github.workspace }}"
+          # install node deps if your job needs them (uncomment if package.json exists)
+          # npm ci --prefix src/jobs/checkout
 
-          TIMESTAMP="$(date -u +%Y%m%dT%H%M%SZ)"
-          LOG_DIR=logs/autocart
-          mkdir -p "$LOG_DIR"
-          LOG="$LOG_DIR/autocart-run-${TIMESTAMP}.log"
-          echo "Starting autocart-runner (log -> $LOG)"
-
-          # sanity checks
-          if [ -z "${TS_SCRIPT:-}" ]; then
-            echo "::error ::TS_SCRIPT not set. Aborting."
-            exit 1
-          fi
-          if [ ! -f "${TS_SCRIPT}" ]; then
-            echo "::error ::TypeScript entry not found at path: ${TS_SCRIPT}"
-            ls -la || true
-            exit 1
-          fi
-          if [ -z "${GOOGLE_APPLICATION_CREDENTIALS:-}" ]; then
-            echo "::error ::GOOGLE_APPLICATION_CREDENTIALS not set. Aborting."
-            exit 1
-          fi
-          if [ ! -f "${GOOGLE_APPLICATION_CREDENTIALS}" ]; then
-            echo "::error ::Firebase key not found at ${GOOGLE_APPLICATION_CREDENTIALS}"
-            exit 1
-          fi
-
-          # build args
-          ARGS=( --cred "${GOOGLE_APPLICATION_CREDENTIALS}" )
-
-          # pass uid/limit/dry/explain/debug from workflow_dispatch inputs
-          if [ -n "${{ github.event.inputs.uid }}" ]; then
-            ARGS+=( --uid "${{ github.event.inputs.uid }}" )
-          fi
-          if [ -n "${{ github.event.inputs.limit }}" ] && [ "${{ github.event.inputs.limit }}" != "0" ]; then
-            ARGS+=( --limit "${{ github.event.inputs.limit }}" )
-          fi
-
-          # dry boolean handling (accept true/1/on)
-          DRY="${{ github.event.inputs.dry }}"
-          DRY_L="$(echo "${DRY}" | tr '[:upper:]' '[:lower:]')"
-          if [ "${DRY_L}" = "true" ] || [ "${DRY_L}" = "1" ] || [ "${DRY_L}" = "on" ]; then
-            ARGS+=( --dry )
-            echo "Will run in DRY mode (no writes)."
-          else
-            echo "Will run LIVE (writes allowed)."
-          fi
-
-          if [ "$(echo "${{ github.event.inputs.explain }}" | tr '[:upper:]' '[:lower:]')" = "true" ]; then
-            ARGS+=( --explain )
-          fi
-          if [ "$(echo "${{ github.event.inputs.debug }}" | tr '[:upper:]' '[:lower:]')" = "true" ]; then
-            ARGS+=( --debug )
-          fi
-
-          echo "Running: npx --yes tsx ${TS_SCRIPT} ${ARGS[*]}"
-          # run and tee logs
-          ( npx --yes tsx "${TS_SCRIPT}" "${ARGS[@]}" 2>&1 ) | tee "$LOG"
-          EXIT=${PIPESTATUS[0]}
-
-          echo "autocart-runner exit code: $EXIT"
-          if [ "$EXIT" -ne 0 ]; then
-            echo "::error ::autocart-runner failed (exit $EXIT). See $LOG"
-            exit "$EXIT"
-          fi
-          echo "autocart-runner finished OK."
-
-      - name: Upload logs (artifact)
+          # run runner using tsx (or npx tsx); we pass explicit --cred just to be safe
+          npx --yes tsx src/jobs/checkout/autocart-runner.ts \
+            --cred "${GOOGLE_APPLICATION_CREDENTIALS}" \
+            --limit "${{ env.AUTOCART_LIMIT }}" \
+            --debug \
+            --explain
+      - name: Upload logs (optional)
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: autocart-logs
           path: |
-            logs/autocart/*.log
-
-      - name: Done
-        if: ${{ always() }}
-        run: echo "Workflow finished (check logs/artifacts)."
+            src/jobs/checkout/logs/*.log
