@@ -6,12 +6,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FirebaseError } from "firebase/app";
 import { onAuthStateChanged, signInWithEmailAndPassword } from "firebase/auth";
-<<<<<<< HEAD
 import { auth } from "@/lib/firebase";
-import { useAuth } from "@/contexts/AuthContext";
-=======
-import { auth } from "@/lib/firebase";
->>>>>>> kizu/develop
 import { useAuth } from "@/contexts/AuthContext";
 
 const AUTH_ERROR_MESSAGES: Record<string, string> = {
@@ -27,10 +22,6 @@ export default function Login() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { signInWithGoogle, signInWithFacebook } = useAuth();
-<<<<<<< HEAD
-  const { signInWithGoogle, signInWithFacebook } = useAuth();
-=======
->>>>>>> kizu/develop
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -117,35 +108,8 @@ export default function Login() {
     }
   };
 
-<<<<<<< HEAD
-  const handleGoogleSignIn = async () => {
-    setErrorMessage(null);
-    setIsSubmitting(true);
-    try {
-      await signInWithGoogle();
-      router.replace(redirectTarget);
-    } catch (error) {
-      setErrorMessage(getFriendlyMessage(error));
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
-  const handleFacebookSignIn = async () => {
-    setErrorMessage(null);
-    setIsSubmitting(true);
-    try {
-      await signInWithFacebook();
-      router.replace(redirectTarget);
-    } catch (error) {
-      setErrorMessage(getFriendlyMessage(error));
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
-=======
->>>>>>> kizu/develop
   if (isCheckingAuth) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#FDA900]">
@@ -156,7 +120,6 @@ export default function Login() {
 
   return (
     <div className="flex min-h-screen bg-[#FDA900]">
-<<<<<<< HEAD
       {/* Left Side - Logo and Preview */}
       <div className="hidden lg:flex lg:w-1/2 items-center justify-center px-16 py-12">
         <div className="flex flex-col gap-10 w-full max-w-[580px]">
@@ -164,7 +127,6 @@ export default function Login() {
             <Image
               src="/images/logo_kaitasu.png"
               alt="かいたすロゴ"
-=======
 
       {/* Left Side - Logo and Preview */}
       <div className="hidden lg:flex lg:w-1/2 items-center justify-center px-16 py-12">
@@ -176,14 +138,11 @@ export default function Login() {
             <Image 
               src="/images/logo_kaitasu.png" 
               alt="かいたすロゴ" 
->>>>>>> kizu/develop
               width={500}
               height={500}
               className="w-48 h-48 object-contain"
             />
           </div>
-<<<<<<< HEAD
-=======
 
           {/* App Preview */}
           {/*   <div className="bg-gray-900 rounded-3xl p-5 w-full shadow-2xl"> */}
@@ -194,7 +153,6 @@ export default function Login() {
           {/*       </div> */}
           {/*     </div> */}
           {/*   </div> */}
->>>>>>> kizu/develop
         </div>
       </div>
 
@@ -202,12 +160,10 @@ export default function Login() {
       <div className="w-full lg:w-1/2 flex items-center justify-center px-16 py-12">
         <div className="w-full max-w-[520px] bg-white rounded-[30px] px-14 py-14 shadow-2xl">
           <h1 className="text-5xl font-bold text-center text-[#101010] mb-12">ログイン</h1>
-<<<<<<< HEAD
           <h1 className="text-5xl font-bold text-center text-[#101010] mb-12">ログイン</h1>
 
           {errorMessage && (
             <div className="mb-6 p-3 rounded-xl bg-red-600/15 text-red-700 text-sm">{errorMessage}</div>
-=======
           <h1 className="text-5xl font-bold text-center text-[#101010] mb-12">
             ログイン
           </h1>
@@ -217,7 +173,6 @@ export default function Login() {
             <div className="mb-6 p-3 rounded-xl bg-red-600/15 text-red-700 text-sm">
               {errorMessage}
             </div>
->>>>>>> kizu/develop
           )}
 
           <form className="space-y-6" onSubmit={handleSubmit} noValidate>
@@ -242,7 +197,6 @@ export default function Login() {
               <label className="block text-base font-medium text-[#101010] mb-2" htmlFor="password">
                 パスワード
               </label>
-<<<<<<< HEAD
               <div className="relative">
                 <input
                   id="password"
@@ -285,7 +239,6 @@ export default function Login() {
                   )}
                 </button>
               </div>
-=======
               <input
                 id="password"
                 className="w-full px-5 py-3.5 rounded-lg border-2 border-gray-300 bg-white text-base text-[#101010] transition-colors focus:outline-none focus:border-[#209fde]"
@@ -296,7 +249,6 @@ export default function Login() {
                 disabled={isSubmitting}
                 required
               />
->>>>>>> kizu/develop
             </div>
 
             <button
@@ -304,16 +256,13 @@ export default function Login() {
               type="submit"
               disabled={isSubmitting}>
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-<<<<<<< HEAD
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth={2}
                   d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"
                 />
-=======
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
->>>>>>> kizu/develop
               </svg>
               {isSubmitting ? "ログイン中..." : "ログイン"}
             </button>
@@ -323,7 +272,6 @@ export default function Login() {
 
           <div className="space-y-3">
             <p className="text-center text-gray-600 text-base font-medium mb-4">他の方法</p>
-<<<<<<< HEAD
 
             <button
               className="w-full bg-white border-2 border-[#209fde] text-[#101010] text-base font-medium py-3.5 rounded-full transition-all hover:bg-gray-50 flex items-center justify-center gap-3 disabled:opacity-60"
@@ -371,7 +319,6 @@ export default function Login() {
               </Link>
             </p>
           </div>
-=======
             
             <button
               className="w-full bg-white border-2 border-[#209fde] text-[#101010] text-base font-medium py-3.5 rounded-full transition-all hover:bg-gray-50 flex items-center justify-center gap-3 disabled:opacity-60"
@@ -410,7 +357,6 @@ export default function Login() {
               Facebookでログイン
             </button>
           </div>
->>>>>>> kizu/develop
         </div>
       </div>
     </div>
