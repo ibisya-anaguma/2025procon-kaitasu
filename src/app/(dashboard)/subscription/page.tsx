@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Search } from "lucide-react";
@@ -8,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useAppContext } from "@/contexts/AppContext";
+import { useHistory } from "@/app/hooks/useHistory";
 import type { Product, Screen } from "@/types/page";
 
 function screenToPath(screen: Screen): string | null {
@@ -40,17 +42,34 @@ function screenToPath(screen: Screen): string | null {
 export default function SubscriptionPage() {
   const router = useRouter();
   const {
-    products,
     subscriptionScrollRef,
     onSelectSubscriptionProduct,
     onNavigate: setScreen
   } = useAppContext();
+  const { history, isLoading, error } = useHistory();
+  const [searchQuery, setSearchQuery] = useState('');
 
   const handleNavigate = (screen: Screen) => {
     setScreen(screen);
     const path = screenToPath(screen);
     if (path) router.push(path);
   };
+
+  // 購入履歴をProduct形式に変換
+  const products: Product[] = history.map((item) => ({
+    id: item.productId,
+    name: item.name,
+    description: '',
+    price: item.price,
+    image: item.image,
+    quantity: 0, // 定期購入用の初期値
+  }));
+
+  // 検索フィルター
+  const filteredProducts = searchQuery
+    ? products.filter((p) => p.name.toLowerCase().includes(searchQuery.toLowerCase()))
+    : products;
+
   return (
     <div
       className="flex-1 bg-white p-6 ml-[232px] relative min-h-screen flex items-center justify-center"
@@ -71,6 +90,8 @@ export default function SubscriptionPage() {
 
           <Input
             placeholder="商品名で検索"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-12 h-12 border-2 border-[#fda900] text-sm rounded-lg bg-white shadow-sm focus:border-[#209fde] focus:ring-2 focus:ring-[#209fde]/20"
             data-oid="subscription-search-input"
           />
@@ -171,7 +192,22 @@ export default function SubscriptionPage() {
               justifyItems: "start"
             }}
             data-oid="subscription-card-grid">
-            {products.map((product) => (
+            {isLoading ? (
+              <div className="col-span-4 text-center py-12">
+                <span className="text-[#101010] font-['BIZ_UDPGothic'] text-[20px]">読み込み中...</span>
+              </div>
+            ) : error ? (
+              <div className="col-span-4 text-center py-12">
+                <span className="text-red-500 font-['BIZ_UDPGothic'] text-[20px]">{error}</span>
+              </div>
+            ) : filteredProducts.length === 0 ? (
+              <div className="col-span-4 text-center py-12">
+                <span className="text-[#ADADAD] font-['BIZ_UDPGothic'] text-[20px]">
+                  {searchQuery ? '検索結果がありません' : '購入履歴がありません'}
+                </span>
+              </div>
+            ) : (
+              filteredProducts.map((product) => (
               <Card
                 key={`subscription-${product.id}`}
                 className="px-4 pt-1 pb-0 bg-white border-2 border-[#e0e0e0] rounded-xl shadow-sm hover:shadow-md transition-shadow flex flex-col"
@@ -250,7 +286,8 @@ export default function SubscriptionPage() {
                   </div>
                 </div>
               </Card>
-            ))}
+              ))
+            )}
             </div>
           </div>
         </div>
