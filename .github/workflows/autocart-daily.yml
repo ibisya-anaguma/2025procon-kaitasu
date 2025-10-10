@@ -1,39 +1,43 @@
-name: autocart-runner
+name: run-autocart
 
-# 手動トリガ／スケジュール（必要ならスケジュールを追加）
 on:
   workflow_dispatch:
     inputs:
-      uid:
-        description: 'user id to process (empty = all)'
-        required: false
-        default: ''
       dry:
-        description: 'dry run? true/false'
+        description: 'Dry run? true or false'
         required: false
         default: 'false'
+      uid:
+        description: 'Process single user id (optional)'
+        required: false
+        default: ''
       limit:
-        description: 'limit per run'
+        description: 'Limit how many users to process'
         required: false
         default: '50'
-      days:
-        description: 'default days threshold'
-        required: false
-        default: '30'
-  # uncomment if you want schedule
   # schedule:
-  #   - cron: '0 0 * * *'
+  #   - cron: "0 16 * * *"  # daily 01:00 JST
 
 permissions:
   contents: read
 
+concurrency:
+  group: run-autocart-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   run-autocart:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 45
+
     env:
-      # relative path where we will write the key
-      FIREBASE_KEY_PATH: .firebase/firebase-key.json
+      SA_PATH: .firebase/firebase-key.json
+      ENTRY: src/jobs/checkout/autocart-runner.ts
+      # pick inputs into env for the run step (safe defaults)
+      DRY: ${{ github.event.inputs.dry || 'false' }}
+      UID: ${{ github.event.inputs.uid || '' }}
+      LIMIT: ${{ github.event.inputs.limit || '50' }}
+
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -43,73 +47,105 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: 20
           cache: 'npm'
 
-      - name: Try npm ci, fallback to npm install if lock mismatch
+      - name: Install dependencies (if any)
         run: |
           set -euo pipefail
-          # attempt clean install first (fast / deterministic)
-          if npm ci --only=production; then
-            echo "npm ci succeeded"
-          else
-            echo "npm ci failed, running npm install as fallback"
-            npm install --no-audit --no-fund
+          if [ -f package-lock.json ] || [ -f package.json ]; then
+            npm ci --no-audit --prefer-offline || npm install --no-audit --prefer-offline
           fi
 
-      - name: Write FIREBASE_SERVICE_ACCOUNT to file (required for prod)
+      - name: Ensure .firebase dir
+        run: mkdir -p .firebase
+
+      - name: Validate FIREBASE_SERVICE_ACCOUNT secret exists
         shell: bash
         run: |
           set -euo pipefail
-          # Fail early if secret is missing — production requires this.
           if [ -z "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" ]; then
-            echo "ERROR: secrets.FIREBASE_SERVICE_ACCOUNT is not set. Aborting."
+            echo "::error::FIREBASE_SERVICE_ACCOUNT secret is not set. Go to Settings → Secrets and variables → Actions and add it (paste the service account JSON file contents)."
             exit 1
           fi
-          mkdir -p "$(dirname "${FIREBASE_KEY_PATH}")"
-          printf '%s' "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" > "${FIREBASE_KEY_PATH}"
-          chmod 600 "${FIREBASE_KEY_PATH}"
-          echo "Wrote ${FIREBASE_KEY_PATH}"
-          # export for subsequent steps
-          echo "GOOGLE_APPLICATION_CREDENTIALS=${GITHUB_WORKSPACE}/${FIREBASE_KEY_PATH}" >> $GITHUB_ENV
+          echo "FIREBASE_SERVICE_ACCOUNT found."
 
-      - name: Confirm environment & debug info
+      - name: Write FIREBASE_SERVICE_ACCOUNT to file (secure)
+        shell: bash
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
         run: |
           set -euo pipefail
-          echo "GITHUB_WORKSPACE: $GITHUB_WORKSPACE"
-          echo "GOOGLE_APPLICATION_CREDENTIALS: $GOOGLE_APPLICATION_CREDENTIALS"
-          echo "Node version: $(node -v)"
-          echo "npm version: $(npm -v)"
-          echo "tsx available via npx: $(npx --yes --no-install --silent tsx --version 2>/dev/null || echo 'npx will install tsx')"
+          printf '%s' "${FIREBASE_SERVICE_ACCOUNT}" > "${{ env.SA_PATH }}"
+          chmod 600 "${{ env.SA_PATH }}"
+          echo "Wrote ${SA_PATH} (mode 600)."
 
-      - name: Run autocart-runner (TypeScript directly via tsx)
+      - name: Show credential info (debug)
         shell: bash
         run: |
           set -euo pipefail
-          # build argument list from inputs
-          UID_INPUT="${{ github.event.inputs.uid || '' }}"
-          DRY_INPUT="${{ github.event.inputs.dry || 'true' }}"
-          LIMIT_INPUT="${{ github.event.inputs.limit || '50' }}"
-          DAYS_INPUT="${{ github.event.inputs.days || '30' }}"
+          echo "GOOGLE_APPLICATION_CREDENTIALS -> $(realpath "${{ env.SA_PATH }}" 2>/dev/null || echo "${{ env.SA_PATH }}")"
+          echo "Credential size: $(wc -c < "${{ env.SA_PATH }}") bytes"
 
-          ARGS=()
-          # pass cred explicitly (absolute path)
-          ARGS+=(--cred "$GOOGLE_APPLICATION_CREDENTIALS")
-          # pass flags
-          if [ -n "$UID_INPUT" ]; then
-            ARGS+=(--uid "$UID_INPUT")
+      - name: Run autocart-runner (LIVE unless dry=true)
+        shell: bash
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ env.SA_PATH }}
+          DRY: ${{ env.DRY }}
+          UID: ${{ env.UID }}
+          LIMIT: ${{ env.LIMIT }}
+          ENTRY: ${{ env.ENTRY }}
+        run: |
+          set -euo pipefail
+
+          # Normalize values (in case empty)
+          : "${DRY:=false}"
+          : "${LIMIT:=50}"
+          : "${UID:=}"
+
+          echo "[INFO] runner inputs: dry=${DRY}, uid='${UID}', limit=${LIMIT}"
+          ARGS=(--cred "$GOOGLE_APPLICATION_CREDENTIALS" --limit "${LIMIT}" --debug)
+
+          if [ -n "${UID}" ]; then
+            ARGS+=(--uid "${UID}")
           fi
-          # dry flag is boolean: only add if "true"
-          if [ "${DRY_INPUT,,}" = "true" ]; then
+
+          if [ "${DRY}" = "true" ] || [ "${DRY}" = "1" ]; then
             ARGS+=(--dry)
+            echo "[INFO] Running in DRY mode (no writes will occur)."
+          else
+            echo "[INFO] LIVE run — Firestore WILL be written (ensure the service account has appropriate permissions)."
           fi
-          ARGS+=(--limit "$LIMIT_INPUT")
-          ARGS+=(--days "$DAYS_INPUT")
-          ARGS+=(--debug)
-          ARGS+=(--explain)
 
-          echo "Running: npx tsx src/jobs/checkout/autocart-runner.ts ${ARGS[*]}"
-          # Run with npx so tsx is available. npx will fetch tsx if not installed.
-          npx --yes tsx src/jobs/checkout/autocart-runner.ts "${ARGS[@]}"
+          # Ensure entry exists
+          if [ ! -f "${ENTRY}" ]; then
+            echo "::error::Entry file ${ENTRY} not found in repository. Aborting."
+            exit 1
+          fi
 
-    # end job
+          # Run the runner via tsx (npx will install tsx if missing)
+          echo "[INFO] Executing: npx --yes tsx ${ENTRY} ${ARGS[*]}"
+          npx --yes tsx "${ENTRY}" "${ARGS[@]}"
+
+      - name: Upload logs (optional)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: autocart-runner-logs
+          path: |
+            src/jobs/checkout/logs || true
+
+      - name: Cleanup credentials (always)
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -f "${{ env.SA_PATH }}" ]; then
+            # if shred exists use it, otherwise rm
+            if command -v shred >/dev/null 2>&1; then
+              shred -u -z "${{ env.SA_PATH }}" || rm -f "${{ env.SA_PATH }}"
+            else
+              rm -f "${{ env.SA_PATH }}"
+            fi
+            echo "Removed ${SA_PATH}"
+          fi
