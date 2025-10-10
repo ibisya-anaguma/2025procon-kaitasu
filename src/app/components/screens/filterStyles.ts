@@ -1,3 +1,9 @@
+// Tailwind CSS classes for filter buttons
+export const FILTER_BUTTON_INACTIVE_CLASS = "flex items-center justify-center w-max min-w-[160px] h-[60px] px-6 shrink-0 rounded-[20px] border-2 border-[#FDA900] bg-white shadow-[4.5px_4.5px_0_0_#E4E2E2]";
+
+export const FILTER_BUTTON_TEXT_CLASS = "text-[#101010] font-['BIZ_UDPGothic'] text-[32px] font-bold leading-normal tracking-[1.664px]";
+
+// Legacy exports for backward compatibility (deprecated)
 export const FILTER_BUTTON_INACTIVE_STYLE = {
   display: "flex",
   alignItems: "center",

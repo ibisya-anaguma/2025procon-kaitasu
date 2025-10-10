@@ -6,7 +6,7 @@ import { Search } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { FILTER_BUTTON_INACTIVE_STYLE, FILTER_BUTTON_TEXT_STYLE } from "@/components/screens/filterStyles";
+import { FILTER_BUTTON_INACTIVE_CLASS, FILTER_BUTTON_TEXT_CLASS } from "@/components/screens/filterStyles";
 import { useProductSearch } from "@/app/hooks/useProductSearch";
 import { useAppContext } from "@/contexts/AppContext";
 import type { LandingCardContent, Screen } from "@/types/page";
@@ -128,10 +128,9 @@ export default function CatalogLandingPage() {
             <Button
               key={`${label}-landing`}
               variant="ghost"
-              className="border border-transparent p-0"
-              style={FILTER_BUTTON_INACTIVE_STYLE}
+              className={`border border-transparent p-0 ${FILTER_BUTTON_INACTIVE_CLASS}`}
               data-oid={`${buttonDataOid}-landing`}>
-              <span style={FILTER_BUTTON_TEXT_STYLE} data-oid={`${textDataOid}-landing`}>
+              <span className={FILTER_BUTTON_TEXT_CLASS} data-oid={`${textDataOid}-landing`}>
                 {label}
               </span>
             </Button>
@@ -139,14 +138,7 @@ export default function CatalogLandingPage() {
           
           <div className="flex items-center gap-2 ml-4" data-oid="catalog-landing-budget">
             <span
-              style={{
-                color: "#101010",
-                fontFamily: '"BIZ UDPGothic"',
-                fontSize: "20px",
-                fontStyle: "normal",
-                fontWeight: 700,
-                lineHeight: "normal"
-              }}
+              className="text-[#101010] font-['BIZ_UDPGothic'] text-[20px] font-bold leading-normal"
               data-oid="catalog-landing-budget-label">
               予算:
             </span>
@@ -159,15 +151,7 @@ export default function CatalogLandingPage() {
               data-oid="catalog-landing-budget-input"
             />
             <span
-              style={{
-                color: "#101010",
-                fontFamily: '"BIZ UDPGothic"',
-                fontSize: "20px",
-                fontStyle: "normal",
-                fontWeight: 700,
-                lineHeight: "normal"
-              }}
-              className="-ml-7 pointer-events-none"
+              className="-ml-7 pointer-events-none text-[#101010] font-['BIZ_UDPGothic'] text-[20px] font-bold leading-normal"
               data-oid="catalog-landing-budget-unit">
               円
             </span>
@@ -178,11 +162,7 @@ export default function CatalogLandingPage() {
         className="relative mt-[23px] mb-[24px] w-[1000px]"
         data-oid="catalog-landing-card-background">
           <div
-          className="pointer-events-none absolute top-0 left-0 z-0 h-[507px] w-[1000px]"
-          style={{
-            borderRadius: "20px",
-            background: "rgba(253, 169, 0, 0.5)"
-          }}
+          className="pointer-events-none absolute top-0 left-0 z-0 h-[507px] w-[1000px] rounded-[20px] bg-[rgba(253,169,0,0.5)]"
           aria-hidden="true"
           />
           <div
@@ -192,15 +172,7 @@ export default function CatalogLandingPage() {
             className="flex items-center justify-center gap-[25px]"
             data-oid="catalog-landing-pagination">
               <span
-              style={{
-                color: "var(--, #101010)",
-                fontFamily: '"BIZ UDPGothic"',
-                fontSize: "32px",
-                fontStyle: "normal",
-                fontWeight: 700,
-                lineHeight: "normal",
-                letterSpacing: "1.664px"
-              }}
+              className="text-[#101010] font-['BIZ_UDPGothic'] text-[32px] font-bold leading-normal tracking-[1.664px]"
               data-oid="catalog-landing-page-label">
                 ページ
               </span>
@@ -211,31 +183,11 @@ export default function CatalogLandingPage() {
                     key={`landing-page-${num}`}
                     size="sm"
                     variant="ghost"
-                    className="border border-transparent p-0"
-                    style={{
-                      display: "flex",
-                      width: "60px",
-                      height: "60px",
-                      padding: "14px 19px",
-                      flexDirection: "column",
-                      justifyContent: "center",
-                      alignItems: "center",
-                      gap: "10px",
-                      flexShrink: 0,
-                      borderRadius: "20px",
-                      background: isActive ? "var(--, #FDA900)" : "var(--, #FFF)",
-                      backgroundColor: isActive ? "#FDA900" : "#FFF",
-                      boxShadow: isActive
-                        ? "0 4px 4px 0 rgba(0, 0, 0, 0.25) inset"
-                        : "0 4px 4px 0 rgba(0, 0, 0, 0.25)",
-                      color: "var(--, #101010)",
-                      fontFamily: '"BIZ UDPGothic"',
-                      fontSize: "32px",
-                      fontStyle: "normal",
-                      fontWeight: 700,
-                      lineHeight: "normal",
-                      letterSpacing: "1.664px"
-                    }}
+                    className={`border border-transparent p-0 flex w-[60px] h-[60px] px-[19px] py-[14px] flex-col justify-center items-center gap-[10px] shrink-0 rounded-[20px] text-[#101010] font-['BIZ_UDPGothic'] text-[32px] font-bold leading-normal tracking-[1.664px] ${
+                      isActive
+                        ? 'bg-[#FDA900] shadow-[0_4px_4px_0_rgba(0,0,0,0.25)_inset]'
+                        : 'bg-white shadow-[0_4px_4px_0_rgba(0,0,0,0.25)]'
+                    }`}
                     onClick={() => onLandingPageChange(num)}
                     data-oid={`catalog-landing-page-${num}`}>
                     {num}
@@ -244,8 +196,7 @@ export default function CatalogLandingPage() {
               })}
             </div>
             <div
-            className="grid grid-cols-4"
-            style={{ gap: "45px" }}
+            className="grid grid-cols-4 gap-[45px]"
             data-oid="catalog-landing-card-grid">
               {currentLandingCards.map((card, index) => {
                 const Icon = card.renderIcon;
@@ -290,27 +241,8 @@ export default function CatalogLandingPage() {
                       <div
                         className="absolute inset-0 z-20 flex items-center justify-center"
                         data-oid={`catalog-landing-card-selected-${index}`}>
-                        <div
-                          style={{
-                            width: "100px",
-                            height: "40px",
-                            flexShrink: 0,
-                            borderRadius: "10px",
-                            background: "#FDA900",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center"
-                          }}>
-                          <span
-                            style={{
-                              color: "#FFF",
-                              fontFamily: '"BIZ UDPGothic"',
-                              fontSize: "24px",
-                              fontStyle: "normal",
-                              fontWeight: 700,
-                              lineHeight: "normal",
-                              letterSpacing: "1.248px"
-                            }}>
+                        <div className="w-[100px] h-[40px] shrink-0 rounded-[10px] bg-[#FDA900] flex items-center justify-center">
+                          <span className="text-white font-['BIZ_UDPGothic'] text-[24px] font-bold leading-normal tracking-[1.248px]">
                             選択中
                           </span>
                         </div>
@@ -320,15 +252,7 @@ export default function CatalogLandingPage() {
                       className="relative z-10 flex h-full w-full flex-col items-cente pt-[10px]"
                       data-oid={`catalog-landing-card-content-${index}`}>
                       <span
-                      style={{
-                        color: "var(--, #101010)",
-                        fontFamily: '"BIZ UDPGothic"',
-                        fontSize: "24px",
-                        fontStyle: "normal",
-                        fontWeight: 700,
-                        lineHeight: "24px",
-                        letterSpacing: "1.248px"
-                      }}
+                      className="text-[#101010] font-['BIZ_UDPGothic'] text-[24px] font-bold leading-[24px] tracking-[1.248px]"
                       data-oid={`catalog-landing-card-title-${index}`}>
                         {lines.map((line, lineIndex) => (
                           <Fragment key={`line-${lineIndex}`}>
@@ -365,29 +289,11 @@ export default function CatalogLandingPage() {
       <div className="mt-4 flex justify-end" data-oid="catalog-landing-next-wrapper">
         <Button
           variant="ghost"
-          className="border border-transparent p-0"
-          style={{
-            borderRadius: "20px",
-            border: "3px solid #FDA900",
-            background: "#FFF",
-            boxShadow: "4.5px 4.5px 0 0 #E4E2E2",
-            width: "150px",
-            height: "60px",
-            flexShrink: 0
-          }}
+          className="border border-transparent p-0 rounded-[20px] border-[3px] border-[#FDA900] bg-white shadow-[4.5px_4.5px_0_0_#E4E2E2] w-[150px] h-[60px] shrink-0"
           onClick={handleSearch}
           disabled={isLoading}
           data-oid="catalog-landing-next-button">
-          <span
-            style={{
-              color: "#000",
-              fontFamily: '"BIZ UDPGothic"',
-              fontSize: "32px",
-              fontStyle: "normal",
-              fontWeight: 700,
-              lineHeight: "normal",
-              letterSpacing: "1.664px"
-            }}>
+          <span className="text-black font-['BIZ_UDPGothic'] text-[32px] font-bold leading-normal tracking-[1.664px]">
             {isLoading ? '検索中...' : '次へ'}
           </span>
         </Button>

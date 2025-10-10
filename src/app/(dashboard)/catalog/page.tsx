@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { FILTER_BUTTON_INACTIVE_STYLE, FILTER_BUTTON_TEXT_STYLE } from "@/components/screens/filterStyles";
+import { FILTER_BUTTON_INACTIVE_CLASS, FILTER_BUTTON_TEXT_CLASS } from "@/components/screens/filterStyles";
 import { useProductSearch } from "@/app/hooks/useProductSearch";
 import { useAppContext } from "@/contexts/AppContext";
 import type { Product, Screen } from "@/types/page";
@@ -91,8 +91,7 @@ export default function CatalogPage() {
           <Button
             key="catalog-back-button"
             variant="ghost"
-            className="border border-transparent p-0"
-            style={FILTER_BUTTON_INACTIVE_STYLE}
+            className={`border border-transparent p-0 ${FILTER_BUTTON_INACTIVE_CLASS}`}
             onClick={() => handleNavigate("catalogLanding")}
             data-oid="catalog-back-button">
             <span className="mr-3 flex items-center">
@@ -110,16 +109,15 @@ export default function CatalogPage() {
                 />
               </svg>
             </span>
-            <span style={FILTER_BUTTON_TEXT_STYLE}>戻る</span>
+            <span className={FILTER_BUTTON_TEXT_CLASS}>戻る</span>
           </Button>
           {CATALOG_FILTER_BUTTONS.map(({ label, buttonDataOid, textDataOid }) => (
             <Button
               key={label}
               variant="ghost"
-              className="border border-transparent p-0"
-              style={FILTER_BUTTON_INACTIVE_STYLE}
+              className={`border border-transparent p-0 ${FILTER_BUTTON_INACTIVE_CLASS}`}
               data-oid={buttonDataOid}>
-              <span style={FILTER_BUTTON_TEXT_STYLE} data-oid={textDataOid}>
+              <span className={FILTER_BUTTON_TEXT_CLASS} data-oid={textDataOid}>
                 {label}
               </span>
             </Button>
@@ -130,11 +128,7 @@ export default function CatalogPage() {
         className="relative mt-[23px] mb-[24px] w-[1000px]"
         data-oid="catalog-card-background">
           <div
-          className="pointer-events-none absolute top-0 left-0 z-0 h-[507px] w-[1000px]"
-          style={{
-            borderRadius: "20px",
-            background: "rgba(253, 169, 0, 0.5)"
-          }}
+          className="pointer-events-none absolute top-0 left-0 z-0 h-[507px] w-[1000px] rounded-[20px] bg-[rgba(253,169,0,0.5)]"
           aria-hidden="true"
           />
           <div
@@ -145,16 +139,7 @@ export default function CatalogPage() {
             className="flex justify-center gap-[25px] mb-6"
             data-oid="uy6_dcp">
             <span
-            className="flex items-center"
-            style={{
-              color: "var(--, #101010)",
-              fontFamily: '"BIZ UDPGothic"',
-              fontSize: "32px",
-              fontStyle: "normal",
-              fontWeight: 700,
-              lineHeight: "normal",
-              letterSpacing: "1.664px"
-            }}
+            className="flex items-center text-[#101010] font-['BIZ_UDPGothic'] text-[32px] font-bold leading-normal tracking-[1.664px]"
             data-oid="catalog-page-label">
               ページ
             </span>
@@ -165,31 +150,11 @@ export default function CatalogPage() {
                   key={num}
                   size="sm"
                   variant="ghost"
-                  className="border border-transparent p-0"
-                  style={{
-                    display: "flex",
-                    width: "60px",
-                    height: "60px",
-                    padding: "14px 19px",
-                    flexDirection: "column",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    gap: "10px",
-                    flexShrink: 0,
-                    borderRadius: "20px",
-                    background: isActive ? "var(--, #FDA900)" : "var(--, #FFF)",
-                    backgroundColor: isActive ? "#FDA900" : "#FFF",
-                    boxShadow: isActive ?
-                      "0 4px 4px 0 rgba(0, 0, 0, 0.25) inset" :
-                      "0 4px 4px 0 rgba(0, 0, 0, 0.25)",
-                    color: "var(--, #101010)",
-                    fontFamily: '"BIZ UDPGothic"',
-                    fontSize: "32px",
-                    fontStyle: "normal",
-                    fontWeight: 700,
-                    lineHeight: "normal",
-                    letterSpacing: "1.664px"
-                  }}
+                  className={`border border-transparent p-0 flex w-[60px] h-[60px] px-[19px] py-[14px] flex-col justify-center items-center gap-[10px] shrink-0 rounded-[20px] text-[#101010] font-['BIZ_UDPGothic'] text-[32px] font-bold leading-normal tracking-[1.664px] ${
+                    isActive
+                      ? 'bg-[#FDA900] shadow-[0_4px_4px_0_rgba(0,0,0,0.25)_inset]'
+                      : 'bg-white shadow-[0_4px_4px_0_rgba(0,0,0,0.25)]'
+                  }`}
                   data-oid="9r7o0ii">
                     {num}
                   </Button>
@@ -201,46 +166,20 @@ export default function CatalogPage() {
             <Button
             size="sm"
             variant="ghost"
-            className="border border-transparent p-0"
-            style={{
-              display: "flex",
-              width: "60px",
-              height: "60px",
-              padding: "14px 19px",
-              flexDirection: "column",
-              justifyContent: "center",
-              alignItems: "center",
-              gap: "10px",
-              borderRadius: "20px",
-              background: "var(--, #FFF)",
-              backgroundColor: "#FFF",
-              boxShadow: "0 4px 4px 0 rgba(0, 0, 0, 0.25)",
-              color: "var(--, #101010)",
-              fontFamily: '"BIZ UDPGothic"',
-              fontSize: "32px",
-              fontStyle: "normal",
-              fontWeight: 700,
-              lineHeight: "normal",
-              letterSpacing: "1.664px"
-            }}
+            className="border border-transparent p-0 flex w-[60px] h-[60px] px-[19px] py-[14px] flex-col justify-center items-center gap-[10px] rounded-[20px] bg-white shadow-[0_4px_4px_0_rgba(0,0,0,0.25)] text-[#101010] font-['BIZ_UDPGothic'] text-[32px] font-bold leading-normal tracking-[1.664px]"
             data-oid="f8qlkjv">
               15
             </Button>
             </div>
 
             <div
-            className="grid grid-cols-4 gap-y-4"
-            style={{
-              columnGap: "45px",
-              gridTemplateColumns: "repeat(4, 188px)",
-              justifyItems: "start"
-            }}
+            className="grid grid-cols-4 gap-y-4 gap-x-[45px] justify-items-start"
+            style={{ gridTemplateColumns: "repeat(4, 188px)" }}
             data-oid="h7qwqv1">
             {displayProducts.map((product) => (
               <Card
                 key={product.id}
-                className="px-4 pt-1 pb-0 bg-white border-2 border-[#e0e0e0] rounded-xl shadow-sm hover:shadow-md transition-shadow flex flex-col"
-                style={{ width: "188px", height: "265px" }}
+                className="px-4 pt-1 pb-0 bg-white border-2 border-[#e0e0e0] rounded-xl shadow-sm hover:shadow-md transition-shadow flex flex-col w-[188px] h-[265px]"
                 data-oid="3w-11ql">
 
                 <div className="flex justify-end mb-[3px]" data-oid="catalog-heart-row">
@@ -261,8 +200,7 @@ export default function CatalogPage() {
                   </svg>
                 </div>
                 <div
-                className="relative mb-[6.5px]"
-                style={{ height: "106px" }}
+                className="relative mb-[6.5px] h-[106px]"
                 data-oid="8gipz64">
                   <img
                 src={product.image || "/placeholder.svg"}
@@ -280,19 +218,7 @@ export default function CatalogPage() {
               className="flex flex-col items-center"
               data-oid="r7z2qp8">
                 <span
-                style={{
-                  color: "var(--, #101010)",
-                  fontFamily: '"BIZ UDPGothic"',
-                  fontSize: "20px",
-                  fontStyle: "normal",
-                  fontWeight: 700,
-                  lineHeight: "normal",
-                  letterSpacing: "1.04px",
-                  alignSelf: "flex-start",
-                  width: "100%",
-                  display: "block",
-                  marginTop: "12px"
-                }}
+                className="text-[#101010] font-['BIZ_UDPGothic'] text-[20px] font-bold leading-normal tracking-[1.04px] self-start w-full block mt-3"
                 data-oid="eq4gt6a">
                     ¥{product.price}
                   </span>
@@ -313,15 +239,7 @@ export default function CatalogPage() {
 
                     </Button>
                     <div
-                  className="flex items-center justify-center text-sm font-medium"
-                  style={{
-                    width: "73px",
-                    height: "26px",
-                    flexShrink: 0,
-                    borderRadius: "5px",
-                    border: "1px solid #FDA900",
-                    background: "#FFF"
-                  }}
+                  className="flex items-center justify-center text-sm font-medium w-[73px] h-[26px] shrink-0 rounded-[5px] border border-[#FDA900] bg-white"
                   data-oid="f1loo1.">
                       {product.quantity}
                     </div>
