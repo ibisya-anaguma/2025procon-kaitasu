@@ -45,16 +45,13 @@ export async function postCollection (
 
 	// idとquantity, frequencyのみ追加
 	for (const item of arr) {
-	        const docRef = cartRef.doc(item.id);
-			const data: Record<string, any> = {
-				quantity: FieldValue.increment(item.quantity ?? 1),
-			};
+		const docRef = cartRef.doc(item.id);
+		const data: { quantity?: number; frequency?: number; createdAt: FieldValue } = {};
 
-			if (item.frequency !== undefined) {
-				data.frequency = item.frequency;
-			}
+		if (item.quantity !== undefined) data.quantity = item.quantity;
+		if (item.frequency !== undefined) data.frequency = item.frequency;
 
-			batch.set(docRef, data, { merge: true });
+		batch.set(docRef, data, { merge: true });
 
 	}
 	await batch.commit();
@@ -62,23 +59,23 @@ export async function postCollection (
 
 // patch処理、quantity以外にも対応
 export async function patchCollection(
-  uid: string,
-  collection: string,
-  itemId: string,
-  data: {
-    quantity?: number;
-    frequency?: number;
-  }
+	uid: string,
+	collection: string,
+	itemId: string,
+	data: {
+		quantity?: number;
+		frequency?: number;
+	}
 ) {
-  const ref = db.collection("users").doc(uid).collection(collection).doc(itemId);
-  await ref.set(data, { merge: true });
+	const ref = db.collection("users").doc(uid).collection(collection).doc(itemId);
+	await ref.set(data, { merge: true });
 }
 
 export async function deleteCollection(
-  uid: string,
-  collection: string,
-  itemId: string
+	uid: string,
+	collection: string,
+	itemId: string
 ) {
-  const ref = db.collection("users").doc(uid).collection(collection).doc(itemId);
-  await ref.delete();
+	const ref = db.collection("users").doc(uid).collection(collection).doc(itemId);
+	await ref.delete();
 }

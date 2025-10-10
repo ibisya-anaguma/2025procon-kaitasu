@@ -15,13 +15,17 @@ SUBSCRIPTION_UPDATE_DATA := {"frequency":20}
 CART_DATA := {"id":"010500000360004973360620491","quantity":2}
 CART_UPDATE_DATA := {"quantity":5}
 
+FAVORITES_DATA := [{"id":"010500000360004973360620491"},{"id":"010500000360002000040030614"}]
+
 # ==============================================================================
 # ターゲット定義
 # ==============================================================================
 
 .PHONY: \
 	post-subscriptions get-subscriptions patch-subscriptions delete-subscriptions \
-	post-cart get-cart patch-cart delete-cart
+	post-cart get-cart patch-cart delete-cart build-food-db \
+	get-favorites post-favorites delete-favorites
+
 
 # ----------------------------------------------------------------------
 # subscriptions 系
@@ -84,3 +88,35 @@ delete-cart:
 	curl -fsS -X DELETE "$(API_BASE_URL)/api/cart/$(ID)" \
 		-H "Authorization: Bearer $$(cat $(TOKEN_FILE))"
 	@echo "\n--- done ---"
+
+
+# ================= favorites 用 =================
+
+
+# GET /api/favorites
+get-favorites:
+	@echo "--- GET /favorites ---"
+	@curl -sS -X GET "$(API_BASE_URL)/api/favorites" \
+	  -H "Authorization: Bearer $$(cat $(TOKEN_FILE))" \
+	| (command -v jq >/dev/null 2>&1 && jq . || cat)
+	@echo "\n--- done ---"
+
+# POST /api/favorites   (配列を送る想定)
+post-favorites:
+	@echo "--- POST /favorites ---"
+	@curl -sS -X POST "$(API_BASE_URL)/api/favorites" \
+	  -H "Authorization: Bearer $$(cat $(TOKEN_FILE))" \
+	  -H "Content-Type: application/json" \
+	  --data-binary '$(FAVORITES_DATA)' \
+	| (command -v jq >/dev/null 2>&1 && jq . || cat)
+	@echo "\n--- done ---"
+
+# DELETE /api/favorites/:id   例: make delete-favorites ID=0105...
+delete-favorites:
+	@if [ -z "$(ID)" ]; then echo "例: make delete-favorites ID=010500000360004973360620491"; exit 1; fi
+	@echo "--- DELETE /favorites/$(ID) ---"
+	@curl -sS -X DELETE "$(API_BASE_URL)/api/favorites/$(ID)" \
+	  -H "Authorization: Bearer $$(cat $(TOKEN_FILE))" \
+	| (command -v jq >/dev/null 2>&1 && jq . || cat)
+	@echo "\n--- done ---"
+
