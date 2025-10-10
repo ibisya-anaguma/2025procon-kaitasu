@@ -52,6 +52,33 @@ export function useSubscriptions() {
     fetchSubscriptions();
   }, [fetchSubscriptions]);
 
+  const addSubscription = async (productId: string | number, quantity: number = 1, frequency: number = 30) => {
+    if (!user) return false;
+
+    try {
+      const idToken = await user.getIdToken();
+      const response = await fetch('/api/subscriptions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${idToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ id: productId.toString(), quantity, frequency }),
+      });
+
+      if (!response.ok) {
+        throw new Error('定期購入の追加に失敗しました');
+      }
+
+      // データを再取得
+      await fetchSubscriptions();
+      return true;
+    } catch (err) {
+      console.error('Error adding subscription:', err);
+      return false;
+    }
+  };
+
   const removeSubscription = async (id: string) => {
     if (!user) return false;
 
@@ -77,6 +104,6 @@ export function useSubscriptions() {
     }
   };
 
-  return { subscriptions, isLoading, error, removeSubscription, refetch: fetchSubscriptions };
+  return { subscriptions, isLoading, error, addSubscription, removeSubscription, refetch: fetchSubscriptions };
 }
 

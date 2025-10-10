@@ -13,11 +13,6 @@ import { useUserInformation } from "@/app/hooks/useUserInformation";
 import type { LandingCardContent, Screen } from "@/types/page";
 import { cn } from "@/lib/utils";
 
-const LANDING_FILTER_BUTTONS = [
-  { label: "健康重視", buttonDataOid: ".zvc9j.", textDataOid: "btn-text-health" },
-  { label: "お気に入り", buttonDataOid: "jm:hia2", textDataOid: "btn-text-favorite" }
-];
-
 function screenToPath(screen: Screen): string | null {
   switch (screen) {
     case "dashboard":
@@ -59,6 +54,7 @@ export default function CatalogLandingPage() {
   const [selectedCards, setSelectedCards] = useState<number[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [budget, setBudget] = useState('');
+  const [isHealthFocused, setIsHealthFocused] = useState(false);
 
   // ユーザー情報から予算を読み込み
   useEffect(() => {
@@ -80,6 +76,10 @@ export default function CatalogLandingPage() {
     setSelectedCards((prev) =>
       prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index]
     );
+  };
+
+  const handleHealthFocusToggle = () => {
+    setIsHealthFocused((prev) => !prev);
   };
 
   const handleNavigate = (screen: Screen) => {
@@ -142,17 +142,27 @@ export default function CatalogLandingPage() {
         </div>
 
         <div className="flex items-center gap-[25px] mb-6" data-oid="catalog-landing-filters">
-          {LANDING_FILTER_BUTTONS.map(({ label, buttonDataOid, textDataOid }) => (
-            <Button
-              key={`${label}-landing`}
-              variant="ghost"
-              className={`border border-transparent p-0 ${FILTER_BUTTON_INACTIVE_CLASS}`}
-              data-oid={`${buttonDataOid}-landing`}>
-              <span className={FILTER_BUTTON_TEXT_CLASS} data-oid={`${textDataOid}-landing`}>
-                {label}
-              </span>
-            </Button>
-          ))}
+          {/* 健康重視ボタン */}
+          <Button
+            variant="ghost"
+            className={`border border-transparent p-0 w-[180px] min-w-[180px] h-[63px] flex items-center justify-center shrink-0 rounded-[20px] border-2 border-[#FDA900] px-6 ${
+              isHealthFocused
+                ? 'bg-[#FDA900] shadow-[0_4px_4px_0_rgba(0,0,0,0.25)_inset]'
+                : 'bg-white shadow-[4.5px_4.5px_0_0_#E4E2E2]'
+            }`}
+            onClick={handleHealthFocusToggle}
+            data-oid="health-focus-button">
+            <span className={FILTER_BUTTON_TEXT_CLASS}>健康重視</span>
+          </Button>
+          
+          {/* お気に入りページへボタン（テキストに合わせた幅） */}
+          <Button
+            variant="ghost"
+            className="border border-transparent p-0 h-[63px] flex items-center justify-center rounded-[20px] border-2 border-[#FDA900] px-6 bg-white shadow-[4.5px_4.5px_0_0_#E4E2E2]"
+            onClick={() => handleNavigate("favoriteList")}
+            data-oid="favorite-list-button">
+            <span className={FILTER_BUTTON_TEXT_CLASS}>お気に入りページへ</span>
+          </Button>
           
           <div className={`flex items-center justify-center gap-2 ml-4 ${FILTER_BUTTON_INACTIVE_CLASS}`} data-oid="catalog-landing-budget">
             <span
@@ -311,7 +321,7 @@ export default function CatalogLandingPage() {
             disabled={isLoading}
             data-oid="catalog-landing-next-button">
             <span className="text-black font-['BIZ_UDPGothic'] text-[32px] font-bold leading-normal tracking-[1.664px]">
-              {isLoading ? '検索中...' : '次へ'}
+              {isLoading ? '検索中...' : '組み合わせを生成'}
             </span>
           </Button>
         </div>

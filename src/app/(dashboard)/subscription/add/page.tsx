@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { useAppContext } from "@/contexts/AppContext";
+import { useSubscriptions } from "@/app/hooks/useSubscriptions";
 import type { Product, Screen, SubscriptionEntry } from "@/types/page";
 
 function screenToPath(screen: Screen): string | null {
@@ -38,10 +39,10 @@ export default function SubscriptionAddPage() {
   const router = useRouter();
   const {
     onUpdateProductQuantity,
-    onSaveSubscriptionEntry,
     selectedSubscriptionProduct: product,
     onNavigate: setScreen
   } = useAppContext();
+  const { addSubscription } = useSubscriptions();
 
   const handleNavigate = (screen: Screen) => {
     setScreen(screen);
@@ -49,27 +50,34 @@ export default function SubscriptionAddPage() {
     if (path) router.push(path);
   };
   const [deliveryFrequency, setDeliveryFrequency] = useState(1);
+  const [isSaving, setIsSaving] = useState(false);
 
   const handleFrequencyChange = (change: number) => {
     setDeliveryFrequency((prev) => Math.max(1, prev + change));
   };
 
-  const handleSave = () => {
-    if (!product) {
+  const handleSave = async () => {
+    if (!product || isSaving) {
       return;
     }
 
-    onSaveSubscriptionEntry({
-      id: product.id,
-      productId: product.id,
-      name: product.name,
-      price: product.price * product.quantity,
-      image: product.image,
-      quantity: product.quantity,
-      frequencyDays: deliveryFrequency
-    });
-    setDeliveryFrequency(1);
-    handleNavigate("subscriptionList");
+    setIsSaving(true);
+    try {
+      // APIを使用して定期購入に追加
+      const success = await addSubscription(product.id, product.quantity, deliveryFrequency);
+      
+      if (success) {
+        setDeliveryFrequency(1);
+        handleNavigate("subscriptionList");
+      } else {
+        alert('定期購入の登録に失敗しました');
+      }
+    } catch (error) {
+      console.error('Error saving subscription:', error);
+      alert('定期購入の登録に失敗しました');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -404,12 +412,16 @@ export default function SubscriptionAddPage() {
                     ...ACTION_BUTTON_STYLE,
                     borderRadius: "20px",
                     border: "3px solid #FDA900",
-                    boxShadow: "4.5px 4.5px 0 0 #E4E2E2"
+                    boxShadow: "4.5px 4.5px 0 0 #E4E2E2",
+                    opacity: isSaving ? 0.6 : 1
                   }}
                   onClick={handleSave}
+                  disabled={isSaving}
                   data-oid="subscription-add-action-save"
                 >
-                  <span style={ACTION_BUTTON_TEXT_STYLE}>保存して登録</span>
+                  <span style={ACTION_BUTTON_TEXT_STYLE}>
+                    {isSaving ? '登録中...' : '保存して登録'}
+                  </span>
                 </Button>
               </div>
             </div>

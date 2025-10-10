@@ -53,6 +53,33 @@ export function useFavorites() {
     fetchFavorites();
   }, [fetchFavorites]);
 
+  const addFavorite = async (productId: string | number, quantity: number = 1) => {
+    if (!user) return false;
+
+    try {
+      const idToken = await user.getIdToken();
+      const response = await fetch('/api/favorites', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${idToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ id: productId.toString(), quantity }),
+      });
+
+      if (!response.ok) {
+        throw new Error('お気に入りの追加に失敗しました');
+      }
+
+      // データを再取得
+      await fetchFavorites();
+      return true;
+    } catch (err) {
+      console.error('Error adding favorite:', err);
+      return false;
+    }
+  };
+
   const removeFavorite = async (id: string) => {
     if (!user) return false;
 
@@ -78,6 +105,6 @@ export function useFavorites() {
     }
   };
 
-  return { favorites, isLoading, error, removeFavorite, refetch: fetchFavorites };
+  return { favorites, isLoading, error, addFavorite, removeFavorite, refetch: fetchFavorites };
 }
 

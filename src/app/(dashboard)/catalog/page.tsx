@@ -11,7 +11,7 @@ import { useAppContext } from "@/contexts/AppContext";
 import type { Product, Screen } from "@/types/page";
 
 const CATALOG_FILTER_BUTTONS = [
-  { label: "お気に入り", buttonDataOid: "jm:hia2", textDataOid: "btn-text-favorite" }
+  { label: "お気に入りページへ", buttonDataOid: "jm:hia2", textDataOid: "btn-text-favorite" }
 ];
 
 function screenToPath(screen: Screen): string | null {
