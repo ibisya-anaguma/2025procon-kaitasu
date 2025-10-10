@@ -1,5 +1,4 @@
 name: run-autocart
-
 on:
   workflow_dispatch:
 
@@ -7,6 +6,7 @@ jobs:
   run-autocart:
     runs-on: ubuntu-latest
     steps:
+
       - name: Checkout repo
         uses: actions/checkout@v4
 
@@ -18,122 +18,127 @@ jobs:
       - name: Install tsx (runtime)
         run: |
           set -euo pipefail
-          # install tsx globally so we can run TypeScript scripts directly
           npm install -g tsx@4 || true
-          # optionally install repo deps if you keep them here (uncomment if needed)
-          # cd src/jobs/checkout && npm ci
 
       - name: Prepare Firebase service account file (from secret)
-        # only run if secret exists
+        # only run this step if secret is present
         if: ${{ secrets.FIREBASE_SERVICE_ACCOUNT != '' }}
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p .firebase
 
-          # Read the secret and attempt robust normalization in Python:
+          # Write secret into .firebase/firebase-key.json using a robust python block.
           # Accepts:
-          #  - raw multiline JSON pasted into secret
-          #  - JSON pasted with literal "\n" sequences
-          #  - one-line base64(JSON)
+          #  - raw JSON pasted into the secret
+          #  - JSON pasted where newline characters are literal "\n"
+          #  - base64(JSON) pasted as one long line
           printf '%s' "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" | python3 - <<'PY' > .firebase/firebase-key.json
-          import sys, json, base64, re
-          s = sys.stdin.read() or ""
-          s = s.strip()
+import sys, json, base64, re
 
-    def is_json(x):
+s = sys.stdin.read() or ""
+s = s.strip()
+
+def is_json(x):
+    try:
+        json.loads(x)
+        return True
+    except Exception:
+        return False
+
+out = None
+
+# 1) raw JSON
+if is_json(s):
+    out = s
+else:
+    # 2) unescape literal "\n" (common when people paste multiline into a single-line secret)
+    try_unescape = s.replace("\\n", "\n")
+    if is_json(try_unescape):
+        out = try_unescape
+    else:
+        # 3) try base64 decode (strip whitespace/newlines first)
+        b64 = re.sub(r'\s+', '', s)
         try:
-              json.loads(x)
-              return True
+            dec = base64.b64decode(b64)
+            text = dec.decode('utf-8')
+            if is_json(text):
+                out = text
+            else:
+                # sometimes the decoded text still contains literal \n
+                text2 = text.replace("\\n", "\n")
+                if is_json(text2):
+                    out = text2
         except Exception:
-              return False
-    out = None
+            out = None
 
-      # 1) raw JSON
-      if is_json(s):
-          out = s
-      else:
-          # 2) unescape literal "\n" sequences (common when pasting multiline into a single-line UI)
-          try_unescape = s.replace("\\n", "\n")
-          if is_json(try_unescape):
-              out = try_unescape
-          else:
-              # 3) try base64 decode (strip whitespace/newlines first)
-              b64 = re.sub(r'\s+', '', s)
-              try:
-                  dec = base64.b64decode(b64)
-                  text = dec.decode('utf-8')
-                  if is_json(text):
-                      out = text
-                  else:
-                      text2 = text.replace("\\n", "\n")
-                      if is_json(text2):
-                          out = text2
-              except Exception:
-                  out = None
+if not out:
+    print("ERROR: FIREBASE_SERVICE_ACCOUNT secret is not valid JSON (attempted common unescape/decoding strategies)", file=sys.stderr)
+    sys.exit(3)
 
-      if not out:
-          print("ERROR: FIREBASE_SERVICE_ACCOUNT secret is not valid JSON (attempted common unescape/decoding strategies)", file=sys.stderr)
-          sys.exit(3)
+sys.stdout.write(out)
+PY
 
-      # write validated JSON to file (stdout redirection in shell writes to .firebase/firebase-key.json)
-      sys.stdout.write(out)
-      PY
+          # sanity: ensure file exists and non-empty
+          TARGET=".firebase/firebase-key.json"
+          if [ ! -s "$TARGET" ]; then
+            echo "::error::Wrote firebase key but it's empty or missing ($TARGET)" >&2
+            exit 4
+          fi
+          chmod 600 "$TARGET" || true
+          echo "Wrote and validated $TARGET (size=$(wc -c < \"$TARGET\") bytes)"
 
-                # sanity checks & perms
-                if [ ! -s .firebase/firebase-key.json ]; then
-                  echo "::error::Wrote firebase key but it's empty or missing (.firebase/firebase-key.json)" >&2
-                  exit 4
-                fi
-                chmod 600 .firebase/firebase-key.json || true
-                echo "Wrote and validated .firebase/firebase-key.json (size=$(wc -c < .firebase/firebase-key.json) bytes)"
+      - name: Show runtime info (non-secret)
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "workspace: $GITHUB_WORKSPACE"
+          echo "Node: $(node -v || true)"
+          echo "tsx: $(which tsx || true)"
+          echo "Will use .firebase/firebase-key.json if created"
 
-            - name: Show runtime info (non-secret)
-              shell: bash
-              run: |
-                set -euo pipefail
-                echo "workspace: $GITHUB_WORKSPACE"
-                echo "Node: $(node -v || true)"
-                echo "ts/x: $(which tsx || true)"
+      - name: Run autocart-runner (LIVE: will write to Firestore)
+        id: run_autocart
+        shell: bash
+        env:
+          # the step will have access to this env var (absolute path)
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/.firebase/firebase-key.json
+        run: |
+          set -euo pipefail
+          cd "${{ github.workspace }}"
 
-            - name: Run autocart-runner (LIVE: will write to Firestore)
-              id: run_autocart
-              shell: bash
-              env:
-                # Use the file we created above
-                GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/.firebase/firebase-key.json
-              run: |
-                set -euo pipefail
-                cd "${{ github.workspace }}"
+          if [ ! -f "${GOOGLE_APPLICATION_CREDENTIALS}" ]; then
+            echo "::error::GOOGLE_APPLICATION_CREDENTIALS file not found: ${GOOGLE_APPLICATION_CREDENTIALS}"
+            exit 5
+          fi
 
-                echo "Using GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS}"
-                echo "Running autocart-runner (LIVE) — this will perform writes unless the runner itself is invoked with --dry."
+          echo "Using GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS}"
+          echo "Running autocart-runner (LIVE) — this will perform writes unless runner itself uses --dry."
 
-                # run TS runner (tsx will compile & run). Adjust args as needed.
-                npx tsx src/jobs/checkout/autocart-runner.ts \
-                  --cred "${GOOGLE_APPLICATION_CREDENTIALS}" \
-                  --limit "50" \
-                  --debug \
-                  --explain
+          # run the TS runner (tsx will compile & execute)
+          npx tsx src/jobs/checkout/autocart-runner.ts \
+            --cred "${GOOGLE_APPLICATION_CREDENTIALS}" \
+            --limit "50" \
+            --debug \
+            --explain
 
-            - name: Upload logs (if any)
-              if: always()
-              uses: actions/upload-artifact@v4
-              with:
-                name: autocart-logs
-                path: |
-                  src/jobs/checkout/logs/*.log
-                  src/jobs/checkout/*.log
+      - name: Upload logs (if any)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: autocart-logs
+          path: |
+            src/jobs/checkout/logs/*.log
+            src/jobs/checkout/*.log
 
-            - name: Cleanup firebase key (always)
-              if: always()
-              shell: bash
-              run: |
-                set -euo pipefail
-                # secure remove best-effort
-                if command -v shred >/dev/null 2>&1; then
-                  shred -u .firebase/firebase-key.json || true
-                else
-                  rm -f .firebase/firebase-key.json || true
-                fi
-                echo "cleaned firebase key"
+      - name: Cleanup firebase key (always)
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          if command -v shred >/dev/null 2>&1; then
+            shred -u .firebase/firebase-key.json || true
+          else
+            rm -f .firebase/firebase-key.json || true
+          fi
+          echo "cleaned firebase key"
