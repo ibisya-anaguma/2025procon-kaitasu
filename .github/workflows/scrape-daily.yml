@@ -73,6 +73,7 @@ jobs:
           EXIT=${PIPESTATUS[0]}
           echo "Scraper exited with $EXIT"
           if [ "$EXIT" -ne 0 ]; then
+            # keep logs (uploaded by artifact step) and fail the job so you notice
             exit "$EXIT"
           fi
 
@@ -80,18 +81,22 @@ jobs:
         if: always()
         run: |
           set -euo pipefail
-          echo "Listing src/jobs/scraper:"
+          echo "=== Listing src/jobs/scraper ==="
           ls -la src/jobs/scraper || true
-          echo "all_products.json exists?:"
+          echo "=== Check all_products.json ==="
           if [ -f "${{ env.SRC_PATH }}" ]; then
             echo "FOUND: ${SRC_PATH}"
-            echo "size:"
+            echo "size (bytes):"
             wc -c "${{ env.SRC_PATH }}" || true
+            echo "preview (first 200 chars):"
+            head -c 200 "${{ env.SRC_PATH }}" || true
+            echo "..."
           else
             echo "MISSING: ${SRC_PATH}"
           fi
 
       - name: Upload scrape artifact (all_products & logs)
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: scrape-results
@@ -99,6 +104,7 @@ jobs:
             ${{ env.SRC_PATH }}
             ${{ env.LOG_DIR }}/*.log
 
+      # Optional: write FIREBASE_SERVICE_ACCOUNT secret to file (if you store it)
       - name: Write FIREBASE_SERVICE_ACCOUNT secret to file (if provided)
         shell: bash
         run: |
@@ -108,6 +114,7 @@ jobs:
             exit 0
           fi
           mkdir -p .firebase
+          # write raw secret content (the whole JSON) into a file
           printf '%s' "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" > .firebase/firebase-key.json
           chmod 600 .firebase/firebase-key.json
           echo "Wrote .firebase/firebase-key.json (permission 600)"
@@ -126,15 +133,18 @@ jobs:
           set -euo pipefail
           echo "Preparing to push ${SRC_PATH} -> ${TARGET_BRANCH}:${DEST_PATH}"
 
+          # If no scrape output, skip gracefully (but debug the dir listing)
           if [ ! -f "$SRC_PATH" ]; then
-            echo "No scrape output found at $SRC_PATH - skipping push"
+            echo "::warning::No scrape output found at $SRC_PATH - skipping push"
+            echo "Contents of src/jobs/scraper:"
+            ls -la "$(dirname "$SRC_PATH")" || true
             exit 0
           fi
 
           # --- CRITICAL: copy to temp BEFORE branch switching (prevents lost file due to checkout) ---
           TMP_SRC=$(mktemp -t all_products.XXXX.json)
-          cp "$SRC_PATH" "$TMP_SRC"
-          echo "Copied src to temp: $TMP_SRC"
+          cp -v "$SRC_PATH" "$TMP_SRC"
+          echo "Copied src to temp: $TMP_SRC (size=$(wc -c < "$TMP_SRC") bytes)"
 
           git config user.name "$GIT_AUTHOR_NAME"
           git config user.email "$GIT_AUTHOR_EMAIL"
@@ -148,14 +158,15 @@ jobs:
           else
             echo "Creating orphan branch $TARGET_BRANCH"
             git checkout --orphan "$TARGET_BRANCH"
-            git rm -rf .
+            git rm -rf . || true
             git clean -fdx || true
             git commit --allow-empty -m "init $TARGET_BRANCH"
             git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${REPO}" HEAD:"$TARGET_BRANCH"
           fi
 
+          # restore file from temp into repository path
           mkdir -p "$(dirname "$DEST_PATH")"
-          cp "$TMP_SRC" "$DEST_PATH"
+          cp -v "$TMP_SRC" "$DEST_PATH"
           git add "$DEST_PATH"
 
           if git diff --cached --quiet; then
