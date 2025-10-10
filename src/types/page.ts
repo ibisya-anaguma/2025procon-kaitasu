@@ -34,3 +34,13 @@ export type FavoriteEntry = {
   image: string;
   quantity: number;
 };
+
+export type HistoryEntry = {
+  id: string;
+  productId: number;
+  name: string;
+  price: number;
+  image: string;
+  quantity: number;
+  purchasedAt: string; // ISO 8601 date string
+};
