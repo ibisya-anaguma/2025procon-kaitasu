@@ -11,7 +11,7 @@ on:
       dry:
         description: 'dry run? true/false'
         required: false
-        default: 'true'
+        default: 'false'
       limit:
         description: 'limit per run'
         required: false
