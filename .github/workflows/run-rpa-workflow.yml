@@ -1,6 +1,11 @@
 name: run-autocart
 on:
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      dry:
+        description: 'Run in dry mode? (true/false)'
+        required: false
+        default: 'false'
 
 permissions:
   contents: read
@@ -18,13 +23,14 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Node.js and python
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
       - name: Ensure python3 & jq available
         run: |
+          set -euo pipefail
           sudo apt-get update -y
           sudo apt-get install -y jq python3 python3-pip || true
 
@@ -36,87 +42,104 @@ jobs:
           mkdir -p .firebase
           TARGET=".firebase/firebase-key.json"
 
-          # Put secret value into an environment variable for the inline python to read
-          export SA="${{ secrets.FIREBASE_SERVICE_ACCOUNT }}"
+          # Pass the secret into Python via stdin, try common unescape strategies, validate JSON,
+          # then write file with safe permissions. This avoids accidental YAML quoting problems.
+          printf '%s' "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" | python3 - <<'PY'
+          import sys, json
 
-          python3 - <<'PY'
-import os, json, sys
-s = os.environ.get("SA", "")
-if not s:
-    print("ERROR: env SA empty", file=sys.stderr); sys.exit(2)
-# try direct load
-try:
-    json.loads(s)
-    out = s
-except Exception:
-    # try unescape literal \n sequences
-    if "\\n" in s:
-        try:
-            out = s.replace("\\n", "\n")
-            json.loads(out)
-            print("NOTE: secret contained literal \\n sequences; unescaped successfully")
-        except Exception as e2:
-            print("ERROR: secret invalid after unescaping:", e2, file=sys.stderr); sys.exit(3)
-    else:
-        print("ERROR: secret not valid JSON", file=sys.stderr); sys.exit(4)
-# write file
-with open(".firebase/firebase-key.json", "w", encoding="utf-8") as f:
-    f.write(out)
-print("WROTE_OK")
-PY
+          s = sys.stdin.read()
 
-          if [ ! -s "$TARGET" ]; then
-            echo "::error::Wrote firebase key but it's empty or missing ($TARGET)"; exit 1
-          fi
-          echo "Wrote and validated $TARGET (size=$(wc -c < "$TARGET") bytes)"
-          chmod 600 "$TARGET" || true
+          def is_json(x):
+              try:
+                  json.loads(x)
+                  return True
+              except Exception:
+                  return False
 
-      - name: Show runtime info
-        shell: bash
-        run: |
-          set -euo pipefail
-          echo "workspace: $GITHUB_WORKSPACE"
-          echo "autocart limit: ${AUTOCART_LIMIT}"
+          out = None
+      # 1) try raw
+        if is_json(s):
+          out = s
+      # 2) try unescape common literal "\n" sequences (paste-with-escaped-newlines)
+        elif is_json(s.replace("\\n", "\n")):
+          out = s.replace("\\n", "\n")
+      # 3) try double-escaped
+        elif is_json(s.replace("\\\\n", "\n")):
+          out = s.replace("\\\\n", "\n")
+        else:
+          print("ERROR: FIREBASE_SERVICE_ACCOUNT is not valid JSON (attempted common unescape)", file=sys.stderr)
+            sys.exit(2)
 
-      - name: Run autocart-runner (LIVE: writes to Firestore unless runner uses --dry)
-        id: run_autocart
-        shell: bash
-        env:
-          GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/.firebase/firebase-key.json
-        run: |
-          set -euo pipefail
-          cd "${{ github.workspace }}"
+        with open(".firebase/firebase-key.json", "w", encoding="utf-8") as f:
+          f.write(out)
 
-          echo "GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS}"
-          echo "Running autocart-runner ..."
+          print("WROTE_OK")
+          PY
 
-          # make sure tsx exists
-          npx -y tsx --version || true
+      # sanity checks & perms (non-secret)
+      if [ ! -s "$TARGET" ]; then
+        echo "::error::Wrote firebase key but it's empty or missing ($TARGET)"
+        exit 3
+        fi
+        chmod 600 "$TARGET" || true
+        echo "Wrote and validated $TARGET (size=$(wc -c < \"$TARGET\") bytes)"
 
-          npx tsx src/jobs/checkout/autocart-runner.ts \
-            --cred "${GOOGLE_APPLICATION_CREDENTIALS}" \
-            --limit "${AUTOCART_LIMIT}" \
-            --debug \
-            --explain
+    - name: Show runtime info (non-secret)
+            shell: bash
+              run: |
+                set -euo pipefail
+                echo "workspace: $GITHUB_WORKSPACE"
+                echo "autocart limit: ${AUTOCART_LIMIT}"
+                echo "dry input: ${{ github.event.inputs.dry }}"
 
-      - name: Upload logs (if any)
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: autocart-logs
-          path: |
-            src/jobs/checkout/logs/*.log
-            src/jobs/checkout/*.log
+            - name: Run autocart-runner (LIVE: will write to Firestore unless dry=true)
+              id: run_autocart
+              shell: bash
+              env:
+                GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/.firebase/firebase-key.json
+              run: |
+                set -euo pipefail
+                cd "${{ github.workspace }}"
 
-      - name: Cleanup firebase key (always)
-        if: always()
-        shell: bash
-        run: |
-          set -euo pipefail
-          TARGET=".firebase/firebase-key.json"
-          if command -v shred >/dev/null 2>&1; then
-            shred -u "$TARGET" || rm -f "$TARGET" || true
-          else
-            rm -f "$TARGET" || true
-          fi
-          echo "Cleaned firebase key"
+                echo "GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS}"
+                echo "Running autocart-runner ..."
+
+                # dry flag
+                DRY_FLAG=""
+                if [ "${{ github.event.inputs.dry }}" = "true" ]; then
+                  DRY_FLAG="--dry"
+                  echo "Running in dry mode (no writes)."
+                else
+                  echo "Running in LIVE mode (writes allowed)."
+                fi
+
+                # ensure tsx available & run the TypeScript runner
+                npx -y tsx --version || true
+
+                npx tsx src/jobs/checkout/autocart-runner.ts \
+                  --cred "${GOOGLE_APPLICATION_CREDENTIALS}" \
+                  --limit "${AUTOCART_LIMIT}" \
+                  --debug \
+                  --explain ${DRY_FLAG:+$DRY_FLAG}
+
+            - name: Upload logs (if any)
+              if: always()
+              uses: actions/upload-artifact@v4
+              with:
+                name: autocart-logs
+                path: |
+                  src/jobs/checkout/logs/*.log
+                  src/jobs/checkout/*.log
+
+            - name: Cleanup firebase key (always)
+              if: always()
+              shell: bash
+              run: |
+                set -euo pipefail
+                TARGET=".firebase/firebase-key.json"
+                if command -v shred >/dev/null 2>&1; then
+                  shred -u "$TARGET" || rm -f "$TARGET" || true
+                else
+                  rm -f "$TARGET" || true
+                fi
+                echo "Cleaned firebase key"
