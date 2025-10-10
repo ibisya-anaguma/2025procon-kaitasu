@@ -2,6 +2,15 @@ import json
 from pathlib import Path
 import numpy as np
 
+def str2bool(v: str) -> bool:
+    if isinstance(v, bool):
+        return v
+    return str(v).lower() in ("1", "true", "t", "yes", "y", "on")
+
+def succeed_with_empty():
+    print(json.dumps([], ensure_ascii=False))
+    raise SystemExit(0)
+
 def as_float(v):
     if v is None:
         return None
@@ -174,9 +183,10 @@ def to_api_shape(products, ids):
     out = []
     for p in products:
         if p["id"] in idset:
+            genre_val = (p.get("genres") or [None])[0]
             out.append({
                 "id": p["id"],
-                "genre": p.get("genre") or p.get("category"),  # JSONのキーに応じて拾う
+                "genre": genre_val,
                 "name": p.get("name"),
                 "price": int(round(p.get("price_yen", p.get("priceTax", 0) or 0))),
                 "imgUrl": p.get("imgUrl"),
@@ -188,21 +198,24 @@ if __name__ == "__main__":
     import argparse
     import json
     from pathlib import Path
+    
+    HERE = Path(__file__).resolve()
+    DATA = HERE.parents[3] / "data" / "foodData.json"
 
     # --- 引数の定義 ---
     parser = argparse.ArgumentParser(description="かいたす: 組み合わせ最適化スクリプト")
     parser.add_argument("--prefs-json", type=str, default="", help="Firebaseから渡す up/down の辞書(JSON文字列)")
     parser.add_argument("--input", type=str, default="", help="入力JSONファイルパス")
     parser.add_argument("--budget", type=int, default=2500, help="予算（円）")
-    parser.add_argument("--health", type=str, default="true", help="健康重視モード true/false")
+    parser.add_argument("--health", type=str2bool, default=True, help="健康重視モード true/false")
     args = parser.parse_args()
 
     # --- 基本設定 ---
     BUDGET_YEN = args.budget
-    HEALTH_MODE = args.health.lower() in ["true", "1", "yes", "on"]
+    HEALTH_MODE = args.health
 
     # --- json読み込み ---
-    with open(Path(__file__).resolve().parent.parent / "data" / "foodData.json", "r", encoding="utf-8") as f:
+    with open(DATA, "r", encoding="utf-8") as f:
         products = json.load(f)
 
     # --- Firebaseからの prefs を読み取り ---
@@ -220,12 +233,12 @@ if __name__ == "__main__":
         Items = build_items_for_solver(normalized, require_health=True)
 
         if not Items:
-            raise SystemExit(1)
+            succeed_with_empty()
 
         # 第1段：H最大化
         sol_opt = solve_one(Items, BUDGET_YEN, selected_categories=None)
         if sol_opt is None or not sol_opt["ids"]:
-            raise SystemExit(1)
+            succeed_with_empty()
         H_star = sol_opt["H"]
 
         # 第2段：残額最小化（同H）
@@ -246,11 +259,11 @@ if __name__ == "__main__":
         Items = build_items_for_solver(products, require_health=False)
 
         if not Items:
-            raise SystemExit(1)
+            succeed_with_empty()
 
         sol_price = _solve_price_only(Items, BUDGET_YEN)
         if sol_price is None or not sol_price["ids"]:
-            raise SystemExit(1)
+            succeed_with_empty()
 
         result = {
             "mode": "price",

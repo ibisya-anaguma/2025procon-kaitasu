@@ -35,8 +35,9 @@ export const POST = withAuth(async (req, uid) => {
   const health = body?.isHealthImportance ? "true" : "false";
 
   // 2) Firestore から nutrition を取得
-  const doc = await adminDb.doc(`users/${uid}`).get();
+  const doc = await adminDb.doc(`users/uid`).get();//ログイン中のuidは使用していない
   const nutritionRaw = doc.data()?.userInformation?.nutrition || {};
+  console.log("[combos] uid=", uid, "nutritionRaw=", nutritionRaw);
 
   // 3) -1/0/1 → "up"/"down" へ正規化
   const prefs = toPrefs(nutritionRaw);
