@@ -153,9 +153,7 @@ get-history:
 # GET /api/budget/summary
 get-budget-summary:
 	@echo "--- GET /budget/summary ---"
-	@$(CURL_AUTH) -X GET "$(API_BASE_URL)/api/budget-summary" 
-		-H "Authorization: Bearer $$(cat $(TOKEN_FILE))" \
-	| $(JQ);
+	@$(CURL_AUTH) -X GET "$(API_BASE_URL)/api/budget-summary" | $(JQ);
 	@echo "\n--- done ---"
 
 
