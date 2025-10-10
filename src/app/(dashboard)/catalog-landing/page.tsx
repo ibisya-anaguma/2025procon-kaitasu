@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FILTER_BUTTON_INACTIVE_CLASS, FILTER_BUTTON_TEXT_CLASS } from "@/components/screens/filterStyles";
 import { useProductSearch } from "@/app/hooks/useProductSearch";
+import { useFavorites } from "@/app/hooks/useFavorites";
 import { useAppContext } from "@/contexts/AppContext";
 import type { LandingCardContent, Screen } from "@/types/page";
 import { cn } from "@/lib/utils";
@@ -54,6 +55,7 @@ export default function CatalogLandingPage() {
     onNavigate: setScreen
   } = useAppContext();
   const { searchProducts, isLoading } = useProductSearch();
+  const { favorites } = useFavorites();
   const [selectedCards, setSelectedCards] = useState<number[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [budget, setBudget] = useState('');
@@ -100,6 +102,14 @@ export default function CatalogLandingPage() {
     }
   };
 
+  // お気に入りフィルターボタンをクリック
+  const handleFavoriteFilter = async () => {
+    // お気に入り商品を検索
+    await searchProducts({ favorite: true, limit: 50 });
+    // catalogページに移動
+    handleNavigate("catalog");
+  };
+
   return (
     <div
       className="flex-1 bg-white p-6 ml-[232px] min-h-screen flex items-center justify-center"
@@ -136,9 +146,16 @@ export default function CatalogLandingPage() {
             <Button
               key={`${label}-landing`}
               variant="ghost"
-              className={`border border-transparent p-0 ${FILTER_BUTTON_INACTIVE_CLASS}`}
+              onClick={label === "お気に入り" ? handleFavoriteFilter : undefined}
+              className={`border border-transparent p-0 ${FILTER_BUTTON_INACTIVE_CLASS} ${
+                label === "お気に入り" ? 'cursor-pointer hover:bg-[#FDA900] hover:shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] transition-all' : ''
+              }`}
               data-oid={`${buttonDataOid}-landing`}>
-              <span className={FILTER_BUTTON_TEXT_CLASS} data-oid={`${textDataOid}-landing`}>
+              <span 
+                className={`${FILTER_BUTTON_TEXT_CLASS} ${
+                  label === "お気に入り" ? 'hover:text-white transition-colors' : ''
+                }`}
+                data-oid={`${textDataOid}-landing`}>
                 {label}
               </span>
             </Button>

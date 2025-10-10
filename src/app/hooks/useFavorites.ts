@@ -55,7 +55,7 @@ export function useFavorites() {
   }, [user]);
 
   // お気に入りに追加
-  const addToFavorites = async (productId: string) => {
+  const addToFavorites = async (productId: string, productInfo?: { name: string; price: number; imgUrl: string }) => {
     if (!user) return false;
 
     setIsLoading(true);
@@ -63,13 +63,22 @@ export function useFavorites() {
 
     try {
       const token = await getIdToken();
+      const payload: Record<string, unknown> = { id: productId, quantity: 1 };
+      
+      // 商品情報が提供されている場合は一緒に保存
+      if (productInfo) {
+        payload.name = productInfo.name;
+        payload.price = productInfo.price;
+        payload.imgUrl = productInfo.imgUrl;
+      }
+      
       const response = await fetch('/api/favorites', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ id: productId, quantity: 1 }),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {

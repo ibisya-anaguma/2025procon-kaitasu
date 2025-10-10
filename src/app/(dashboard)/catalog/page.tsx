@@ -57,9 +57,10 @@ export default function CatalogPage() {
     onNavigate: setScreen
   } = useAppContext();
   const { products: searchResults, searchProducts, clearSearch, isLoading } = useProductSearch();
-  const { addToFavorites, removeFromFavorites, isFavorite } = useFavorites();
+  const { favorites, addToFavorites, removeFromFavorites, isFavorite } = useFavorites();
   const { addToSubscriptions } = useSubscriptions();
   const [searchQuery, setSearchQuery] = useState('');
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
@@ -91,6 +92,14 @@ export default function CatalogPage() {
     clearSearch();
   };
 
+  // お気に入りフィルター切り替え
+  const handleToggleFavoriteFilter = () => {
+    setShowFavoritesOnly(!showFavoritesOnly);
+    // 検索をクリア
+    setSearchQuery('');
+    clearSearch();
+  };
+
   // お気に入りトグル
   const handleToggleFavorite = async (productId: number) => {
     const productIdStr = String(productId);
@@ -99,12 +108,27 @@ export default function CatalogPage() {
       if (success) {
         setSuccessMessage('お気に入りから削除しました');
         setTimeout(() => setSuccessMessage(''), 3000);
+        
+        // お気に入りフィルター中の場合、リストから削除されるのでメッセージを更新
+        if (showFavoritesOnly && favorites.length === 1) {
+          setTimeout(() => {
+            setSuccessMessage('お気に入りが空になりました');
+          }, 100);
+        }
       } else {
         setErrorMessage('お気に入りの削除に失敗しました');
         setTimeout(() => setErrorMessage(''), 3000);
       }
     } else {
-      const success = await addToFavorites(productIdStr);
+      // 商品情報を取得
+      const product = displayProducts.find(p => p.id === productId);
+      const productInfo = product ? {
+        name: product.name,
+        price: product.price,
+        imgUrl: product.image || ''
+      } : undefined;
+      
+      const success = await addToFavorites(productIdStr, productInfo);
       if (success) {
         setSuccessMessage('お気に入りに追加しました');
         setTimeout(() => setSuccessMessage(''), 3000);
@@ -150,19 +174,45 @@ export default function CatalogPage() {
     }
   };
 
-  // 検索結果がある場合は検索結果を、ない場合は静的な商品データを使用
-  const displayProducts = searchResults.length > 0 ? searchResults.map(p => {
-    // 既存の商品データから数量を取得
-    const existingProduct = staticProducts.find(sp => sp.id === Number(p.id));
-    return {
-      id: Number(p.id),
-      name: p.name,
-      price: p.price,
-      image: p.imgUrl,
-      quantity: existingProduct?.quantity || 0,
-      description: ''
-    };
-  }) : staticProducts;
+  // 検索結果がある場合は検索結果を、お気に入りフィルターがある場合はお気に入り商品を、それ以外は静的な商品データを使用
+  const displayProducts = (() => {
+    // 検索結果がある場合
+    if (searchResults.length > 0) {
+      return searchResults.map(p => {
+        const existingProduct = staticProducts.find(sp => sp.id === Number(p.id));
+        return {
+          id: Number(p.id),
+          name: p.name,
+          price: p.price,
+          image: p.imgUrl,
+          quantity: existingProduct?.quantity || 0,
+          description: ''
+        };
+      });
+    }
+    
+    // お気に入りフィルターがある場合
+    if (showFavoritesOnly) {
+      if (favorites.length > 0) {
+        return favorites.map(fav => {
+          const existingProduct = staticProducts.find(sp => sp.id === Number(fav.id));
+          return {
+            id: Number(fav.id),
+            name: fav.name,
+            price: fav.price,
+            image: fav.imgUrl,
+            quantity: existingProduct?.quantity || 0,
+            description: ''
+          };
+        });
+      }
+      // お気に入りが空の場合は空の配列を返す
+      return [];
+    }
+    
+    // デフォルトは静的な商品データ
+    return staticProducts;
+  })();
 
   return (
     <div
@@ -272,6 +322,11 @@ export default function CatalogPage() {
             「{searchQuery}」に一致する商品が見つかりませんでした
           </div>
         )}
+        {!isLoading && showFavoritesOnly && !searchQuery && (
+          <div className="mb-4 text-[18px] text-[#FDA900] font-['BIZ_UDPGothic'] font-bold">
+            {favorites.length > 0 ? `お気に入り商品 ${favorites.length}件` : 'お気に入り商品はありません'}
+          </div>
+        )}
 
         <div className="flex gap-[25px] mb-6" data-oid="br-d9o3">
           <Button
@@ -301,9 +356,16 @@ export default function CatalogPage() {
             <Button
               key={label}
               variant="ghost"
-              className={`border border-transparent p-0 ${FILTER_BUTTON_INACTIVE_CLASS}`}
+              onClick={handleToggleFavoriteFilter}
+              className={`border border-transparent p-0 ${FILTER_BUTTON_INACTIVE_CLASS} ${
+                showFavoritesOnly ? 'bg-[#FDA900] shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]' : ''
+              }`}
               data-oid={buttonDataOid}>
-              <span className={FILTER_BUTTON_TEXT_CLASS} data-oid={textDataOid}>
+              <span 
+                className={`${FILTER_BUTTON_TEXT_CLASS} ${
+                  showFavoritesOnly ? 'text-white' : ''
+                }`} 
+                data-oid={textDataOid}>
                 {label}
               </span>
             </Button>
@@ -362,7 +424,14 @@ export default function CatalogPage() {
             className="grid grid-cols-4 gap-y-4 gap-x-[45px] justify-items-start"
             style={{ gridTemplateColumns: "repeat(4, 188px)" }}
             data-oid="h7qwqv1">
-            {displayProducts.map((product) => (
+            {displayProducts.length === 0 ? (
+              <div className="col-span-4 flex items-center justify-center h-[200px]">
+                <span className="text-[#ADADAD] font-['BIZ_UDPGothic'] text-[24px] font-bold">
+                  {showFavoritesOnly ? 'お気に入り商品はありません' : '商品が見つかりませんでした'}
+                </span>
+              </div>
+            ) : (
+              displayProducts.map((product) => (
               <Card
                 key={product.id}
                 className="px-4 pt-1 pb-0 bg-white border-2 border-[#e0e0e0] rounded-xl shadow-sm hover:shadow-md transition-shadow flex flex-col w-[188px] h-[265px]"
@@ -460,8 +529,9 @@ export default function CatalogPage() {
                   </div>
                 </div>
               </Card>
-            ))}
-            </div>
+            ))
+            )}
+          </div>
           </div>
         </div>
 

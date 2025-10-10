@@ -31,6 +31,7 @@ export function addFoodDetails<T extends { id: string }>(items: T[]) {
   return items.map((item) => {
     const food = foodData.find((f) => f.id === item.id);
     if (!food) {
+      console.warn(`[addFoodDetails] Food not found for id: ${item.id}`);
       return { ...item, name: "no Name", price: 0, imgUrl: "" };
     }
 
@@ -38,7 +39,7 @@ export function addFoodDetails<T extends { id: string }>(items: T[]) {
       ...item,
       name: food.name,
       price: food.priceTax,
-      imgUrl: food.url
+      imgUrl: food.imgUrl
     };
   });
 }

@@ -103,14 +103,31 @@ try {
 
 // ====== お気に入り（任意） ======
 // favorite=true かつ uid 指定 & Firebase Admin が入っていれば
-// users/{uid}/favorites の id を取得し、ヒットした商品をブーストする。
+// users/{uid}/favorites の id を取得し、お気に入り商品のみを返す。
 async function fetchFavoriteIds(uid: string): Promise<Set<string>> {
-  // テスト用の実装（実際のFirebase実装は後で追加）
   try {
-    // テスト用のお気に入りIDを返す
-    return new Set<string>(['sample-1']);
-  } catch {
-    // 未設定なら空
+    // Firebaseの実装を確認
+    const admin = await import('firebase-admin');
+    
+    if (!admin.apps.length) {
+      // Firebase Adminが初期化されていない場合は空のセットを返す
+      console.warn('[fetchFavoriteIds] Firebase Admin not initialized');
+      return new Set<string>();
+    }
+
+    const db = admin.firestore();
+    const favoritesRef = db.collection('users').doc(uid).collection('favorites');
+    const snapshot = await favoritesRef.get();
+    
+    const favoriteIds = new Set<string>();
+    snapshot.forEach(doc => {
+      favoriteIds.add(doc.id);
+    });
+    
+    return favoriteIds;
+  } catch (error) {
+    console.error('[fetchFavoriteIds] Error:', error);
+    // エラーの場合は空のセットを返す
     return new Set<string>();
   }
 }
@@ -140,19 +157,18 @@ export async function POST(request: NextRequest) {
       return true;
     });
 
-    // 2) favorite ブースト（任意）
+    // 2) favorite フィルター（任意）
     if (favorite) {
       let favIds = new Set<string>();
       if (uid) {
         favIds = await fetchFavoriteIds(uid);
       }
       if (favIds.size > 0) {
-        // お気に入りを先頭に寄せる
-        result = result.sort((a, b) => {
-          const aFav = favIds.has(String(a.id)) ? 1 : 0;
-          const bFav = favIds.has(String(b.id)) ? 1 : 0;
-          return bFav - aFav;
-        });
+        // お気に入り商品のみをフィルター
+        result = result.filter((p) => favIds.has(String(p.id)));
+      } else {
+        // お気に入りが空の場合は空の結果を返す
+        result = [];
       }
     }
 
