@@ -1,19 +1,41 @@
-export const runtime = "nodejs";
+import { NextRequest, NextResponse } from 'next/server';
+import { adminAuth, adminDb } from '@/lib/firebaseAdmin';
 
-import { NextRequest } from "next/server";
-import { withAuth } from "@/lib/middleware"
-import { adminDb as db } from "@/lib/firebaseAdmin";
-
-export const GET = withAuth(async (_req: NextRequest, uid: string) => {
+// GET /api/history - 購入履歴を取得
+export async function GET(request: NextRequest) {
   try {
-    console.log("[DBG] firestore read start for uid:", uid);
-    const snap = await db.collection("users").doc(uid).collection("history").get();
+    // Authorizationヘッダーからトークンを取得
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json({ error: '認証トークンが必要です' }, { status: 401 });
+    }
 
-    // ドキュメントが0件でも200で空配列を返す
-    const items = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-    return Response.json(items);
+    const token = authHeader.split('Bearer ')[1];
+    
+    // トークンを検証してuidを取得
+    let uid: string;
+    try {
+      const decodedToken = await adminAuth.verifyIdToken(token);
+      uid = decodedToken.uid;
+    } catch (error) {
+      console.error('トークン検証エラー:', error);
+      return NextResponse.json({ error: '無効な認証トークンです' }, { status: 401 });
+    }
+
+    console.log("[DBG] firestore read start for uid:", uid);
+    
+    // Firestoreから購入履歴を取得
+    const snap = await adminDb.collection("users").doc(uid).collection("history").get();
+
+    if (snap.empty) {
+      // 購入履歴が存在しない場合は空配列を返す
+      return NextResponse.json({ uid, userInformation: [] });
+    }
+    
+    const userInformation = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    return NextResponse.json({ uid, userInformation });
   } catch (err: any) {
     console.error("[ERR] handler:", err?.name, err?.message);
-    return Response.json({ error: "Internal server error", message: String(err?.message || err) }, { status: 500 });
+    return NextResponse.json({ error: "Internal server error", message: String(err?.message || err) }, { status: 500 });
   }
-});
+}

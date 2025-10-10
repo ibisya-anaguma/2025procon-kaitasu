@@ -1,9 +1,0 @@
-{
-  "name": "aeon-recommend",
-  "version": "1.0.0",
-  "type": "commonjs",
-  "private": true,
-  "dependencies": {
-    "firebase-admin": "^12.0.0"
-  }
-}

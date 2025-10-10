@@ -1,0 +1,142 @@
+"use client";
+
+import { Catalog } from "@/components/screens/Catalog";
+import { CatalogLanding } from "@/components/screens/CatalogLanding";
+import { Cart } from "@/components/screens/Cart";
+import { Dashboard } from "@/components/screens/Dashboard";
+import { FavoriteList } from "@/components/screens/FavoriteList";
+import { History } from "@/components/screens/History";
+import { Order } from "@/components/screens/Order";
+import { Profile } from "@/components/screens/Profile";
+import { Sidebar } from "@/components/screens/Sidebar";
+import { Subscription } from "@/components/screens/Subscription";
+import { SubscriptionAdd } from "@/components/screens/SubscriptionAdd";
+import { SubscriptionList } from "@/components/screens/SubscriptionList";
+import { useJapaneseFoodApp } from "@/hooks/useJapaneseFoodApp";
+
+export const JapaneseFoodApp = () => {
+  const {
+    cartItems,
+    catalogPriceSum,
+    catalogQuantitySum,
+    catalogScrollRef,
+    currentLandingCards,
+    currentScreen,
+    hoveredNav,
+    landingPage,
+    onHoverChange,
+    onLandingPageChange,
+    onNavigate,
+    onPageChange,
+    onUpdateProductQuantity,
+    onSelectSubscriptionProduct,
+    onSaveSubscriptionEntry,
+    onRemoveSubscriptionEntry,
+    onAddFavoriteEntry,
+    onRemoveFavoriteEntry,
+    profilePage,
+    products,
+    selectedSubscriptionProduct,
+    subscriptionScrollRef,
+    totalLandingPages,
+    totalProfilePages,
+    subscriptionEntries,
+    favoriteEntries
+  } = useJapaneseFoodApp();
+
+  const renderScreen = () => {
+    switch (currentScreen) {
+      case "dashboard":
+        return <Dashboard onNavigate={onNavigate} />;
+      case "catalog":
+        return (
+          <Catalog
+            products={products}
+            catalogQuantitySum={catalogQuantitySum}
+            catalogPriceSum={catalogPriceSum}
+            onNavigate={onNavigate}
+            onUpdateProductQuantity={onUpdateProductQuantity}
+            catalogScrollRef={catalogScrollRef}
+          />
+        );
+      case "cart":
+        return (
+          <Cart
+            cartItems={cartItems}
+            onNavigate={onNavigate}
+            onUpdateProductQuantity={onUpdateProductQuantity}
+            onAddFavoriteEntry={onAddFavoriteEntry}
+          />
+        );
+      case "order":
+        return <Order onNavigate={onNavigate} />;
+      case "history":
+        return <History />;
+      case "profile":
+        return (
+          <Profile
+            profilePage={profilePage}
+            totalProfilePages={totalProfilePages}
+            onPageChange={onPageChange}
+            onNavigate={onNavigate}
+          />
+        );
+      case "catalogLanding":
+        return (
+          <CatalogLanding
+            landingPage={landingPage}
+            totalLandingPages={totalLandingPages}
+            onLandingPageChange={onLandingPageChange}
+            onNavigate={onNavigate}
+            currentLandingCards={currentLandingCards}
+          />
+        );
+      case "subscription":
+        return (
+          <Subscription
+            products={products}
+            subscriptionScrollRef={subscriptionScrollRef}
+            onNavigate={onNavigate}
+            onSelectSubscriptionProduct={onSelectSubscriptionProduct}
+          />
+        );
+      case "subscriptionAdd":
+        return (
+          <SubscriptionAdd
+            onNavigate={onNavigate}
+            onUpdateProductQuantity={onUpdateProductQuantity}
+            onSaveSubscriptionEntry={onSaveSubscriptionEntry}
+            product={selectedSubscriptionProduct}
+          />
+        );
+      case "subscriptionList":
+        return (
+          <SubscriptionList
+            entries={subscriptionEntries}
+            onRemoveEntry={onRemoveSubscriptionEntry}
+          />
+        );
+      case "favoriteList":
+        return (
+          <FavoriteList
+            entries={favoriteEntries}
+            onRemoveEntry={onRemoveFavoriteEntry}
+          />
+        );
+      default:
+        return <Dashboard monthlyBudget={monthlyBudget} onNavigate={onNavigate} />;
+    }
+  };
+
+  return (
+    <div className="flex">
+      <Sidebar
+        currentScreen={currentScreen}
+        hoveredNav={hoveredNav}
+        onHoverChange={onHoverChange}
+        onNavigate={onNavigate}
+      />
+      {renderScreen()}
+    </div>
+  );
+};

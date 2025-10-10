@@ -1,141 +1,197 @@
-export const runtime = "nodejs";
+import { NextRequest, NextResponse } from 'next/server';
+import { adminAuth, adminDb } from '@/lib/firebaseAdmin';
 
-import { NextRequest } from "next/server";
-import { getApps, initializeApp, cert, getApp } from "firebase-admin/app";
-import { withAuth } from "@/lib/middleware"
-import { adminDb as db } from "@/lib/firebaseAdmin";
-
-export const GET = withAuth(async (_req: NextRequest, uid: string) => {
+// GET /api/user-information - ユーザー情報を取得
+export async function GET(request: NextRequest) {
   try {
-    console.log("[DBG] firestore read start for uid:", uid);
-    const snap = await db.collection("users").doc(uid).collection("userInformation").get();
-
-    if (snap && snap.empty) {
-      return Response.json({ error: "not found" }, { status: 404 });
+    // Authorizationヘッダーからトークンを取得
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json({ error: '認証トークンが必要です' }, { status: 401 });
     }
-    const userInformation = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-    return Response.json({ uid, userInformation });
-  } catch (err: any) {
-    console.error("[ERR] handler:", err?.name, err?.message);
-    return Response.json({ error: "Internal server error", message: String(err?.message || err) }, { status: 500 });
-  }
-});
 
-export const PATCH = withAuth(async (req: Request, uid: string) => {
-  try {
-    const body = await req.json();
-    const updates: Record<string, any> = {};
-
-    // name → userInformation.userName
-    if (typeof body.name === "string" && body.name.trim() !== "") {updates["userInformation.userName"] = body.name.trim();}
-
-    // monthlyBudget（0以上の数値に限定。整数化するなら Math.floor）
-    if (typeof body.monthlyBudget === "number" && Number.isFinite(body.monthlyBudget) && body.monthlyBudget >= 0) {updates["userInformation.monthlyBudget"] = Math.floor(body.monthlyBudget);}
-    if (typeof body.resetDay === "number" && Number.isInteger(body.resetDay) && body.resetDay >= 1 && body.resetDay <= 31) {updates["userInformation.resetDay"] = body.resetDay;}
-    if (Object.keys(updates).length === 0) {return NextResponse.json({ error: "no valid fields" }, { status: 400 });}
-
-    await db.collection("users").doc(uid).set(updates, { merge: true });
-
-    return NextResponse.json({ msg: "success" });
-  } catch (err: any) {
-    console.error("[ERR] PATCH /user-information:", err);
-    return NextResponse.json(
-      { error: "Internal server error", message: String(err?.message || err) },
-      { status: 500 }
-    );
-  }
-});
-
-export const POST = withAuth(async (_req: NextRequest, uid: string) => {
-  try {
-    const body = await _req.json();
-
-    // 許容値（入力バリデーション用）
-    const DISEASES = ["Hypertension","HeartDisease","Sarcopenia","Diabetes","Osteoporosis"] as const;
-    const INCREASE = ["Protein","VitaminD","Ca","Fiber"] as const;
-    const REDUCE   = ["Salt","Fat","Sugar","Vitamin","Mineral"] as const;
-
-    // ===== マスタ定義（略号版） =====
-    const diseaseUp: Record<string, string[]> = {
-      Hypertension: ["K","MG","CA","FIB","VITC","TOCPHA"],
-      HeartDisease: ["K","MG","FIB","TOCPHA","VITC","NIA"],
-      Sarcopenia: ["PROT","VITD","CA","MG","VITB6A","VITB12","ENERC_KCAL"],
-      Diabetes: ["FIB","MG","THIA","VITB6A","NIA","VITC","TOCPHA"],
-      Osteoporosis: ["CA","VITD","VITK","MG","PROT","ZN","CU"],
-    };
-    const diseaseDown: Record<string, string[]> = {
-      Hypertension: ["NA","NACL_EQ","FATNLEA","CHOLE"],
-      HeartDisease: ["NA","NACL_EQ","FATNLEA","CHOLE","P"],
-      Sarcopenia: ["NA","FATNLEA"],
-      Diabetes: ["CHOAVLM","CHOCDF","FATNLEA","NA","NACL_EQ","CHOLE"],
-      Osteoporosis: ["NA","NACL_EQ","P","VITA_RAE"],
-    };
-    const increaseByBucket: Record<string, string[]> = {
-      Protein: ["PROT"],
-      VitaminD: ["VITD"],
-      Ca: ["CA"],
-      Fiber: ["FIB"],
-    };
-    const reduceByBucket: Record<string, string[]> = {
-      Salt: ["NA","NACL_EQ"],
-      Fat: ["FAT","FATNLEA","CHOLE"],
-      Sugar: ["CHOCDF","CHOAVLM"],
-      Vitamin: ["VITA_RAE","VITD","TOCPHA","VITK"],
-      Mineral: ["NA","P"],
-    };
-
-    // ===== 正規化 =====
-    function normList(v: unknown, allowed: readonly string[]) {
-      if (!Array.isArray(v)) return [] as string[];
-      const set = new Set(allowed);
-      return [...new Set(v.filter(Boolean).map(String))].filter(x => set.has(x));
+    const token = authHeader.split('Bearer ')[1];
+    
+    // トークンを検証してuidを取得
+    let uid: string;
+    try {
+      const decodedToken = await adminAuth.verifyIdToken(token);
+      uid = decodedToken.uid;
+    } catch (error) {
+      console.error('トークン検証エラー:', error);
+      return NextResponse.json({ error: '無効な認証トークンです' }, { status: 401 });
     }
-    const diseases = normList(body.disease, DISEASES);
-    const incPrefs  = normList(body.increaseNutrients, INCREASE);
-    const redPrefs  = normList(body.reduceNutrients, REDUCE);
 
-    // ===== 栄養フラグ合成（0は保存しない） =====
-    type UpDown = -1 | 1;
-    function mergeNutritionFlags(
-      _diseases: string[], _inc: string[], _red: string[],
-    ): Record<string, UpDown> {
-      const score: Record<string, number> = {};
+    // Firestoreからユーザー情報を取得
+    const userDoc = await adminDb.collection('users').doc(uid).get();
+    
+    if (!userDoc.exists) {
+      // ドキュメントが存在しない場合、デフォルト値を返す
+      const defaultData = {
+        name: '',
+        monthlyBudget: 50000,
+        resetDay: 1
+      };
+      
+      // デフォルト値でドキュメントを作成
+      await adminDb.collection('users').doc(uid).set({
+        userName: '',
+        monthlyBudget: 50000,
+        resetDay: 1,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      });
+      
+      return NextResponse.json(defaultData);
+    }
+    
+    const userData = userDoc.data();
+    
+    // レスポンス形式に合わせてデータを整形
+    const response = {
+      name: userData?.userName || '',
+      monthlyBudget: userData?.monthlyBudget || 50000,
+      resetDay: userData?.resetDay || 1,
+      surveyCompleted: userData?.surveyCompleted || false
+    };
 
-      // 病気ルール
-      for (const d of _diseases) {
-        for (const k of (diseaseUp[d] || []))   score[k] = (score[k] || 0) + 1;
-        for (const k of (diseaseDown[d] || [])) score[k] = (score[k] || 0) - 1;
+    return NextResponse.json(response);
+  } catch (error) {
+    console.error('ユーザー情報取得エラー:', error);
+    return NextResponse.json({ error: 'サーバーエラーが発生しました' }, { status: 500 });
+  }
+}
+
+// POST /api/user-information - ユーザー情報を初期設定（健康設定）
+export async function POST(request: NextRequest) {
+  try {
+    // Authorizationヘッダーからトークンを取得
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json({ error: '認証トークンが必要です' }, { status: 401 });
+    }
+
+    const token = authHeader.split('Bearer ')[1];
+    
+    // トークンを検証してuidを取得
+    let uid: string;
+    try {
+      const decodedToken = await adminAuth.verifyIdToken(token);
+      uid = decodedToken.uid;
+    } catch (error) {
+      console.error('トークン検証エラー:', error);
+      return NextResponse.json({ error: '無効な認証トークンです' }, { status: 401 });
+    }
+
+    // リクエストボディを取得
+    const body = await request.json();
+    const { disease, increaseNutrients, reduceNutrients } = body;
+
+    // バリデーション
+    const validDiseases = ['Hypertension', 'KidneyDisease', 'Sarcopenia', 'Diabetes', 'Osteoporosis'];
+    const validIncreaseNutrients = ['Protein', 'VitaminD', 'Ca', 'Fiber', 'Potassium'];
+    const validReduceNutrients = ['Salt', 'Fat', 'Sugar', 'Vitamin', 'Mineral'];
+
+    if (disease && !Array.isArray(disease)) {
+      return NextResponse.json({ error: 'diseaseは配列である必要があります' }, { status: 400 });
+    }
+    if (increaseNutrients && !Array.isArray(increaseNutrients)) {
+      return NextResponse.json({ error: 'increaseNutrientsは配列である必要があります' }, { status: 400 });
+    }
+    if (reduceNutrients && !Array.isArray(reduceNutrients)) {
+      return NextResponse.json({ error: 'reduceNutrientsは配列である必要があります' }, { status: 400 });
+    }
+
+    // 値の検証
+    if (disease && disease.some(d => !validDiseases.includes(d))) {
+      return NextResponse.json({ error: '無効なdiseaseの値が含まれています' }, { status: 400 });
+    }
+    if (increaseNutrients && increaseNutrients.some(n => !validIncreaseNutrients.includes(n))) {
+      return NextResponse.json({ error: '無効なincreaseNutrientsの値が含まれています' }, { status: 400 });
+    }
+    if (reduceNutrients && reduceNutrients.some(n => !validReduceNutrients.includes(n))) {
+      return NextResponse.json({ error: '無効なreduceNutrientsの値が含まれています' }, { status: 400 });
+    }
+
+    // Firestoreのユーザードキュメントを更新
+    await adminDb.collection('users').doc(uid).set({
+      disease: disease || [],
+      increaseNutrients: increaseNutrients || [],
+      reduceNutrients: reduceNutrients || [],
+      updatedAt: new Date().toISOString()
+    }, { merge: true });
+
+    return NextResponse.json({ msg: 'success' });
+  } catch (error) {
+    console.error('ユーザー情報設定エラー:', error);
+    return NextResponse.json({ error: 'サーバーエラーが発生しました' }, { status: 500 });
+  }
+}
+
+// PATCH /api/user-information - ユーザー情報を更新
+export async function PATCH(request: NextRequest) {
+  try {
+    // Authorizationヘッダーからトークンを取得
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json({ error: '認証トークンが必要です' }, { status: 401 });
+    }
+
+    const token = authHeader.split('Bearer ')[1];
+    
+    // トークンを検証してuidを取得
+    let uid: string;
+    try {
+      const decodedToken = await adminAuth.verifyIdToken(token);
+      uid = decodedToken.uid;
+    } catch (error) {
+      console.error('トークン検証エラー:', error);
+      return NextResponse.json({ error: '無効な認証トークンです' }, { status: 401 });
+    }
+
+    // リクエストボディを取得
+    const body = await request.json();
+    const { name, monthlyBudget, resetDay, surveyCompleted } = body;
+
+    // 更新するフィールドを準備
+    const updateData: any = {};
+    
+    if (name !== undefined) {
+      updateData.userName = name;
+    }
+    if (monthlyBudget !== undefined) {
+      if (typeof monthlyBudget !== 'number' || monthlyBudget < 0) {
+        return NextResponse.json({ error: 'monthlyBudgetは0以上の数値である必要があります' }, { status: 400 });
       }
-      // ユーザー指定
-      for (const b of _inc) for (const k of (increaseByBucket[b] || [])) score[k] = (score[k] || 0) + 1;
-      for (const b of _red) for (const k of (reduceByBucket[b]   || [])) score[k] = (score[k] || 0) - 1;
-
-      // 出力（0除外）
-      const out: Record<string, UpDown> = {};
-      for (const [k, v] of Object.entries(score)) {
-        if (v === 0) continue;
-        out[k] = v > 0 ? 1 : -1;
+      updateData.monthlyBudget = monthlyBudget;
+    }
+    if (resetDay !== undefined) {
+      if (typeof resetDay !== 'number' || resetDay < 1 || resetDay > 31) {
+        return NextResponse.json({ error: 'resetDayは1-31の数値である必要があります' }, { status: 400 });
       }
-      return out;
+      updateData.resetDay = resetDay;
+    }
+    if (surveyCompleted !== undefined) {
+      if (typeof surveyCompleted !== 'boolean') {
+        return NextResponse.json({ error: 'surveyCompletedはbooleanである必要があります' }, { status: 400 });
+      }
+      updateData.surveyCompleted = surveyCompleted;
     }
 
-    const nutritionFlags = mergeNutritionFlags(diseases, incPrefs, redPrefs);
+    // 少なくとも1つのフィールドが更新される必要がある
+    if (Object.keys(updateData).length === 0) {
+      return NextResponse.json({ error: '更新するフィールドが指定されていません' }, { status: 400 });
+    }
 
-    // ===== Firestore保存（nutritionだけ） =====
-    const payload = {
-      userInformation: {
-        nutrition: nutritionFlags,
-      },
-    };
+    // タイムスタンプを追加
+    updateData.updatedAt = new Date().toISOString();
 
-    await db.collection("users").doc(uid).set(payload, { merge: true });
-    return NextResponse.json({ msg: "success" });
+    // Firestoreのユーザー情報を更新
+    await adminDb.collection('users').doc(uid).set(updateData, { merge: true });
 
-  } catch (err: any) {
-    console.error("[ERR] POST /user-information:", err);
-    return NextResponse.json(
-      { error: "Internal server error", message: String(err?.message || err) },
-      { status: 500 }
-    );
+    return NextResponse.json({ msg: 'success' });
+  } catch (error) {
+    console.error('ユーザー情報更新エラー:', error);
+    return NextResponse.json({ error: 'サーバーエラーが発生しました' }, { status: 500 });
   }
-});
+}

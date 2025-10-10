@@ -1,3 +1,4 @@
+/* eslint-disable */
 // うめ
 // all_products.json(あらともの取得した材料)の名前をfoodCompositionDatabase.json(文部科学省食品成分DB)
 // にあうように単語をフォーマット、検索をかける
