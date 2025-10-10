@@ -10,6 +10,11 @@ const compat = new FlatCompat({
 });
 
 const eslintConfig = [
+  {
+    ignores: [
+      "src/jobs/foodDataUpdate/searchFoods.ts"
+    ],
+  },
   ...compat.extends("next/core-web-vitals", "next/typescript"),
 ];
 

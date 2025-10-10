@@ -1,5 +1,11 @@
+<<<<<<< HEAD
 //あらとも
 
+=======
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// src/jobs/checkout/autocart-runner.ts
+// 最終完成版 — 全ユーザー向け auto-cart runner
+>>>>>>> kizu/develop
 import * as admin from "firebase-admin";
 import * as fs from "fs";
 import * as path from "path";
@@ -102,6 +108,11 @@ function initAdmin(credPath?: string) {
     } else {
       resolved = path.resolve(credPath);
     }
+<<<<<<< HEAD
+=======
+  } catch {
+    // ignore, we'll try default init
+>>>>>>> kizu/develop
   }
   if (resolved && fs.existsSync(resolved)) {
     const sa = JSON.parse(fs.readFileSync(resolved, "utf8"));

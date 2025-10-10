@@ -1,48 +1,47 @@
-import { NextResponse } from 'next/server';
-import path from 'path';
-import { exec } from 'child_process';
-import { promisify } from 'util';
+import { NextRequest, NextResponse } from "next/server";
+import { exec } from "child_process";
+import path from "path";
+import { promisify } from "util";
 
-const SCRIPT_PATH = path.resolve(
-	process.cwd(),
-	'src/app/api/combos/combination.py'
-);
+import { withAuth } from "@/lib/middleware";
+
 const execAsync = promisify(exec);
+const SCRIPT_PATH = path.resolve(process.cwd(), "src/app/api/combos/combination.py");
 
-export async function POST(_req: Request) {
-	try {
-		const command = `python3 ${SCRIPT_PATH}`
-		const { stdout, stderr } = await execAsync(command);
+export const POST = withAuth(async (_req: NextRequest) => {
+  try {
+    const command = `python3 ${SCRIPT_PATH}`;
+    const { stdout, stderr } = await execAsync(command);
 
-		if (stderr) {
-			return NextResponse.json(
-				{ error: 'Checkout script failed.', details: stderr.trim() },
-			);
-		}
+    if (stderr?.trim()) {
+      return NextResponse.json(
+        { error: "Combination script failed.", details: stderr.trim() },
+        { status: 500 }
+      );
+    }
 
-		const items 
-		return NextResponse.json({
-			msg: 'success',
-		});
+    let data: unknown = null;
+    const trimmed = stdout.trim();
 
-	} catch (e: any) { 
-		// return NextResponse.json(
-		// 	{ error: 'Python script not found' },
-		// 	{ status: 500 }
-		// );
+    if (trimmed) {
+      try {
+        data = JSON.parse(trimmed);
+      } catch {
+        data = trimmed;
+      }
+    }
 
-		return NextResponse.json(
-			{
-				error: 'exec-failed',
-				message: e?.message || String(e),
-				code: e?.code,
-				cmd: e?.cmd,
-				killed: e?.killed,
-				signal: e?.signal,
-				stdout: e?.stdout?.toString?.(),
-				stderr: e?.stderr?.toString?.(),
-			},
-			{ status: 500 }
-		);
-	}
-}
+    return NextResponse.json({ msg: "success", data });
+  } catch (error) {
+    const err = error as { message?: string; code?: number | string; cmd?: string } | undefined;
+    return NextResponse.json(
+      {
+        error: "exec-failed",
+        message: err?.message ?? String(error),
+        code: err?.code,
+        cmd: err?.cmd
+      },
+      { status: 500 }
+    );
+  }
+});

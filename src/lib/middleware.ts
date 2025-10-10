@@ -15,18 +15,18 @@ async function getUidFromToken(request: NextRequest): Promise<string> {
   return decodedToken.uid;
 }
 
-export type WithAuthHandler = (
-	req: NextRequest,
-	uid: string,
-	context?: any
+export type WithAuthHandler<Context = undefined> = (
+  req: NextRequest,
+  uid: string,
+  context: Context
 ) => Promise<NextResponse> | NextResponse;
 
-export function withAuth(handler: WithAuthHandler) {
-	return async (req: NextRequest, context?: any) => {
+export function withAuth<Context = undefined>(handler: WithAuthHandler<Context>) {
+	return async (req: NextRequest, context?: Context) => {
 		let uid: string;
 		try {
 			uid = await getUidFromToken(req);
-		} catch (error) {
+			} catch {
 			return NextResponse.json(
 				{ error: 'Unauthorized' },
 				{ status: 401 }
@@ -34,15 +34,16 @@ export function withAuth(handler: WithAuthHandler) {
 		}
 		// handlerの実行は別でエラーを出す
 		try {
-			return await handler(req, uid, context);
-		} catch (error: any) {
+			return await handler(req, uid, context as Context);
+		} catch (error: unknown) {
+			const err = error instanceof Error ? { message: error.message, stack: error.stack } : {};
 			return NextResponse.json(
-				// { error: "Internal Server Error" },
-				// debug用
-				{ error: "Internal Server Error", message: error?.message, code: error?.code },
+				{
+					error: "Internal Server Error",
+					...err
+				},
 				{ status: 500 }
 			);
 		}
 	};
 }
-

@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import React from 'react';
 import { BIZ_UDPGothic } from "next/font/google";
+<<<<<<< HEAD
 import { AuthProvider } from "@/contexts/AuthContext";
+=======
+>>>>>>> kizu/develop
 import "./globals.css";
 
 const bizUDPGothic = BIZ_UDPGothic({
@@ -24,9 +27,13 @@ export default function RootLayout({
   return (
     <html lang="ja" className="light">
       <body className={bizUDPGothic.className}>
+<<<<<<< HEAD
         <AuthProvider>
           {children}
         </AuthProvider>
+=======
+        {children}
+>>>>>>> kizu/develop
       </body>
     </html>
   );

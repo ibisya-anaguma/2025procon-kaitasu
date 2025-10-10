@@ -8,7 +8,11 @@ import { useAppContext } from "@/contexts/AppContext";
 
 export default function CartPage() {
   const router = useRouter();
+<<<<<<< HEAD
   const { cartItems, onUpdateProductQuantity } = useAppContext();
+=======
+  const { cartItems, onUpdateProductQuantity, onAddFavoriteEntry } = useAppContext();
+>>>>>>> kizu/develop
 
   const totalCartQuantity = cartItems.reduce((sum, item) => sum + item.quantity, 0);
   const totalCartPrice = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -56,7 +60,53 @@ export default function CartPage() {
                   {item.name}
                 </h4>
               </div>
+<<<<<<< HEAD
               <div className="flex items-center gap-[20px] pr-[62px]" data-oid="cart-right-group">
+=======
+              <div className="flex items-center gap-[20px] pr-[20px]" data-oid="cart-right-group">
+                <Button
+                  variant="ghost"
+                  className="flex items-center gap-2 border-2 border-[#FDA900] rounded-[11.936px] bg-white px-4 py-2 shadow-[2.686px_2.686px_0_0_#E4E2E2]"
+                  onClick={() => onAddFavoriteEntry(item)}
+                  data-oid="cart-favorite-button">
+                  <span
+                    style={{
+                      color: "#000",
+                      fontFamily: '"BIZ UDPGothic"',
+                      fontSize: "19.098px",
+                      fontStyle: "normal",
+                      fontWeight: 700,
+                      lineHeight: "normal",
+                      letterSpacing: "0.993px"
+                    }}
+                    data-oid="cart-favorite-text">
+                    お気に入りに追加
+                  </span>
+                  <div
+                    style={{
+                      width: "25px",
+                      height: "25px",
+                      borderRadius: "6px",
+                      background: "#FFF"
+                    }}
+                    data-oid="cart-favorite-icon">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="22"
+                      height="20"
+                      viewBox="0 0 22 20"
+                      fill="none">
+                      <path
+                        d="M11.2666 5.29155C11.2666 5.29155 11.2666 5.17797 10.4897 4.15576C9.59015 2.96999 8.26127 2.11133 6.66662 2.11133C4.1213 2.11133 2.06665 4.16598 2.06665 6.7113C2.06665 7.66196 2.35287 8.54106 2.84353 9.26683C3.67153 10.5037 11.2666 18.4668 11.2666 18.4668M11.2666 5.29155C11.2666 5.29155 11.2666 5.17797 12.0435 4.15576C12.943 2.96999 14.2719 2.11133 15.8666 2.11133C18.4119 2.11133 20.4665 4.16598 20.4665 6.7113C20.4665 7.66196 20.1803 8.54106 19.6896 9.26683C18.8616 10.5037 11.2666 18.4668 11.2666 18.4668"
+                        stroke="#209FDE"
+                        strokeWidth="2.30369"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </div>
+                </Button>
+>>>>>>> kizu/develop
                 <div className="flex flex-col items-center gap-1" data-oid="f:g9-vr">
                   <span
                     style={{

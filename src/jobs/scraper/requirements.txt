@@ -1,4 +1,0 @@
-python-dotenv
-selenium
-webdriver-manager
-firebase-admin
