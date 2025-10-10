@@ -1,4 +1,4 @@
-name: run-autocart
+name: run-autosubscriptioncart
 
 on:
   workflow_dispatch:
