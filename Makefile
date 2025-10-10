@@ -29,7 +29,10 @@ CURL_AUTH = curl -fsS -H "Authorization: Bearer $$(cat $(TOKEN_FILE))"
     post-subscriptions get-subscriptions patch-subscriptions delete-subscriptions \
     post-cart get-cart patch-cart delete-cart build-food-db \
     get-favorites post-favorites delete-favorites \
-    get-recommendations get-history
+    get-recommendations get-history \
+    get-budget-summary \
+    search \
+    get-user-information post-user-information patch-user-information
 
 
 # ----------------------------------------------------------------------
@@ -106,7 +109,7 @@ get-favorites:
 	| (command -v jq >/dev/null 2>&1 && jq . || cat)
 	@echo "\n--- done ---"
 
-# POST /api/favorites   (配列を送る想定)
+# POST /api/favorites    (配列を送る想定)
 post-favorites:
 	@echo "--- POST /favorites ---"
 	@curl -sS -X POST "$(API_BASE_URL)/api/favorites" \
@@ -116,7 +119,7 @@ post-favorites:
 	| (command -v jq >/dev/null 2>&1 && jq . || cat)
 	@echo "\n--- done ---"
 
-# DELETE /api/favorites/:id   例: make delete-favorites ID=0105...
+# DELETE /api/favorites/:id    例: make delete-favorites ID=0105...
 delete-favorites:
 	@if [ -z "$(ID)" ]; then echo "例: make delete-favorites ID=010500000360004973360620491"; exit 1; fi
 	@echo "--- DELETE /favorites/$(ID) ---"
@@ -138,8 +141,66 @@ get-recommendations:
 
 # ================= history 用 =================
 
-# GET
+# GET /api/history
 get-history:
 	@echo "--- GET /history ---"
 	@$(CURL_AUTH) -X GET "$(API_BASE_URL)/api/history" | $(JQ);
+	@echo "\n--- done ---"
+
+
+# ================= budget-summary 用 =================
+
+# GET /api/budget/summary
+get-budget-summary:
+	@echo "--- GET /budget/summary ---"
+	@$(CURL_AUTH) -X GET "$(API_BASE_URL)/api/budget-summary" | $(JQ);
+	@echo "\n--- done ---"
+
+
+# ================= search 用 =================
+
+# デフォルト値（必要に応じて上書きして使う）
+SEARCH_Q ?= "かいわれ"
+SEARCH_GENRE ?= null
+SEARCH_FAVORITE ?= false
+SEARCH_UID ?=
+SEARCH_LIMIT ?= 50
+
+# POST /api/search 例:
+#    make search SEARCH_Q="牛乳 低脂肪" SEARCH_GENRE=100 SEARCH_FAVORITE=true SEARCH_UID=dev-user SEARCH_LIMIT=30
+search:
+	@echo "--- POST /search ---"
+	@curl -sS -X POST "$(API_BASE_URL)/api/search" \
+	  -H "Content-Type: application/json" \
+	  --data-binary "{\"q\":\"$(SEARCH_Q)\",\"genre\":$(SEARCH_GENRE),\"favorite\":$(SEARCH_FAVORITE),\"uid\":\"$(SEARCH_UID)\",\"limit\":$(SEARCH_LIMIT)}" \
+	| $(JQ)
+	@echo "\n--- done ---"
+
+
+# ================= user-information 用 =================
+
+# デフォルトの送信データ（必要なら上書きしてください）
+UI_PATCH_DATA ?= {"name":"テスト太郎","monthlyBudget":20000,"resetDay":25}
+UI_POST_DATA  ?= {"disease":["Hypertension"],"increaseNutrients":["Protein"],"reduceNutrients":["Salt"]}
+
+# GET /api/user-information
+get-user-information:
+	@echo "--- GET /user-information ---"
+	@$(CURL_AUTH) -X GET "$(API_BASE_URL)/api/user-information" | $(JQ)
+	@echo "\n--- done ---"
+
+# PATCH /api/user-information
+patch-user-information:
+	@echo "--- PATCH /user-information ---"
+	@$(CURL_AUTH) -X PATCH "$(API_BASE_URL)/api/user-information" \
+		-H "Content-Type: application/json" \
+		--data-binary '$(UI_PATCH_DATA)' | $(JQ)
+	@echo "\n--- done ---"
+
+# POST /api/user-information
+post-user-information:
+	@echo "--- POST /user-information ---"
+	@$(CURL_AUTH) -X POST "$(API_BASE_URL)/api/user-information" \
+		-H "Content-Type: application/json" \
+		--data-binary '$(UI_POST_DATA)' | $(JQ)
 	@echo "\n--- done ---"
