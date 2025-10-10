@@ -147,11 +147,11 @@ export default function CatalogLandingPage() {
               placeholder="0"
               value={budget}
               onChange={(e) => setBudget(e.target.value)}
-              className="w-[150px] h-10 border-2 border-[#fda900] text-base rounded-lg bg-white shadow-sm focus:border-[#209fde] focus:ring-2 focus:ring-[#209fde]/20 text-right pr-8"
+              className="py-8 border-2 border-[#fda900] text-bold text-right rounded-lg bg-white shadow-sm focus:border-[#209fde] focus:ring-2 focus:ring-[#209fde]/20"
               data-oid="catalog-landing-budget-input"
             />
             <span
-              className="-ml-7 pointer-events-none text-[#101010] font-['BIZ_UDPGothic'] text-[20px] font-bold leading-normal"
+              className="pointer-events-none text-[#101010] font-['BIZ_UDPGothic'] text-[20px] font-bold leading-normal"
               data-oid="catalog-landing-budget-unit">
               円
             </span>

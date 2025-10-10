@@ -108,7 +108,7 @@ export default function ProfilePage() {
     );
   }
   return (
-    <div className="flex-1 bg-white p-6 ml-[232px]" data-oid="3pchgx4">
+    <div className="flex-1 bg-white p-6 ml-[232px] min-h-screen flex items-center justify-center" data-oid="3pchgx4">
       <div className="flex flex-col items-center gap-4" data-oid=":530dgu">
 
         <Card

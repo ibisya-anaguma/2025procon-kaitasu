@@ -43,7 +43,7 @@ export default function OrderPage() {
     if (path) router.push(path);
   };
   return (
-    <div className="flex-1 bg-white p-6 ml-[232px]" data-oid="syv6qb8">
+    <div className="flex-1 bg-white p-6 ml-[232px] min-h-screen flex items-center justify-center" data-oid="syv6qb8">
       <div className="max-w-sm mx-auto" data-oid="9cyq3uk">
         <h2 className="text-base font-bold mb-4" data-oid="ycsxz70">
           注文確認

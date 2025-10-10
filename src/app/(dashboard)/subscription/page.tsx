@@ -53,7 +53,7 @@ export default function SubscriptionPage() {
   };
   return (
     <div
-      className="flex-1 bg-white p-6 ml-[232px] relative min-h-screen"
+      className="flex-1 bg-white p-6 ml-[232px] relative min-h-screen flex items-center justify-center"
       data-oid="subscription-page">
 
       <div

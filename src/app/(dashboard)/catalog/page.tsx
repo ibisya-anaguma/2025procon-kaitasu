@@ -71,7 +71,7 @@ export default function CatalogPage() {
 
   return (
     <div
-      className="flex-1 bg-white p-6 ml-[232px] relative min-h-screen"
+      className="flex-1 bg-white p-6 ml-[232px] relative min-h-screen flex items-center justify-center"
       data-oid="d95y1m5">
 
       <div

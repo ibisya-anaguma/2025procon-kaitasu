@@ -11,7 +11,7 @@ export default function DashboardPage() {
   const { monthlyBudget } = useAppContext();
 
   return (
-    <div className="flex-1 bg-white p-6 ml-[232px] min-h-screen" data-oid="ysuosjy">
+    <div className="flex-1 bg-white p-6 ml-[232px] min-h-screen flex items-center justify-center" data-oid="ysuosjy">
       <div className="mx-auto w-[903px] space-y-4" data-oid=":xr07ip">
         {/* Notification Card */}
         <Card
