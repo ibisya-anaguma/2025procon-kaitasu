@@ -6,13 +6,13 @@ import { FieldValue } from "firebase-admin/firestore";
 import { adminDb as db } from "@/lib/firebaseAdmin";
 
 // users/{uid}/collectionの中のドキュメント取得
-export async function getCollection (uid:string, collection: string, limit?: number) {
-	const snapshot = await db
-		.collection("users")
-		.doc(uid)
-		.collection(collection)
-		.limit(limitCount ?? 100) // limitがなかったら100件までにする
-		.get();
+export async function getCollection (uid: string, collection: string, limit?: number) {
+    const snapshot = await db
+        .collection("users")
+        .doc(uid)
+        .collection(collection)
+        .limit(limit ?? 100) // limitがなかったら100件までにする
+        .get();
 
 	return snapshot.docs.map((doc) => ({
 		id: doc.id,

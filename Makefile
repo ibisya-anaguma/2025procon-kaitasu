@@ -17,6 +17,10 @@ CART_UPDATE_DATA := {"quantity":5}
 
 FAVORITES_DATA := [{"id":"010500000360004973360620491"},{"id":"010500000360002000040030614"}]
 
+JQ := $$(command -v jq >/dev/null 2>&1 && echo "jq ." || echo "cat")
+
+CURL_AUTH = curl -fsS -H "Authorization: Bearer $$(cat $(TOKEN_FILE))"
+
 # ==============================================================================
 # ターゲット定義
 # ==============================================================================
@@ -25,7 +29,7 @@ FAVORITES_DATA := [{"id":"010500000360004973360620491"},{"id":"01050000036000200
     post-subscriptions get-subscriptions patch-subscriptions delete-subscriptions \
     post-cart get-cart patch-cart delete-cart build-food-db \
     get-favorites post-favorites delete-favorites \
-    get-recommendations
+    get-recommendations get-history
 
 
 # ----------------------------------------------------------------------
@@ -126,8 +130,16 @@ delete-favorites:
 
 # GET /api/recommendations
 get-recommendations:
-    @echo "--- GET /recommendations ---"
-    @curl -sS -X GET "$(API_BASE_URL)/api/recommendations" \
-      -H "Authorization: Bearer $$(cat $(TOKEN_FILE))" \
-    | (command -v jq >/dev/null 2>&1 && jq . || cat)
-    @echo "\n--- done ---"
+	@echo "--- GET /recommendations ---"
+	@curl -sS -X GET "$(API_BASE_URL)/api/recommendations" \
+	  -H "Authorization: Bearer $$(cat $(TOKEN_FILE))" \
+	| (command -v jq >/dev/null 2>&1 && jq . || cat)
+	@echo "\n--- done ---"
+
+# ================= history 用 =================
+
+# GET
+get-history:
+	@echo "--- GET /history ---"
+	@$(CURL_AUTH) -X GET "$(API_BASE_URL)/api/history" | $(JQ);
+	@echo "\n--- done ---"
