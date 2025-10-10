@@ -13,7 +13,7 @@ jobs:
     timeout-minutes: 60
     env:
       # default limit here; override by editing step command if needed
-      AUTOCART_LIMIT: "1"
+      AUTOCART_LIMIT: "50"
 
     steps:
       - name: Checkout repo
