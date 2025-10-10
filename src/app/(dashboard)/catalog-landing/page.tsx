@@ -102,10 +102,10 @@ export default function CatalogLandingPage() {
 
   return (
     <div
-      className="flex-1 bg-white p-6 ml-[232px] min-h-screen"
+      className="flex-1 bg-white p-6 ml-[232px] min-h-screen flex items-center justify-center"
       data-oid="catalog-landing">
 
-      <div className="mx-auto w-[1000px]">
+      <div className="w-[1000px]">
         <div className="relative mb-6" data-oid="catalog-landing-search">
           <Search
             className="absolute left-4 top-1/2 -translate-y-1/2 text-[#fda900]"
@@ -136,9 +136,9 @@ export default function CatalogLandingPage() {
             </Button>
           ))}
           
-          <div className="flex items-center gap-2 ml-4" data-oid="catalog-landing-budget">
+          <div className={`flex items-center justify-center gap-2 ml-4 ${FILTER_BUTTON_INACTIVE_CLASS}`} data-oid="catalog-landing-budget">
             <span
-              className="text-[#101010] font-['BIZ_UDPGothic'] text-[20px] font-bold leading-normal"
+              className={FILTER_BUTTON_TEXT_CLASS}
               data-oid="catalog-landing-budget-label">
               予算:
             </span>
@@ -147,11 +147,11 @@ export default function CatalogLandingPage() {
               placeholder="0"
               value={budget}
               onChange={(e) => setBudget(e.target.value)}
-              className="py-8 border-2 border-[#fda900] text-bold text-right rounded-lg bg-white shadow-sm focus:border-[#209fde] focus:ring-2 focus:ring-[#209fde]/20"
+              className="w-[120px] h-[40px] border-none text-center text-[#101010] font-['BIZ_UDPGothic'] text-[32px] font-bold bg-transparent focus:outline-none focus:ring-0"
               data-oid="catalog-landing-budget-input"
             />
             <span
-              className="pointer-events-none text-[#101010] font-['BIZ_UDPGothic'] text-[20px] font-bold leading-normal"
+              className={FILTER_BUTTON_TEXT_CLASS}
               data-oid="catalog-landing-budget-unit">
               円
             </span>
@@ -284,19 +284,19 @@ export default function CatalogLandingPage() {
             </div>
           </div>
         </div>
-      </div>
 
-      <div className="mt-4 flex justify-end" data-oid="catalog-landing-next-wrapper">
-        <Button
-          variant="ghost"
-          className="border border-transparent p-0 rounded-[20px] border-[3px] border-[#FDA900] bg-white shadow-[4.5px_4.5px_0_0_#E4E2E2] w-[150px] h-[60px] shrink-0"
-          onClick={handleSearch}
-          disabled={isLoading}
-          data-oid="catalog-landing-next-button">
-          <span className="text-black font-['BIZ_UDPGothic'] text-[32px] font-bold leading-normal tracking-[1.664px]">
-            {isLoading ? '検索中...' : '次へ'}
-          </span>
-        </Button>
+        <div className="mt-4 flex justify-end" data-oid="catalog-landing-next-wrapper">
+          <Button
+            variant="ghost"
+            className="border border-transparent p-0 rounded-[20px] border-[3px] border-[#FDA900] bg-white shadow-[4.5px_4.5px_0_0_#E4E2E2] w-[150px] h-[60px] shrink-0"
+            onClick={handleSearch}
+            disabled={isLoading}
+            data-oid="catalog-landing-next-button">
+            <span className="text-black font-['BIZ_UDPGothic'] text-[32px] font-bold leading-normal tracking-[1.664px]">
+              {isLoading ? '検索中...' : '次へ'}
+            </span>
+          </Button>
+        </div>
       </div>
     </div>
   );

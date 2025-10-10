@@ -91,7 +91,7 @@ export function Sidebar() {
       data-oid="ehf5pv5">
       <div className="flex flex-col items-center" data-oid="pm140hy">
         <img
-          src="/images/logo_kaitasu.png"
+          src="/images/logo_kaitasu.svg"
           alt="かいたす"
           className="h-[72px] w-[72px]"
           data-oid="kaitasu-logo"
