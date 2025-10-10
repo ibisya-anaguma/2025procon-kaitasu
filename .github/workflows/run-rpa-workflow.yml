@@ -1,120 +1,93 @@
 name: run-autocart
 
 on:
-  workflow_dispatch: {}
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   run-autocart:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      AUTOCART_LIMIT: '50'
 
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Setup Node.js
+      - name: Setup Node (for tsx)
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.x'
+      - name: Install tsx (runtime)
+        run: |
+          set -euo pipefail
+          npm i -g tsx@4
 
+      # -------------------------------
+      # Prepare Firebase service account (decode base64 secret -> json)
+      # Expect secret: FIREBASE_SERVICE_ACCOUNT_B64 (base64 of JSON, single line)
+      # -------------------------------
       - name: Prepare Firebase service account file (from secret)
-        shell: bash
-        env:
-          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        if: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_B64 != '' }}
         run: |
           set -euo pipefail
           mkdir -p .firebase
 
-          # This Python block robustly accepts:
-          #  - raw JSON pasted into the secret
-          #  - JSON pasted where newline characters are literal "\n"
-          #  - one-line base64(JSON)
+          # write the base64 blob into a file (no newline issues)
+          printf '%s' "${{ secrets.FIREBASE_SERVICE_ACCOUNT_B64 }}" > .firebase/firebase-key.b64
+
+          # decode to JSON file
+          base64 --decode .firebase/firebase-key.b64 > .firebase/firebase-key.json
+
+          # quick validation using python (will exit non-zero if invalid)
           python3 - <<'PY'
-          import os, sys, json, base64, re
-
-          s = os.environ.get("FIREBASE_SERVICE_ACCOUNT", "")
-          if not s:
-              print("ERROR: FIREBASE_SERVICE_ACCOUNT secret is empty", file=sys.stderr)
-              sys.exit(2)
-          s = s.strip()
-
-          def is_json(x):
-              try:
-                  json.loads(x)
-                  return True
-              except Exception:
-                  return False
-
-          out = None
-
-          # 1) raw JSON?
-          if is_json(s):
-              out = s
-          else:
-              # 2) unescape literal "\n" sequences (common paste issue)
-              try_unescape = s.replace("\\n", "\n").replace("\n", "\n")
-              if is_json(try_unescape):
-                  out = try_unescape
-              else:
-                  # 3) try base64 decode (strip whitespace/newlines first)
-                  b64 = re.sub(r"\s+", "", s)
-                  try:
-                      dec = base64.b64decode(b64)
-                      text = dec.decode("utf-8")
-                      if is_json(text):
-                          out = text
-                      else:
-                          text2 = text.replace("\\n", "\n")
-                          if is_json(text2):
-                              out = text2
-                  except Exception:
-                      out = None
-
-          if not out:
-              print("ERROR: FIREBASE_SERVICE_ACCOUNT secret is not valid JSON (tried raw/unescape/base64)", file=sys.stderr)
+          import json, sys, pathlib
+          p = pathlib.Path('.firebase/firebase-key.json')
+          try:
+              data = json.loads(p.read_text(encoding='utf-8'))
+          except Exception as e:
+              print("ERROR: FIREBASE_SERVICE_ACCOUNT secret is not valid JSON (decoded).", file=sys.stderr)
+              print(str(e), file=sys.stderr)
               sys.exit(3)
-
-          with open(".firebase/firebase-key.json", "w", encoding="utf-8") as f:
-              f.write(out)
-
+          # minimal sanity check
+          if not isinstance(data.get("type"), str) or data.get("type") != "service_account":
+              print("ERROR: decoded JSON missing expected 'type':'service_account'", file=sys.stderr)
+              sys.exit(4)
           print("WROTE_OK")
           PY
-
-          TARGET=".firebase/firebase-key.json"
-          if [ ! -s "$TARGET" ]; then
-            echo "::error::Wrote firebase key but it's empty or missing ($TARGET)" >&2
-            exit 4
-          fi
-          chmod 600 "$TARGET" || true
-          echo "Wrote and validated $TARGET (size=$(wc -c < "$TARGET") bytes)"
+          # secure permissions
+          chmod 600 .firebase/firebase-key.json || true
+          rm -f .firebase/firebase-key.b64 || true
 
       - name: Show runtime info (non-secret)
-        shell: bash
         run: |
           set -euo pipefail
-          echo "GITHUB_WORKSPACE=$GITHUB_WORKSPACE"
-          echo "AUTOCART_LIMIT=${{ env.AUTOCART_LIMIT || '50' }}"
+          echo "workspace: $GITHUB_WORKSPACE"
+          echo "autocart limit: ${AUTOCART_LIMIT}"
 
-      - name: Run autocart-runner (LIVE:will write to Firestore unless --dry)
+      - name: Run autocart-runner (LIVE: will write to Firestore unless runner uses --dry)
         id: run_autocart
-        shell: bash
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/.firebase/firebase-key.json
-          AUTOCART_LIMIT: '50'
+          AUTOCART_LIMIT: ${{ env.AUTOCART_LIMIT }}
         run: |
           set -euo pipefail
-          cd "${GITHUB_WORKSPACE}"
+          echo "Using GOOGLE_APPLICATION_CREDENTIALS=$GOOGLE_APPLICATION_CREDENTIALS"
+          cd "${{ github.workspace }}"
+          # run the TS runner
+          npx tsx src/jobs/checkout/autocart-runner.ts \
+            --cred "$GOOGLE_APPLICATION_CREDENTIALS" \
+            --limit "$AUTOCART_LIMIT" \
+            --debug \
+            --explain
 
-          echo "Using GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS}"
-          echo "Running autocart-runner (LIVE unless you pass --dry)."
-
-          npx tsx src/jobs/checkout/autocart-runner.ts             --cred "${GOOGLE_APPLICATION_CREDENTIALS}"             --limit "${AUTOCART_LIMIT}"             --debug             --explain
-
-      - name: Upload logs (always)
+      - name: Upload logs (if any)
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -125,12 +98,7 @@ jobs:
 
       - name: Cleanup firebase key (always)
         if: always()
-        shell: bash
         run: |
           set -euo pipefail
-          if command -v shred >/dev/null 2>&1; then
-            shred -u .firebase/firebase-key.json || true
-          else
-            rm -f .firebase/firebase-key.json || true
-          fi
+          rm -f .firebase/firebase-key.json || true
           echo "cleaned firebase key"
