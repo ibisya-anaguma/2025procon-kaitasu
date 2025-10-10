@@ -92,7 +92,7 @@ export const useJapaneseFoodApp = (): JapaneseFoodAppState => {
     if (currentScreen !== "profile" && profilePage !== 1) {
       setProfilePage(1);
     }
-  }, [currentScreen, profilePage]);
+  }, [currentScreen]);
 
   const onUpdateProductQuantity: UpdateProductQuantityHandler = (id, change) => {
     const activeScrollContainer = catalogScrollRef.current ?? subscriptionScrollRef.current;
