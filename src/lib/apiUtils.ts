@@ -5,7 +5,7 @@ import foodData from "@/data/foodData.json";
 import { adminDb } from "@/lib/firebaseAdmin";
 import { FieldValue } from "firebase-admin/firestore";
 
-export type FirestoreCollection = "cart" | "subscriptions" | "favorites" | string;
+export type FirestoreCollection = "cart" | "subscriptions" | "favorites" | "history" | string;
 
 export type PatchableData = {
   quantity?: number;

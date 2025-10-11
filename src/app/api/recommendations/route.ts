@@ -20,7 +20,7 @@ type HistoryItem = {
 };
 
 // firestoreのタイムスタンプをミリ秒に変換する
-function flattenAndConvertHistory(
+function flattenAndonvertHistory(
 	nestedHistory: any[]
 ): FlatHistoryItem[] {
 	const flatHistory: FlatHistoryItem[] = [];

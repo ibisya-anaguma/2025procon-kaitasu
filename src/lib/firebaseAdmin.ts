@@ -1,3 +1,4 @@
+// src/lib/firebaseAdmin.ts
 // サーバー用firebase認証処理
 // うめ
 
