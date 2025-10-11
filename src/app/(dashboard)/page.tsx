@@ -220,7 +220,7 @@ export default function DashboardPage() {
               </div>
             </div>
           </div>
-          <div className="w-[744px] bg-[#adadad] rounded-full h-[34px] mb-1 mx-auto" data-oid="pk6di4e">
+          <div className="w-[744px] bg-[#adadad] rounded-full h-[34px] mb-1 mx-auto flex justify-end overflow-hidden" data-oid="pk6di4e">
             <div
                 className="bg-[#209fde] h-[34px] rounded-full"
                 style={{ width: `${Math.max(0, Math.min(100, budgetSummary?.usageRate ?? 0))}%` }}
