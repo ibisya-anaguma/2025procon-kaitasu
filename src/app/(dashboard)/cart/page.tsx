@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/card";
 import { useAppContext } from "@/contexts/AppContext";
 import type { Product, Screen } from "@/types/page";
 import { fetchWithAuth } from "@/lib/auth-client";
+import { useFavorites } from "@/app/hooks/useFavorites";
 
 function screenToPath(screen: Screen): string | null {
   switch (screen) {
@@ -42,9 +43,9 @@ export default function CartPage() {
   const {
     cartItems: localCartItems,
     onUpdateProductQuantity,
-    onAddFavoriteEntry,
     onNavigate: setScreen
   } = useAppContext();
+  const { addFavorite } = useFavorites();
   const [apiCartItems, setApiCartItems] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -96,6 +97,19 @@ export default function CartPage() {
     setScreen(screen);
     const path = screenToPath(screen);
     if (path) router.push(path);
+  };
+
+  // お気に入りに追加
+  const handleAddToFavorite = async (item: Product) => {
+    console.log('[DEBUG cart] Adding to favorites:', item);
+    const success = await addFavorite(item.id, item.quantity);
+    if (success) {
+      console.log('[DEBUG cart] Successfully added to favorites');
+      // TODO: 成功メッセージを表示（オプション）
+    } else {
+      console.error('[DEBUG cart] Failed to add to favorites');
+      // TODO: エラーメッセージを表示（オプション）
+    }
   };
 
   // カート商品の数量を更新（ローカルとAPIの両方）
@@ -191,7 +205,7 @@ export default function CartPage() {
                 <Button
                   variant="ghost"
                   className="flex items-center gap-2 border-2 border-[#FDA900] rounded-[11.936px] bg-white px-4 py-2 shadow-[2.686px_2.686px_0_0_#E4E2E2]"
-                  onClick={() => onAddFavoriteEntry(item)}
+                  onClick={() => handleAddToFavorite(item)}
                   data-oid="cart-favorite-button">
                   <span
                     className="text-black font-['BIZ_UDPGothic'] text-[19.098px] font-bold leading-normal tracking-[0.993px]"
