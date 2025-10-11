@@ -89,6 +89,70 @@ export default function CatalogLandingPage() {
   const [budget, setBudget] = useState('');
   const [isHealthFocused, setIsHealthFocused] = useState(false);
 
+  // お気に入り商品を取得してカタログページに表示
+  const handleShowFavorites = async () => {
+    console.log('[DEBUG landing] ========== お気に入りボタンクリック ==========');
+    console.log('[DEBUG landing] User:', user);
+    
+    try {
+      if (!user) {
+        console.log('[DEBUG landing] User not logged in');
+        alert('ログインが必要です');
+        return;
+      }
+
+      console.log('[DEBUG landing] Fetching favorites...');
+      const idToken = await user.getIdToken();
+      console.log('[DEBUG landing] Got ID token');
+      
+      const response = await fetch('/api/favorites', {
+        headers: {
+          'Authorization': `Bearer ${idToken}`,
+        },
+      });
+
+      console.log('[DEBUG landing] Favorites API response status:', response.status);
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('[DEBUG landing] API error:', errorData);
+        throw new Error('お気に入りの取得に失敗しました');
+      }
+
+      const favorites = await response.json();
+      console.log('[DEBUG landing] Favorites data:', favorites);
+      console.log('[DEBUG landing] Favorites count:', favorites.length);
+
+      if (!favorites || favorites.length === 0) {
+        console.log('[DEBUG landing] No favorites found');
+        alert('お気に入りに商品が登録されていません');
+        return;
+      }
+
+      // お気に入り商品をSearchProduct形式に変換
+      const favoriteProducts = favorites.map((fav: any) => ({
+        id: fav.id,
+        name: fav.name,
+        price: fav.price,
+        imgUrl: fav.imgUrl || fav.image || '',
+      }));
+
+      console.log('[DEBUG landing] Converted products:', favoriteProducts.length);
+
+      // searchProductsを使って結果を設定
+      await searchProducts({ favorite: true, comboResults: favoriteProducts });
+      console.log('[DEBUG landing] Search products set');
+      
+      // カタログページに遷移
+      console.log('[DEBUG landing] Navigating to catalog...');
+      handleNavigate("catalog");
+      console.log('[DEBUG landing] ==========================================');
+    } catch (error) {
+      console.error('[DEBUG landing] Failed to fetch favorites:', error);
+      alert('お気に入りの取得に失敗しました: ' + (error instanceof Error ? error.message : ''));
+    }
+  };
+
   // ユーザー情報から予算を読み込み
   useEffect(() => {
     if (userInfo?.monthlyBudget) {
@@ -319,7 +383,7 @@ export default function CatalogLandingPage() {
           <Button
             variant="ghost"
             className="border border-transparent p-0 h-[63px] flex items-center justify-center rounded-[20px] border-2 border-[#FDA900] px-6 bg-white shadow-[4.5px_4.5px_0_0_#E4E2E2]"
-            onClick={() => handleNavigate("favoriteList")}
+            onClick={handleShowFavorites}
             data-oid="favorite-list-button">
             <span className={FILTER_BUTTON_TEXT_CLASS}>お気に入りページへ</span>
           </Button>
