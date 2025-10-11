@@ -112,6 +112,73 @@ export default function CartPage() {
     }
   };
 
+  // 注文確定処理
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
+
+  const handleCheckout = async () => {
+    if (cartItems.length === 0) {
+      alert('カートに商品がありません');
+      return;
+    }
+
+    // 確認ダイアログ
+    const confirmed = window.confirm(
+      `合計 ${totalCartQuantity}点（¥${totalCartPrice.toLocaleString('ja-JP')}）を注文確定しますか？`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setIsCheckingOut(true);
+    console.log('[DEBUG cart] Starting checkout process (simulation mode)...');
+    console.log('[DEBUG cart] Cart items:', cartItems);
+
+    try {
+      // 開発環境用：履歴に保存してカートをクリア
+      const historyResponse = await fetchWithAuth('/api/history', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          items: cartItems,
+          historyDocId: `checkout-${Date.now()}`
+        }),
+      });
+
+      if (!historyResponse.ok) {
+        const historyError = await historyResponse.json();
+        throw new Error(historyError.error || '履歴の保存に失敗しました');
+      }
+
+      const historyResult = await historyResponse.json();
+      console.log('[DEBUG cart] Saved to history:', historyResult);
+      
+      // 成功メッセージを表示
+      alert(`【開発環境：決済シミュレーション】\n\n` +
+            `注文内容:\n` +
+            `商品数: ${totalCartQuantity}点\n` +
+            `合計金額: ¥${totalCartPrice.toLocaleString('ja-JP')}\n\n` +
+            `✓ 購入履歴に保存しました\n` +
+            `✓ カートをクリアしました\n\n` +
+            `決済処理が正常に完了しました。\n` +
+            `（実際の決済は行われていません）`);
+      
+      // ローカルステートとAPIのカートをクリア
+      setApiCartItems([]);
+      
+      // カートページをリロード
+      window.location.reload();
+      
+    } catch (error) {
+      console.error('[DEBUG cart] Checkout error:', error);
+      alert(error instanceof Error ? error.message : '決済処理に失敗しました。もう一度お試しください。');
+    } finally {
+      setIsCheckingOut(false);
+    }
+  };
+
   // カート商品の数量を更新（ローカルとAPIの両方）
   const handleUpdateQuantity = async (id: number | string, change: number) => {
     // ローカルの商品の場合は従来の処理
@@ -305,11 +372,12 @@ export default function CartPage() {
         <div className="flex gap-3" data-oid="ufdhcq:">
           <Button
             variant="outline"
-            className="flex-1 text-sm border-2 border-[#fda900] text-[#fda900] rounded-md bg-transparent"
-            onClick={() => handleNavigate("order")}
+            className="flex-1 text-sm border-2 border-[#fda900] text-[#fda900] rounded-md bg-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={handleCheckout}
+            disabled={isCheckingOut || cartItems.length === 0}
             data-oid="8i_h.o."
           >
-            注文確認
+            {isCheckingOut ? '処理中...' : '注文確定'}
           </Button>
           <Button
             className="flex-1 bg-[#fda900] text-sm border-2 border-[#fda900] rounded-md hover:bg-[#fda900]/90"
