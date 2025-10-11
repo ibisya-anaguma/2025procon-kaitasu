@@ -1,14 +1,55 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { SidebarCatalogIcon, SidebarHistoryIcon, SidebarProfileIcon, SidebarSubscriptionIcon } from "@/components/icons/sidebar-icons";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useAppContext } from "@/contexts/AppContext";
 
+type RecommendedProduct = {
+  id: string;
+  name: string;
+  price: number;
+  image: string;
+};
+
 export default function DashboardPage() {
   const router = useRouter();
   const { monthlyBudget } = useAppContext();
+  const [recommendedProducts, setRecommendedProducts] = useState<RecommendedProduct[]>([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  // おすすめ商品を取得
+  useEffect(() => {
+    const fetchRecommendation = async () => {
+      try {
+        const response = await fetch('/api/recommendations');
+        if (response.ok) {
+          const data = await response.json();
+          if (data && data.length > 0) {
+            setRecommendedProducts(data);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch recommendations:', error);
+      }
+    };
+
+    fetchRecommendation();
+  }, []);
+
+  // 前の商品に移動
+  const handlePrevious = () => {
+    setCurrentIndex((prev) => (prev > 0 ? prev - 1 : recommendedProducts.length - 1));
+  };
+
+  // 次の商品に移動
+  const handleNext = () => {
+    setCurrentIndex((prev) => (prev < recommendedProducts.length - 1 ? prev + 1 : 0));
+  };
+
+  const recommendedProduct = recommendedProducts[currentIndex] || null;
 
   return (
     <div className="flex-1 bg-white p-6 ml-[232px] min-h-screen flex items-center justify-center" data-oid="ysuosjy">
@@ -18,9 +59,100 @@ export default function DashboardPage() {
           className="w-[903px] p-4 rounded-[14.469px] border-[5px] border-[#FDA900] bg-white"
           data-oid="2bp9lo4">
           <h3 className="text-center font-medium mb-3 text-sm" data-oid="aek175l">
-            お知らせ
+            おすすめ
           </h3>
-          <div className="h-12 bg-[#adadad] rounded" data-oid="v_esgva"></div>
+          {recommendedProduct ? (
+            <div className="flex items-center justify-center gap-4">
+              {/* 左矢印 */}
+              <button
+                onClick={handlePrevious}
+                className="flex items-center justify-center w-12 h-12 hover:bg-gray-100 rounded-full transition-colors"
+                aria-label="前のおすすめ商品">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="#FDA900"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                  strokeLinejoin="round">
+                  <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+              </button>
+
+              {/* 商品表示エリア */}
+              <div 
+                className="flex items-center"
+                style={{
+                  width: '690px',
+                  height: '109px',
+                  flexShrink: 0
+                }}>
+                <img
+                  src={recommendedProduct.image || "/placeholder.svg"}
+                  alt={recommendedProduct.name}
+                  style={{
+                    width: '164.548px',
+                    height: '109px',
+                    flexShrink: 0,
+                    aspectRatio: '164.55/109.00',
+                    objectFit: 'cover',
+                    borderRadius: '8px'
+                  }}
+                />
+                <div 
+                  style={{
+                    marginLeft: '20px',
+                    flex: 1,
+                    color: 'var(--, #101010)',
+                    fontFamily: '"BIZ UDPGothic"',
+                    fontSize: '24px',
+                    fontStyle: 'normal',
+                    fontWeight: 700,
+                    lineHeight: 'normal',
+                    letterSpacing: '1.248px'
+                  }}>
+                  {recommendedProduct.name}
+                </div>
+                <div
+                  style={{
+                    marginLeft: 'auto',
+                    color: 'var(--, #101010)',
+                    fontFamily: '"BIZ UDPGothic"',
+                    fontSize: '24px',
+                    fontStyle: 'normal',
+                    fontWeight: 700,
+                    lineHeight: 'normal',
+                    letterSpacing: '1.248px'
+                  }}>
+                  ¥{recommendedProduct.price.toLocaleString('ja-JP')}
+                </div>
+              </div>
+
+              {/* 右矢印 */}
+              <button
+                onClick={handleNext}
+                className="flex items-center justify-center w-12 h-12 hover:bg-gray-100 rounded-full transition-colors"
+                aria-label="次のおすすめ商品">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="#FDA900"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                  strokeLinejoin="round">
+                  <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+              </button>
+            </div>
+          ) : (
+            <div className="h-12 bg-[#adadad] rounded animate-pulse" data-oid="v_esgva"></div>
+          )}
         </Card>
 
         {/* Budget Card */}
