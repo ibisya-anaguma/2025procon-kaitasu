@@ -1,6 +1,5 @@
 // firebase初期化処理
 // src/lib/firebase.ts
-"use client"
 
 import { initializeApp, getApps } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
