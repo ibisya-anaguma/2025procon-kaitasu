@@ -6,6 +6,7 @@ import { SidebarCatalogIcon, SidebarHistoryIcon, SidebarProfileIcon, SidebarSubs
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useAppContext } from "@/contexts/AppContext";
+import { fetchWithAuth } from "@/lib/auth-client";
 
 type RecommendedProduct = {
   id: string;
@@ -14,11 +15,19 @@ type RecommendedProduct = {
   image: string;
 };
 
+type BudgetSummary = {
+    budget: number;
+    remainingAmount: number;
+    usageRate: number; // 0-100
+};
+
 export default function DashboardPage() {
   const router = useRouter();
   const { monthlyBudget } = useAppContext();
   const [recommendedProducts, setRecommendedProducts] = useState<RecommendedProduct[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [budgetSummary, setBudgetSummary] = useState<BudgetSummary | null>(null);
+  const [isLoadingBudget, setIsLoadingBudget] = useState<boolean>(false);
 
   // おすすめ商品を取得
   useEffect(() => {
@@ -37,6 +46,27 @@ export default function DashboardPage() {
     };
 
     fetchRecommendation();
+  }, []);
+
+  // 予算サマリーを取得
+  useEffect(() => {
+      const fetchBudgetSummary = async () => {
+          setIsLoadingBudget(true);
+          try {
+              const res = await fetchWithAuth('/api/budget-summary');
+              if (!res.ok) {
+                  console.warn('[dashboard] budget-summary fetch failed', res.status);
+                  return;
+              }
+              const data: BudgetSummary = await res.json();
+              setBudgetSummary(data);
+          } catch (e) {
+              console.error('[dashboard] budget-summary fetch error', e);
+          } finally {
+              setIsLoadingBudget(false);
+          }
+      };
+      fetchBudgetSummary();
   }, []);
 
   // 前の商品に移動
@@ -166,25 +196,36 @@ export default function DashboardPage() {
             <div className="flex items-baseline gap-2 mt-[29px] mr-[81px] self-end" data-oid="qq2w-88">
               <span className="font-bold text-[20px]">残り</span>
               <span className="font-bold text-[36px] leading-none">
-                ¥{monthlyBudget.toLocaleString("ja-JP")}
+                {(() => {
+                    const value = budgetSummary?.remainingAmount ?? monthlyBudget ?? 0;
+                    return `¥${Number(value).toLocaleString('ja-JP')}`;
+                })()}
               </span>
             </div>
           </div>
           <div className="flex w-[703px] justify-between mb-[7px] mt-[9px]" data-oid="h3m4f7m">
             <div className="text-[20px] text-[#adadad]" data-oid="woecoz3">
-              ¥12,500
+              {(() => {
+                  if (!budgetSummary) return '¥-';
+                  const spent = Math.max(0, (budgetSummary.budget || 0) - (budgetSummary.remainingAmount || 0));
+                  return `¥${spent.toLocaleString('ja-JP')}`;
+              })()}
             </div>
             <div className="flex" data-oid="h3m4f7m">
               <div className="text-[20px] text-right text-[#209fde]" data-oid="6x91r4a">
                 使用率:
               </div>
               <div className="text-[20px] text-right text-[#101010]" data-oid="6x91r4a">
-                60%
+                {budgetSummary ? `${budgetSummary.usageRate}%` : (isLoadingBudget ? '...' : '-%')}
               </div>
             </div>
           </div>
           <div className="w-[744px] bg-[#adadad] rounded-full h-[34px] mb-1 mx-auto" data-oid="pk6di4e">
-            <div className="bg-[#209fde] h-[34px] rounded-full w-[60%]" data-oid="5_0shjj"></div>
+            <div
+                className="bg-[#209fde] h-[34px] rounded-full"
+                style={{ width: `${Math.max(0, Math.min(100, budgetSummary?.usageRate ?? 0))}%` }}
+                data-oid="5_0shjj"
+            ></div>
           </div>
         </Card>
 
