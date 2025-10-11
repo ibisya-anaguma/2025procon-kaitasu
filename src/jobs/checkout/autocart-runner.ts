@@ -1,11 +1,6 @@
-<<<<<<< HEAD
-//あらとも
-
-=======
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // src/jobs/checkout/autocart-runner.ts
 // 最終完成版 — 全ユーザー向け auto-cart runner
->>>>>>> kizu/develop
 import * as admin from "firebase-admin";
 import * as fs from "fs";
 import * as path from "path";
@@ -102,17 +97,14 @@ function daysBetween(a: Date, b: Date) {
 
 function initAdmin(credPath?: string) {
   let resolved = "";
-  if (credPath) {
-    if (credPath.startsWith("~")) {
-      resolved = path.join(os.homedir(), credPath.slice(1));
-    } else {
-      resolved = path.resolve(credPath);
-    }
-<<<<<<< HEAD
-=======
+  try {
+	if (credPath.startsWith("~")) {
+		resolved = path.join(os.homedir(), credPath.slice(1));
+	} else {
+		resolved = path.resolve(credPath);
+	}
   } catch {
     // ignore, we'll try default init
->>>>>>> kizu/develop
   }
   if (resolved && fs.existsSync(resolved)) {
     const sa = JSON.parse(fs.readFileSync(resolved, "utf8"));
