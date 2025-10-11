@@ -55,7 +55,7 @@ export function useProductSearch() {
         const convertedProducts: SearchProduct[] = params.comboResults.map((item: any) => ({
           id: item.id || String(item.productId),
           name: item.name,
-          price: item.price || item.priceTax || 0,
+          price: Math.round(item.price || item.priceTax || 0), // 小数点を四捨五入
           imgUrl: item.imgUrl || item.url || item.image || '',
         }));
         console.log('[DEBUG useProductSearch] Converted products:', convertedProducts.length, 'items');

@@ -24,15 +24,22 @@ export async function fetchWithAuth(
   input: RequestInfo | URL,
   init: RequestInit = {}
 ): Promise<Response> {
-  const token = await getIdToken();
-  const headers = new Headers(init.headers);
+  try {
+    const token = await getIdToken();
+    const headers = new Headers(init.headers);
 
-  if (!headers.has("Authorization")) {
-    headers.set("Authorization", `Bearer ${token}`);
+    if (!headers.has("Authorization")) {
+      headers.set("Authorization", `Bearer ${token}`);
+    }
+
+    return fetch(input, {
+      ...init,
+      headers
+    });
+  } catch (error) {
+    // Firebase認証が設定されていない、またはユーザーがサインインしていない場合
+    // トークンなしでリクエストを試行（開発環境用）
+    console.warn('[fetchWithAuth] Failed to get auth token, proceeding without auth:', error);
+    return fetch(input, init);
   }
-
-  return fetch(input, {
-    ...init,
-    headers
-  });
 }

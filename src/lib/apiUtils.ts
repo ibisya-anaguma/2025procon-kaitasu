@@ -31,14 +31,15 @@ export function addFoodDetails<T extends { id: string }>(items: T[]) {
   return items.map((item) => {
     const food = foodData.find((f) => f.id === item.id);
     if (!food) {
-      return { ...item, name: "no Name", price: 0, imgUrl: "" };
+      return { ...item, name: "no Name", price: 0, image: "", imgUrl: "" };
     }
 
     return {
       ...item,
       name: food.name,
-      price: food.priceTax,
-      imgUrl: food.url
+      price: Math.round(food.priceTax), // 小数点を四捨五入して整数に
+      image: (food as any).imgUrl || "", // imageフィールドに画像URLを設定
+      imgUrl: (food as any).imgUrl || "" // 後方互換性のため両方設定
     };
   });
 }

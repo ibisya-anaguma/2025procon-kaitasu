@@ -69,7 +69,7 @@ try {
     products = rawProducts.map((item) => ({
       id: String(item.id ?? ""),
       name: item.name,
-      price: typeof item.price === "number" ? item.price : Number(item.price ?? 0),
+      price: Math.round(typeof item.price === "number" ? item.price : Number(item.price ?? 0)), // 念のため整数に
       image: item.image,
       imgUrl: item.imgUrl ?? item.image ?? "",
       genre: item.genre,

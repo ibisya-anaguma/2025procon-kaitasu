@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 
@@ -7,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useAppContext } from "@/contexts/AppContext";
 import type { Product, Screen } from "@/types/page";
+import { fetchWithAuth } from "@/lib/auth-client";
 
 function screenToPath(screen: Screen): string | null {
   switch (screen) {
@@ -38,17 +40,106 @@ function screenToPath(screen: Screen): string | null {
 export default function CartPage() {
   const router = useRouter();
   const {
-    cartItems,
+    cartItems: localCartItems,
     onUpdateProductQuantity,
     onAddFavoriteEntry,
     onNavigate: setScreen
   } = useAppContext();
+  const [apiCartItems, setApiCartItems] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // カートAPIから商品を取得
+  useEffect(() => {
+    const fetchCartItems = async () => {
+      try {
+        const response = await fetchWithAuth('/api/cart');
+        if (response.ok) {
+          const data = await response.json();
+          setApiCartItems(data);
+        } else {
+          console.error('[cart] Failed to fetch cart items:', response.statusText);
+        }
+      } catch (error) {
+        console.error('[cart] Error fetching cart items:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchCartItems();
+  }, []);
+
+  // ローカルとAPIのカートアイテムをマージ
+  const cartItems = [...localCartItems];
+  
+  // APIから取得した商品でローカルにないものを追加
+  apiCartItems.forEach(apiItem => {
+    const exists = cartItems.some(item => item.id === apiItem.id);
+    if (!exists) {
+      cartItems.push(apiItem);
+    }
+  });
+
+  // デバッグ: カート商品の画像URLを確認
+  useEffect(() => {
+    if (cartItems.length > 0) {
+      console.log('[DEBUG cart] Cart items:', cartItems.map(item => ({
+        id: item.id,
+        name: item.name,
+        image: item.image,
+        hasImage: !!item.image
+      })));
+    }
+  }, [cartItems]);
 
   const handleNavigate = (screen: Screen) => {
     setScreen(screen);
     const path = screenToPath(screen);
     if (path) router.push(path);
   };
+
+  // カート商品の数量を更新（ローカルとAPIの両方）
+  const handleUpdateQuantity = async (id: number | string, change: number) => {
+    // ローカルの商品の場合は従来の処理
+    if (typeof id === 'number') {
+      onUpdateProductQuantity(id, change);
+    }
+
+    // APIの商品の場合は数量を更新してAPIに反映
+    const item = apiCartItems.find(item => item.id === id);
+    if (item) {
+      const newQuantity = Math.max(0, item.quantity + change);
+      
+      // ローカルステートを更新
+      setApiCartItems(prev => 
+        prev.map(p => 
+          p.id === id ? { ...p, quantity: newQuantity } : p
+        ).filter(p => p.quantity > 0) // 数量が0の商品は削除
+      );
+
+      // APIに反映
+      try {
+        if (newQuantity === 0) {
+          // 数量が0の場合は削除
+          await fetchWithAuth(`/api/cart/${id}`, {
+            method: 'DELETE',
+          });
+        } else {
+          // 数量を更新
+          await fetchWithAuth('/api/cart', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify([{ id, quantity: newQuantity }]),
+          });
+        }
+      } catch (error) {
+        console.error('[cart] Error updating cart:', error);
+      }
+    }
+  };
+
   const totalCartQuantity = cartItems.reduce(
     (sum, item) => sum + item.quantity,
     0,
@@ -57,6 +148,14 @@ export default function CartPage() {
     (sum, item) => sum + item.price * item.quantity,
     0,
   );
+
+  if (isLoading) {
+    return (
+      <div className="flex-1 bg-white p-6 ml-[232px] min-h-screen flex items-center justify-center">
+        <div className="text-center">読み込み中...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 bg-white p-6 ml-[232px] min-h-screen flex items-center justify-center" data-oid="qie1-gm">
@@ -129,7 +228,7 @@ export default function CartPage() {
                       size="icon"
                       variant="ghost"
                       className="rounded bg-transparent hover:bg-transparent focus:bg-transparent focus-visible:bg-transparent active:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none w-[41px] h-[40px] shrink-0"
-                      onClick={() => onUpdateProductQuantity(item.id, -1)}
+                      onClick={() => handleUpdateQuantity(item.id, -1)}
                       data-oid="g4qqy_k"
                     >
                       <Image
@@ -150,7 +249,7 @@ export default function CartPage() {
                       size="icon"
                       variant="ghost"
                       className="rounded bg-transparent hover:bg-transparent focus:bg-transparent focus-visible:bg-transparent active:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none w-[41px] h-[40px] shrink-0"
-                      onClick={() => onUpdateProductQuantity(item.id, 1)}
+                      onClick={() => handleUpdateQuantity(item.id, 1)}
                       data-oid="4kc4n3t"
                     >
                       <Image

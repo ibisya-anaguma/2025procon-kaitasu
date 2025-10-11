@@ -11,6 +11,7 @@ import { useProductSearch } from "@/app/hooks/useProductSearch";
 import { useFavorites } from "@/app/hooks/useFavorites";
 import { useAppContext } from "@/contexts/AppContext";
 import type { Product, Screen } from "@/types/page";
+import { fetchWithAuth } from "@/lib/auth-client";
 
 function screenToPath(screen: Screen): string | null {
   switch (screen) {
@@ -60,7 +61,38 @@ export default function CatalogPage() {
     console.log('[DEBUG catalog] Favorites updated:', favorites);
   }, [favorites]);
 
-  const handleNavigate = (screen: Screen) => {
+  const handleNavigate = async (screen: Screen) => {
+    // カートに移動する際、検索結果の選択商品をカートに追加
+    if (screen === "cart" && searchResults.length > 0) {
+      const selectedProducts = searchResults
+        .filter(p => {
+          const qty = searchProductQuantities[p.id] || 0;
+          return qty > 0;
+        })
+        .map(p => ({
+          id: p.id,
+          quantity: searchProductQuantities[p.id] || 0
+        }));
+
+      if (selectedProducts.length > 0) {
+        try {
+          const response = await fetchWithAuth('/api/cart', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(selectedProducts),
+          });
+
+          if (!response.ok) {
+            console.error('[catalog] Failed to add products to cart:', response.statusText);
+          }
+        } catch (error) {
+          console.error('[catalog] Error adding products to cart:', error);
+        }
+      }
+    }
+
     setScreen(screen);
     const path = screenToPath(screen);
     if (path) router.push(path);
@@ -168,6 +200,16 @@ export default function CatalogPage() {
   console.log('[DEBUG catalog] Is combo results:', isComboResults);
   console.log('[DEBUG catalog] Product quantities:', searchProductQuantities);
   console.log('[DEBUG catalog] Favorites count:', favorites.length);
+  
+  // 画像URLのデバッグ
+  if (displayProducts.length > 0) {
+    console.log('[DEBUG catalog] First product image:', displayProducts[0].image);
+    console.log('[DEBUG catalog] Sample images:', displayProducts.slice(0, 3).map(p => ({
+      name: p.name,
+      image: p.image,
+      hasImage: !!p.image
+    })));
+  }
   
   // 検索結果がある場合、商品の詳細情報を出力
   if (searchResults.length > 0) {
