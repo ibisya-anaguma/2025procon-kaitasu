@@ -33,7 +33,7 @@ export function useFavorites() {
       // APIのレスポンス(shape: { id: string, quantity?: number, name: string, price: number, imgUrl: string }[])
       // をUIで使用しているFavoriteEntry型にマッピング
       const mapped: FavoriteEntry[] = (Array.isArray(data) ? data : []).map((item: any) => ({
-        productId: Number(item.id),
+        productId: String(item.id),  // 文字列として保持
         name: item.name,
         price: item.price,
         image: item.imgUrl || '',

@@ -10,8 +10,40 @@ import { FILTER_BUTTON_INACTIVE_CLASS, FILTER_BUTTON_TEXT_CLASS } from "@/compon
 import { useProductSearch } from "@/app/hooks/useProductSearch";
 import { useAppContext } from "@/contexts/AppContext";
 import { useUserInformation } from "@/app/hooks/useUserInformation";
+import { useAuth } from "@/contexts/AuthContext";
 import type { LandingCardContent, Screen } from "@/types/page";
 import { cn } from "@/lib/utils";
+
+// ジャンルボタンのインデックスとジャンル番号のマッピング
+  const GENRE_MAPPING: Record<number, number> = {
+    0: 11,   // 野菜
+    1: 12,   // くだもの
+    2: 13,   // 魚
+    3: 14,   // 肉
+    4: 15,   // お弁当・寿司・お惣菜・サラダ
+    5: 16,   // ハム・ソーセージ・肉加工品
+    6: 17,   // 卵・牛乳・乳製品
+    7: 18,   // ヨーグルト・ドリンクヨーグルト
+    8: 19,   // パン・シリアル・ジャム
+    9: 50,   // おすすめ・特集
+    10: 40,  // トップバリュ
+    11: 41,  // カフェランテ
+  };
+
+  const GENRE_NAMES: Record<number, string> = {
+    11: '野菜',
+    12: 'くだもの',
+    13: '魚',
+    14: '肉',
+    15: 'お弁当・寿司・お惣菜・サラダ',
+    16: 'ハム・ソーセージ・肉加工品',
+    17: '卵・牛乳・乳製品',
+    18: 'ヨーグルト・ドリンクヨーグルト',
+    19: 'パン・シリアル・ジャム',
+    50: 'おすすめ・特集',
+    40: 'トップバリュ',
+    41: 'カフェランテ',
+  };
 
 function screenToPath(screen: Screen): string | null {
   switch (screen) {
@@ -51,6 +83,7 @@ export default function CatalogLandingPage() {
   } = useAppContext();
   const { searchProducts, isLoading } = useProductSearch();
   const { userInfo, updateUserInformation } = useUserInformation();
+  const { user } = useAuth();
   const [selectedCards, setSelectedCards] = useState<number[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [budget, setBudget] = useState('');
@@ -95,20 +128,147 @@ export default function CatalogLandingPage() {
   };
 
   const handleSearch = async () => {
-    // ジャンル番号の計算（ページ数とカード位置から）
-    const selectedGenres = selectedCards.map(cardIndex => {
-      // 各ページは12個のカードを持つ
-      const genreNumber = (landingPage - 1) * 12 + cardIndex + 1;
-      return genreNumber;
-    });
+    console.log('[DEBUG landing] handleSearch called, isHealthFocused:', isHealthFocused);
+    console.log('[DEBUG landing] selectedCards:', selectedCards);
+    
+    // 健康重視モードが選択されている場合、combos APIを呼び出す
+    if (isHealthFocused) {
+      try {
+        // 選択されたジャンル番号を取得
+        const selectedGenres = selectedCards.map(cardIndex => {
+          const globalIndex = (landingPage - 1) * 12 + cardIndex;
+          return GENRE_MAPPING[globalIndex];
+        }).filter(genre => genre !== undefined);
 
-    // 検索を実行してからcatalogページに遷移
-    await searchProducts({
-      q: searchQuery.trim() || null,
-      genre: selectedGenres.length > 0 ? selectedGenres[0] : null, // 複数ジャンルの場合は最初のものを使用
-      limit: 50
-    });
+        // 選択されたジャンルの詳細情報を出力
+        console.log('[DEBUG landing] ========== 選択されたジャンル情報 ==========');
+        console.log('[DEBUG landing] 選択数:', selectedGenres.length);
+        selectedGenres.forEach((genreId, index) => {
+          console.log(`[DEBUG landing] ${index + 1}. ジャンルID: ${genreId}, ジャンル名: ${GENRE_NAMES[genreId] || '不明'}`);
+        });
+        console.log('[DEBUG landing] ==========================================');
+        console.log('[DEBUG landing] Selected genres:', selectedGenres);
 
+        // 予算を取得
+        const budgetValue = parseInt(budget, 10) || userInfo?.monthlyBudget || 50000;
+        console.log('[DEBUG landing] Budget:', budgetValue);
+
+        // combos APIを呼び出す
+        if (user) {
+          console.log('[DEBUG landing] Calling combos API...');
+          const idToken = await user.getIdToken();
+          const response = await fetch('/api/combos', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${idToken}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              budget: budgetValue,
+              isHealthImportance: true,
+              genres: selectedGenres,
+            }),
+          });
+
+          console.log('[DEBUG landing] Combos API status:', response.status);
+
+          if (response.ok) {
+            const comboProducts = await response.json();
+            console.log('[DEBUG landing] Combos API response:', comboProducts);
+            
+            // combos APIからの商品詳細を出力
+            if (Array.isArray(comboProducts) && comboProducts.length > 0) {
+              console.log('[DEBUG landing] ========== combos API 返却商品 ==========');
+              console.log('[DEBUG landing] 商品数:', comboProducts.length);
+              const genreCounts: Record<number, number> = {};
+              comboProducts.forEach((product: any) => {
+                const genreId = product.genre;
+                genreCounts[genreId] = (genreCounts[genreId] || 0) + 1;
+              });
+              console.log('[DEBUG landing] ジャンル別商品数:');
+              Object.entries(genreCounts).forEach(([genreId, count]) => {
+                console.log(`[DEBUG landing]   - ジャンルID ${genreId} (${GENRE_NAMES[Number(genreId)] || '不明'}): ${count}個`);
+              });
+              console.log('[DEBUG landing] 合計金額:', comboProducts.reduce((sum: number, p: any) => sum + (p.price || 0), 0), '円');
+              console.log('[DEBUG landing] ==========================================');
+            }
+            
+            // 結果が空の場合は通常の検索にフォールバック
+            if (!Array.isArray(comboProducts) || comboProducts.length === 0) {
+              console.log('[DEBUG landing] No combo results, falling back to normal search');
+              const fallbackGenres = selectedCards.map(cardIndex => {
+                const globalIndex = (landingPage - 1) * 12 + cardIndex;
+                return GENRE_MAPPING[globalIndex];
+              }).filter(genre => genre !== undefined);
+
+              console.log('[DEBUG landing] Calling searchProducts (fallback)...');
+              await searchProducts({
+                q: searchQuery.trim() || null,
+                genres: fallbackGenres.length > 0 ? fallbackGenres : undefined,
+                limit: 50
+              });
+            } else {
+              // combos APIの結果を検索結果として設定
+              console.log('[DEBUG landing] Setting combo results as search products');
+              await searchProducts({
+                q: null,
+                genre: null,
+                limit: 50,
+                comboResults: comboProducts,
+              });
+              console.log('[DEBUG landing] searchProducts completed');
+              // sessionStorageへの保存を確認
+              const saved = sessionStorage.getItem('searchResults');
+              console.log('[DEBUG landing] Verified sessionStorage:', saved ? JSON.parse(saved).length : 0, 'items');
+            }
+          } else {
+            console.error('[DEBUG landing] Combos API failed with status:', response.status);
+          }
+        }
+      } catch (error) {
+        console.error('[DEBUG landing] Error calling combos API:', error);
+        // エラーの場合は通常の検索にフォールバック
+        const selectedGenres = selectedCards.map(cardIndex => {
+          const globalIndex = (landingPage - 1) * 12 + cardIndex;
+          return GENRE_MAPPING[globalIndex];
+        }).filter(genre => genre !== undefined);
+        
+        await searchProducts({
+          q: searchQuery.trim() || null,
+          genres: selectedGenres.length > 0 ? selectedGenres : undefined,
+          limit: 50
+        });
+      }
+    } else {
+      // 通常の検索
+      console.log('[DEBUG landing] Normal search mode');
+      const selectedGenres = selectedCards.map(cardIndex => {
+        const globalIndex = (landingPage - 1) * 12 + cardIndex;
+        return GENRE_MAPPING[globalIndex];
+      }).filter(genre => genre !== undefined);
+
+      // 選択されたジャンルの詳細情報を出力
+      console.log('[DEBUG landing] ========== 選択されたジャンル情報 ==========');
+      console.log('[DEBUG landing] 選択数:', selectedGenres.length);
+      selectedGenres.forEach((genreId, index) => {
+        console.log(`[DEBUG landing] ${index + 1}. ジャンルID: ${genreId}, ジャンル名: ${GENRE_NAMES[genreId] || '不明'}`);
+      });
+      console.log('[DEBUG landing] ==========================================');
+
+      console.log('[DEBUG landing] Calling searchProducts (normal)...');
+      console.log('[DEBUG landing] Search params:', {
+        q: searchQuery.trim() || null,
+        genres: selectedGenres,
+      });
+
+      await searchProducts({
+        q: searchQuery.trim() || null,
+        genres: selectedGenres.length > 0 ? selectedGenres : undefined,
+        limit: 50
+      });
+    }
+
+    console.log('[DEBUG landing] Navigating to catalog...');
     handleNavigate("catalog");
   };
 

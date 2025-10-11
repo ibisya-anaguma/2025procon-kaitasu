@@ -28,7 +28,7 @@ export type SubscriptionEntry = {
 };
 
 export type FavoriteEntry = {
-  productId: number;
+  productId: string | number;
   name: string;
   price: number;
   image: string;

@@ -61,7 +61,7 @@ export default function FavoriteListPage() {
             </div>
           ) : (
             entries.map((entry, index) => (
-              <Fragment key={`favorite-entry-${entry.productId}`}>
+              <Fragment key={`favorite-entry-${String(entry.productId)}-${index}`}>
                 <div
                   className="flex items-center gap-8"
                   data-oid="favorite-list-row">

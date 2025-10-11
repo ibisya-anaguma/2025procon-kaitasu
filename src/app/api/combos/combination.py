@@ -145,12 +145,18 @@ def solve_one(Items, budget_yen, selected_categories=None, H_floor_ratio=None, f
         "price_sum": price_sum,
     }
 
-def _solve_price_only(Items, budget_yen):
+def _solve_price_only(Items, budget_yen, selected_categories=None):
     n = len(Items)
     x = [LpVariable(f"x_{i}", 0, 1, LpBinary) for i in range(n)]
     m = LpProblem("kaitasu_price", LpMaximize)
     price = [int(round(it.get("price_yen", 0))) for it in Items]
     m += lpSum(price[i] * x[i] for i in range(n)) <= int(budget_yen)
+    
+    # カテゴリ制約（各カテゴリ >= 1）
+    if selected_categories:
+        for cat in selected_categories:
+            m += lpSum(x[i] for i in range(n) if Items[i].get("category") == cat) >= 1, f"cat_{cat}_ge1"
+    
     m += lpSum(price[i] * x[i] for i in range(n))
     status = m.solve(PULP_CBC_CMD(msg=False))
     if status != 1:
@@ -164,6 +170,7 @@ def build_items_for_solver(products, require_health=True):
     solver用に必要なフィールドを補完。
     - price_yen が無い場合は priceTax を整数化して埋める
     - health_score が None のものは除外（健康モード仕様）
+    - genres配列の最初の要素をcategoryとして使用
     """
     Items = []
     for p in products:
@@ -171,8 +178,10 @@ def build_items_for_solver(products, require_health=True):
         hs = p.get("health_score")
         if require_health and hs is None:
             continue
+        # genresの最初の要素をcategoryとして使用
+        genre_val = (p.get("genres") or [None])[0]
         Items.append({
-            "id": p["id"], "name": p.get("name"), "category": p.get("category"),
+            "id": p["id"], "name": p.get("name"), "category": genre_val,
             "price_yen": price_yen, "health_score": hs,
         })
     return Items
@@ -208,11 +217,22 @@ if __name__ == "__main__":
     parser.add_argument("--input", type=str, default="", help="入力JSONファイルパス")
     parser.add_argument("--budget", type=int, default=2500, help="予算（円）")
     parser.add_argument("--health", type=str2bool, default=True, help="健康重視モード true/false")
+    parser.add_argument("--genres", type=str, default="", help="選択されたジャンル番号のJSON配列")
     args = parser.parse_args()
 
     # --- 基本設定 ---
     BUDGET_YEN = args.budget
     HEALTH_MODE = args.health
+
+    # --- 選択されたジャンルをパース ---
+    selected_genres = []
+    if args.genres:
+        try:
+            selected_genres = json.loads(args.genres)
+            if not isinstance(selected_genres, list):
+                selected_genres = []
+        except Exception:
+            selected_genres = []
 
     # --- json読み込み ---
     with open(DATA, "r", encoding="utf-8") as f:
@@ -236,14 +256,14 @@ if __name__ == "__main__":
             succeed_with_empty()
 
         # 第1段：H最大化
-        sol_opt = solve_one(Items, BUDGET_YEN, selected_categories=None)
+        sol_opt = solve_one(Items, BUDGET_YEN, selected_categories=selected_genres if selected_genres else None)
         if sol_opt is None or not sol_opt["ids"]:
             succeed_with_empty()
         H_star = sol_opt["H"]
 
         # 第2段：残額最小化（同H）
         sol_opt2 = solve_one(
-            Items, BUDGET_YEN, selected_categories=None,
+            Items, BUDGET_YEN, selected_categories=selected_genres if selected_genres else None,
             H_floor_ratio=H_star - 1e-9, forbid_overlap_with=None
         )
         best = sol_opt2 or sol_opt
@@ -261,7 +281,7 @@ if __name__ == "__main__":
         if not Items:
             succeed_with_empty()
 
-        sol_price = _solve_price_only(Items, BUDGET_YEN)
+        sol_price = _solve_price_only(Items, BUDGET_YEN, selected_categories=selected_genres if selected_genres else None)
         if sol_price is None or not sol_price["ids"]:
             succeed_with_empty()
 

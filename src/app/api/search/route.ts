@@ -31,6 +31,7 @@ type Product = {
 type SearchBody = {
   q?: string | null;
   genre?: number | null;
+  genres?: number[]; // 複数ジャンル対応
   favorite?: boolean;
   uid?: string; // 任意: favorite=true を使うなら指定推奨
   limit?: number;
@@ -121,6 +122,7 @@ export async function POST(request: NextRequest) {
     const body: SearchBody = await request.json();
     const q = normalize(body.q);
     const g = body.genre != null ? toNum(body.genre) : null;
+    const genres = body.genres || [];
     const favorite = !!body.favorite;
     const uid = body.uid || ""; // 任意
     const limit = Math.min(Math.max(1, Number(body.limit || 50)), 200);
@@ -134,7 +136,13 @@ export async function POST(request: NextRequest) {
         const ok = tokens.every((t) => name.includes(t));
         if (!ok) return false;
       }
-      if (g != null) {
+      // 複数ジャンル対応：genresが指定されている場合はそちらを優先
+      if (genres.length > 0) {
+        // いずれかのジャンルに一致すればOK
+        const matchesAnyGenre = genres.some(genre => hasGenre(p, genre));
+        if (!matchesAnyGenre) return false;
+      } else if (g != null) {
+        // 単一ジャンルの場合
         if (!hasGenre(p, g)) return false;
       }
       return true;
@@ -166,7 +174,7 @@ export async function POST(request: NextRequest) {
 
     // リクエスト/レスポンスをログ（見やすさ重視）
     console.log(
-      `[SEARCH] q="${q}" genre=${g ?? "none"} favorite=${favorite} uid=${
+      `[SEARCH] q="${q}" genre=${g ?? "none"} genres=${genres.length > 0 ? `[${genres.join(',')}]` : "none"} favorite=${favorite} uid=${
         uid || "-"
       } -> ${payload.length} hits`
     );

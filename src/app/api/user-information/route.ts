@@ -113,11 +113,67 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '無効なreduceNutrientsの値が含まれています' }, { status: 400 });
     }
 
+    // アンケート回答を栄養フラグに変換
+    const diseaseUp: Record<string, string[]> = {
+      Hypertension: ["K","MG","CA","FIB","VITC","TOCPHA"],
+      KidneyDisease: ["PROT","FIB","VITD","CA"],
+      Sarcopenia: ["PROT","VITD","CA","MG","VITB6A","VITB12","ENERC_KCAL"],
+      Diabetes: ["FIB","MG","THIA","VITB6A","NIA","VITC","TOCPHA"],
+      Osteoporosis: ["CA","VITD","VITK","MG","PROT","ZN","CU"],
+    };
+    const diseaseDown: Record<string, string[]> = {
+      Hypertension: ["NA","NACL_EQ","FATNLEA","CHOLE"],
+      KidneyDisease: ["NA","NACL_EQ","P","PROT"],
+      Sarcopenia: ["NA","FATNLEA"],
+      Diabetes: ["CHOAVLM","CHOCDF","FATNLEA","NA","NACL_EQ","CHOLE"],
+      Osteoporosis: ["NA","NACL_EQ","P","VITA_RAE"],
+    };
+    const increaseByBucket: Record<string, string[]> = {
+      Protein: ["PROT"],
+      VitaminD: ["VITD"],
+      Ca: ["CA"],
+      Fiber: ["FIB"],
+      Potassium: ["K"],
+    };
+    const reduceByBucket: Record<string, string[]> = {
+      Salt: ["NA","NACL_EQ"],
+      Fat: ["FAT","FATNLEA","CHOLE"],
+      Sugar: ["CHOCDF","CHOAVLM"],
+      Vitamin: ["VITA_RAE","VITD","TOCPHA","VITK"],
+      Mineral: ["NA","P"],
+    };
+
+    // 栄養フラグを計算
+    const score: Record<string, number> = {};
+    
+    // 病気ルール
+    for (const d of (disease || [])) {
+      for (const k of (diseaseUp[d] || [])) score[k] = (score[k] || 0) + 1;
+      for (const k of (diseaseDown[d] || [])) score[k] = (score[k] || 0) - 1;
+    }
+    // ユーザー指定
+    for (const b of (increaseNutrients || [])) {
+      for (const k of (increaseByBucket[b] || [])) score[k] = (score[k] || 0) + 1;
+    }
+    for (const b of (reduceNutrients || [])) {
+      for (const k of (reduceByBucket[b] || [])) score[k] = (score[k] || 0) - 1;
+    }
+
+    // 0を除外して、-1 or 1 に正規化
+    const nutrition: Record<string, number> = {};
+    for (const [k, v] of Object.entries(score)) {
+      if (v === 0) continue;
+      nutrition[k] = v > 0 ? 1 : -1;
+    }
+
+    console.log('[user-information] Calculated nutrition:', nutrition);
+
     // Firestoreのユーザードキュメントを更新
     await adminDb.collection('users').doc(uid).set({
       disease: disease || [],
       increaseNutrients: increaseNutrients || [],
       reduceNutrients: reduceNutrients || [],
+      nutrition: nutrition,
       updatedAt: new Date().toISOString()
     }, { merge: true });
 
